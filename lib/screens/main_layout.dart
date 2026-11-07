@@ -7,6 +7,8 @@ import 'adopt.dart';
 import 'maps.dart';
 import 'profile.dart';
 import 'login.dart';
+import 'drawer/help_support.dart';
+import 'drawer/terms_conditions.dart';
 
 class MainLayout extends StatefulWidget {
   final String name;
@@ -28,6 +30,28 @@ class _MainLayoutState extends State<MainLayout> {
       SnackBar(
         content: Text('$page is coming soon!'),
         duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _openHelpSupport(BuildContext drawerContext) {
+    Navigator.pop(drawerContext);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const HelpSupportPage(),
+      ),
+    );
+  }
+
+  void _openTermsConditions(BuildContext drawerContext) {
+    Navigator.pop(drawerContext);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const TermsConditionsPage(),
       ),
     );
   }
@@ -98,6 +122,7 @@ class _MainLayoutState extends State<MainLayout> {
         child: SafeArea(
           child: Column(
             children: [
+              // DRAWER HEADER
               Container(
                 width: double.infinity,
                 height: 160,
@@ -135,9 +160,13 @@ class _MainLayoutState extends State<MainLayout> {
 
               const SizedBox(height: 10),
 
+              // GENERAL MENU ITEMS
               _drawerItem(
                 Icons.help_outline,
                 'Help & Support',
+                onTap: (drawerContext) {
+                  _openHelpSupport(drawerContext);
+                },
               ),
 
               _drawerItem(
@@ -150,9 +179,22 @@ class _MainLayoutState extends State<MainLayout> {
                 'Settings',
               ),
 
+              // DIVIDER
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Divider(
+                  color: Color(0xFFE5E5E5),
+                  thickness: 1,
+                ),
+              ),
+
+              // LEGAL MENU ITEMS
               _drawerItem(
                 Icons.description_outlined,
                 'Terms & Conditions',
+                onTap: (drawerContext) {
+                  _openTermsConditions(drawerContext);
+                },
               ),
 
               _drawerItem(
@@ -164,6 +206,7 @@ class _MainLayoutState extends State<MainLayout> {
 
               const Divider(),
 
+              // LOG OUT
               ListTile(
                 leading: const Icon(
                   Icons.logout,
@@ -254,7 +297,11 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   // DRAWER MENU ITEM
-  Widget _drawerItem(IconData icon, String title) {
+  Widget _drawerItem(
+      IconData icon,
+      String title, {
+        Function(BuildContext)? onTap,
+      }) {
     return Builder(
       builder: (drawerContext) {
         return ListTile(
@@ -271,8 +318,12 @@ class _MainLayoutState extends State<MainLayout> {
             ),
           ),
           onTap: () {
-            Navigator.pop(drawerContext);
-            _showComingSoon(title);
+            if (onTap != null) {
+              onTap(drawerContext);
+            } else {
+              Navigator.pop(drawerContext);
+              _showComingSoon(title);
+            }
           },
         );
       },
