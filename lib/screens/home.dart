@@ -4,9 +4,18 @@ import '../utils/app_colors.dart';
 class HomePage extends StatelessWidget {
   final String name;
 
+  /// Opens the Report a Stray screen (provided by MainLayout).
   final VoidCallback? onReportTap;
 
-  const HomePage({super.key, required this.name, this.onReportTap});
+  /// Opens the Adopt screen (provided by MainLayout).
+  final VoidCallback? onAdoptTap;
+
+  const HomePage({
+    super.key,
+    required this.name,
+    this.onReportTap,
+    this.onAdoptTap,
+  });
 
   void _showComingSoon(BuildContext context, String page) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -80,18 +89,18 @@ class HomePage extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                  child: _actionCard(
+                child: _actionCard(
                   emoji: '📷',
                   title: 'Report a Stray',
                   onTap: () {
-                  if (onReportTap != null) {
-                  onReportTap!();
-                  } else {
-                  _showComingSoon(context, 'Report a Stray');
-                  }
+                    if (onReportTap != null) {
+                      onReportTap!();
+                    } else {
+                      _showComingSoon(context, 'Report a Stray');
+                    }
                   },
-                  ),
                 ),
+              ),
 
               const SizedBox(width: 15),
 
@@ -99,10 +108,13 @@ class HomePage extends StatelessWidget {
                 child: _actionCard(
                   emoji: '🐾',
                   title: 'Adopt a Pet',
-                  onTap: () => _showComingSoon(
-                    context,
-                    'Adopt a Pet',
-                  ),
+                  onTap: () {
+                    if (onAdoptTap != null) {
+                      onAdoptTap!();
+                    } else {
+                      _showComingSoon(context, 'Adopt a Pet');
+                    }
+                  },
                 ),
               ),
             ],
