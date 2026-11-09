@@ -87,6 +87,7 @@ class _MainLayoutState extends State<MainLayout> {
         name: widget.name,
         onReportTap: _openReportStray,
         onAdoptTap: _openAdopt,
+        onViewAllTap: () => setState(() => _selectedIndex = 2),
       ),
       const MapsPage(),
       const ReportsPage(),
