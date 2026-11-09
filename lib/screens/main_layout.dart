@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 import 'home.dart';
 import 'report.dart';
+import 'report_stray.dart';
 import 'adopt.dart';
 import 'maps.dart';
 import 'profile.dart';
@@ -34,6 +35,27 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 
+  // Opens the "Report a Stray" form as its own screen (not a tab).
+  void _openReportStray() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ReportStrayPage(),
+      ),
+    );
+  }
+
+  // Opens the Adopt screen.
+  // NOTE: change AdoptPage if the class in adopt.dart has a different name.
+  void _openAdopt() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AdoptPage(),
+      ),
+    );
+  }
+
   void _openHelpSupport(BuildContext drawerContext) {
     Navigator.pop(drawerContext);
 
@@ -58,10 +80,16 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
+    // Order must match the bottom navigation items below:
+    // Home, Map, Reports, Profile
     final List<Widget> pages = [
-      HomePage(name: widget.name),
-      const ReportPage(),
+      HomePage(
+        name: widget.name,
+        onReportTap: _openReportStray,
+        onAdoptTap: _openAdopt,
+      ),
       const MapsPage(),
+      const ReportsPage(),
       const ProfilePage(),
     ];
 
@@ -245,7 +273,7 @@ class _MainLayoutState extends State<MainLayout> {
         ),
       ),
 
-      // BOTTOM NAVIGATION
+      // BOTTOM NAVIGATION: Home, Map, Reports, Profile
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         type: BottomNavigationBarType.fixed,
@@ -268,15 +296,15 @@ class _MainLayoutState extends State<MainLayout> {
           ),
 
           BottomNavigationBarItem(
-            icon: Icon(Icons.camera_alt_outlined),
-            activeIcon: Icon(Icons.camera_alt),
-            label: 'Report',
+            icon: Icon(Icons.location_on_outlined),
+            activeIcon: Icon(Icons.location_on),
+            label: 'Map',
           ),
 
           BottomNavigationBarItem(
-            icon: Icon(Icons.map_outlined),
-            activeIcon: Icon(Icons.map),
-            label: 'Maps',
+            icon: Icon(Icons.description_outlined),
+            activeIcon: Icon(Icons.description),
+            label: 'Reports',
           ),
 
           BottomNavigationBarItem(
