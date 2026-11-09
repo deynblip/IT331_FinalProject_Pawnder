@@ -91,7 +91,7 @@ class _MainLayoutState extends State<MainLayout> {
       ),
       const MapsPage(),
       const ReportsPage(),
-      const ProfilePage(),
+      ProfilePage(name: widget.name),
     ];
 
     return Scaffold(

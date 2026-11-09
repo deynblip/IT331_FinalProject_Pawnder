@@ -1,6 +1,7 @@
 import '../models/stray_report.dart';
 
 // TEMPORARY DATA. Papalitan ng galing sa backend sa Phase 5.
+// isMine = true ang mga report na gawa ng naka-login na user (para sa Profile).
 final List<StrayReport> mockReports = [
   StrayReport(
     id: '1',
@@ -14,6 +15,7 @@ final List<StrayReport> mockReports = [
     lat: 13.7565,
     lng: 121.0583,
     imageAsset: 'assets/images/injured_dog.jpg',
+    isMine: true,
   ),
   StrayReport(
     id: '2',
@@ -28,6 +30,7 @@ final List<StrayReport> mockReports = [
     lng: 121.0740,
     responders: 2,
     imageAsset: 'assets/images/injured_cat.jpg',
+    isMine: true,
   ),
   StrayReport(
     id: '3',

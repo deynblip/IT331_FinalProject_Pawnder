@@ -42,6 +42,7 @@ class StrayReport {
   final double lat;
   final double lng;
   final int responders;
+  final bool isMine; // TEMP: report ng naka-login na user
 
   const StrayReport({
     required this.id,
@@ -57,6 +58,7 @@ class StrayReport {
     this.imageAsset,
     this.distanceKm = 0,
     this.responders = 0,
+    this.isMine = false,
   });
 
   String get distanceText => distanceKm == distanceKm.roundToDouble()
@@ -89,6 +91,7 @@ class StrayReport {
       lat: lat,
       lng: lng,
       responders: responders ?? this.responders,
+      isMine: isMine,
     );
   }
 }

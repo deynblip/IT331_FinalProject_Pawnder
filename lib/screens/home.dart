@@ -121,7 +121,13 @@ class HomePage extends StatelessWidget {
             children: [
               Expanded(
                 child: _actionCard(
-                  emoji: '📷',
+                  icon: Image.asset(
+                    'assets/images/report_icon.png',
+                    width: 48,
+                    height: 48,
+                    errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.photo_camera, color: kBlue, size: 44),
+                  ),
                   title: 'Report a Stray',
                   onTap: () {
                     if (onReportTap != null) {
@@ -137,7 +143,13 @@ class HomePage extends StatelessWidget {
 
               Expanded(
                 child: _actionCard(
-                  emoji: '🐾',
+                  icon: Image.asset(
+                    'assets/images/adopt_icon.png',
+                    width: 48,
+                    height: 48,
+                    errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.pets, color: kBlue, size: 44),
+                  ),
                   title: 'Adopt a Pet',
                   onTap: () {
                     if (onAdoptTap != null) {
@@ -272,7 +284,7 @@ class HomePage extends StatelessWidget {
 
   // Quick action card
   Widget _actionCard({
-    required String emoji,
+    required Widget icon,
     required String title,
     required VoidCallback onTap,
   }) {
@@ -289,14 +301,8 @@ class HomePage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              emoji,
-              style: const TextStyle(fontSize: 35),
-              textAlign: TextAlign.center,
-            ),
-
+            icon,
             const SizedBox(height: 10),
-
             Text(
               title,
               textAlign: TextAlign.center,
