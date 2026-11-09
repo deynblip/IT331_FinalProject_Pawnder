@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
+import '../data/mock_reports.dart';
+import '../models/stray_report.dart';
+import '../widgets/report_card.dart';
+import 'report_details_screen.dart';
 
 class HomePage extends StatelessWidget {
   final String name;
@@ -10,11 +14,15 @@ class HomePage extends StatelessWidget {
   /// Opens the Adopt screen (provided by MainLayout).
   final VoidCallback? onAdoptTap;
 
+  /// Switches to the Reports tab (provided by MainLayout).
+  final VoidCallback? onViewAllTap;
+
   const HomePage({
     super.key,
     required this.name,
     this.onReportTap,
     this.onAdoptTap,
+    this.onViewAllTap,
   });
 
   void _showComingSoon(BuildContext context, String page) {
@@ -26,8 +34,31 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  // 2 pinakamalapit na report na hindi pa rescued
+  List<StrayReport> get _nearby {
+    final list = mockReports
+        .where((r) => r.status != RescueStatus.rescued)
+        .toList()
+      ..sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
+    return list.take(2).toList();
+  }
+
+  void _openDetails(BuildContext context, StrayReport report) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ReportDetailsScreen(
+          report: report,
+          onChanged: (_) {}, // TEMP: ikakabit sa backend later
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final nearby = _nearby;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -123,42 +154,63 @@ class HomePage extends StatelessWidget {
           const SizedBox(height: 30),
 
           // Nearby reports
-          const Text(
-            'Nearby Reports',
-            style: TextStyle(
-              color: kNavy,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Nearby Reports',
+                style: TextStyle(
+                  color: kNavy,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              TextButton(
+                onPressed: onViewAllTap,
+                child: const Text(
+                  'View All',
+                  style: TextStyle(color: kHintGray),
+                ),
+              ),
+            ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
 
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F7FA),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Column(
-              children: [
-                Icon(
-                  Icons.location_on_outlined,
-                  color: kBlue,
-                  size: 35,
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'No nearby reports yet',
-                  style: TextStyle(
-                    color: kHintGray,
-                    fontSize: 14,
+          if (nearby.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F7FA),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Column(
+                children: [
+                  Icon(
+                    Icons.location_on_outlined,
+                    color: kBlue,
+                    size: 35,
                   ),
-                ),
-              ],
+                  SizedBox(height: 8),
+                  Text(
+                    'No nearby reports yet',
+                    style: TextStyle(
+                      color: kHintGray,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ...nearby.map(
+                  (r) => ReportCard(
+                report: r,
+                showStatus: false,
+                onTap: () => _openDetails(context, r),
+              ),
             ),
-          ),
 
           const SizedBox(height: 30),
 
