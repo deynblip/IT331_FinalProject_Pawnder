@@ -61,7 +61,6 @@ class _MainLayoutState extends State<MainLayout> {
     final List<Widget> pages = [
       HomePage(name: widget.name),
       const ReportPage(),
-      const AdoptPage(),
       const MapsPage(),
       const ProfilePage(),
     ];
@@ -272,12 +271,6 @@ class _MainLayoutState extends State<MainLayout> {
             icon: Icon(Icons.camera_alt_outlined),
             activeIcon: Icon(Icons.camera_alt),
             label: 'Report',
-          ),
-
-          BottomNavigationBarItem(
-            icon: Icon(Icons.pets_outlined),
-            activeIcon: Icon(Icons.pets),
-            label: 'Adopt',
           ),
 
           BottomNavigationBarItem(

@@ -4,7 +4,9 @@ import '../utils/app_colors.dart';
 class HomePage extends StatelessWidget {
   final String name;
 
-  const HomePage({super.key, required this.name});
+  final VoidCallback? onReportTap;
+
+  const HomePage({super.key, required this.name, this.onReportTap});
 
   void _showComingSoon(BuildContext context, String page) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -78,15 +80,18 @@ class HomePage extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _actionCard(
+                  child: _actionCard(
                   emoji: '📷',
                   title: 'Report a Stray',
-                  onTap: () => _showComingSoon(
-                    context,
-                    'Report a Stray',
+                  onTap: () {
+                  if (onReportTap != null) {
+                  onReportTap!();
+                  } else {
+                  _showComingSoon(context, 'Report a Stray');
+                  }
+                  },
                   ),
                 ),
-              ),
 
               const SizedBox(width: 15),
 
