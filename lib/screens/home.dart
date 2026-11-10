@@ -11,17 +11,13 @@ class HomePage extends StatelessWidget {
   /// Opens the Report a Stray screen (provided by MainLayout).
   final VoidCallback? onReportTap;
 
-  /// Opens the Adopt screen (provided by MainLayout).
-  final VoidCallback? onAdoptTap;
-
-  /// Switches to the Reports tab (provided by MainLayout).
+  /// Opens the Reports Bulletin inside the Reports tab (provided by MainLayout).
   final VoidCallback? onViewAllTap;
 
   const HomePage({
     super.key,
     required this.name,
     this.onReportTap,
-    this.onAdoptTap,
     this.onViewAllTap,
   });
 
@@ -139,27 +135,6 @@ class HomePage extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(width: 15),
-
-              Expanded(
-                child: _actionCard(
-                  icon: Image.asset(
-                    'assets/images/adopt_icon.png',
-                    width: 48,
-                    height: 48,
-                    errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.pets, color: kBlue, size: 44),
-                  ),
-                  title: 'Adopt a Pet',
-                  onTap: () {
-                    if (onAdoptTap != null) {
-                      onAdoptTap!();
-                    } else {
-                      _showComingSoon(context, 'Adopt a Pet');
-                    }
-                  },
-                ),
-              ),
             ],
           ),
 

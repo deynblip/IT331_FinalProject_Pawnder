@@ -10,7 +10,10 @@ import '../widgets/report_card.dart';
 import 'report_details_screen.dart';
 
 class MapsPage extends StatefulWidget {
-  const MapsPage({super.key});
+  /// Opens the Reports Bulletin (provided by ReportsSection).
+  final VoidCallback? onViewAllReports;
+
+  const MapsPage({super.key, this.onViewAllReports});
 
   @override
   State<MapsPage> createState() => _MapsPageState();
@@ -191,6 +194,27 @@ class _MapsPageState extends State<MapsPage> {
                 style: TextStyle(color: kHintGray),
               ),
             ),
+          if (current == null) const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: widget.onViewAllReports,
+              icon: const Icon(Icons.format_list_bulleted, size: 20),
+              label: const Text(
+                'View All Reports',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kBlue,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

@@ -9,7 +9,10 @@ import 'report_details_screen.dart';
 /// Reports tab: the community reports bulletin (list + filters).
 /// NOTE: Gumagamit pa ng mock data. Ikakabit sa ReportService sa backend step.
 class ReportsPage extends StatefulWidget {
-  const ReportsPage({super.key});
+  /// Switches back to the Map view (provided by ReportsSection).
+  final VoidCallback? onViewMap;
+
+  const ReportsPage({super.key, this.onViewMap});
 
   @override
   State<ReportsPage> createState() => _ReportsPageState();
@@ -62,13 +65,36 @@ class _ReportsPageState extends State<ReportsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Reports',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: kNavy,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Reports',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: kNavy,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: widget.onViewMap,
+                icon: const Icon(Icons.map_outlined, size: 18),
+                label: const Text(
+                  'View Map',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kBlue,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  minimumSize: const Size(0, 40),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           Wrap(
