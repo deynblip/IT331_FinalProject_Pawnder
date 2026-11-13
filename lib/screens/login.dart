@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'admin/admin_layout.dart';
 import '../services/auth_service.dart';
 import '../utils/validators.dart';
 import '../widgets/auth_layout.dart';
@@ -55,14 +55,15 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    // 4. Login successful
+    // 4. Login successful. Admins go to the dashboard, everyone else to the app.
+    final String name = AuthService.nameOf(email) ?? '';
+
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (context) => MainLayout(
-          name: AuthService.nameOf(email) ?? '',
-          email: email,
-        ),
+        builder: (context) => AuthService.isAdmin(email)
+            ? AdminLayout(name: name)
+            : MainLayout(name: name, email: email),
       ),
           (route) => false,
     );

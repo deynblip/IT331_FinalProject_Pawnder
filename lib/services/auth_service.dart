@@ -6,7 +6,13 @@
 // Replace with Firebase Auth or your own backend later.
 
 class AuthService {
-  static final Map<String, _Account> _accounts = {};
+  // A ready-made admin account (temporary, for development).
+  static const String adminEmail = 'admin@pawnder.com';
+  static const String adminPassword = 'admin123';
+
+  static final Map<String, _Account> _accounts = {
+    adminEmail: _Account('Admin', adminPassword, isAdmin: true),
+  };
 
   static String _key(String email) => email.trim().toLowerCase();
 
@@ -22,15 +28,23 @@ class AuthService {
 
   static String? nameOf(String email) => _accounts[_key(email)]?.name;
 
+  static bool isAdmin(String email) => _accounts[_key(email)]?.isAdmin ?? false;
+
+  // Number of regular users (the admin account is not counted).
+  static int get userCount =>
+      _accounts.values.where((a) => !a.isAdmin).length;
+
   static void updatePassword(String email, String newPassword) {
     final old = _accounts[_key(email)];
     if (old == null) return;
-    _accounts[_key(email)] = _Account(old.name, newPassword);
+    _accounts[_key(email)] =
+        _Account(old.name, newPassword, isAdmin: old.isAdmin);
   }
 }
 
 class _Account {
   final String name;
   final String password;
-  _Account(this.name, this.password);
+  final bool isAdmin;
+  _Account(this.name, this.password, {this.isAdmin = false});
 }
