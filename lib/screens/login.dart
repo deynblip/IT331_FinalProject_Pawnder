@@ -61,6 +61,7 @@ class _LoginPageState extends State<LoginPage> {
       MaterialPageRoute(
         builder: (context) => MainLayout(
           name: AuthService.nameOf(email) ?? '',
+          email: email,
         ),
       ),
           (route) => false,

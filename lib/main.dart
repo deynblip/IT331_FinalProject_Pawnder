@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'screens/welcome.dart';
 import 'utils/app_colors.dart';
+import 'utils/theme_controller.dart';
 
 void main() {
   runApp(const PawnderApp());
@@ -12,14 +13,29 @@ class PawnderApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Pawnder',
-      theme: ThemeData(
-        fontFamily: 'Nunito',
-        colorScheme: ColorScheme.fromSeed(seedColor: kBlue),
-      ),
-      home: const WelcomePage(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeModeNotifier,
+      builder: (context, mode, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Pawnder',
+          themeMode: mode,
+          theme: ThemeData(
+            fontFamily: 'Nunito',
+            colorScheme: ColorScheme.fromSeed(seedColor: kBlue),
+          ),
+          darkTheme: ThemeData(
+            fontFamily: 'Nunito',
+            brightness: Brightness.dark,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: kBlue,
+              brightness: Brightness.dark,
+            ).copyWith(surface: kDarkSurface),
+            scaffoldBackgroundColor: kDarkBg,
+          ),
+          home: const WelcomePage(),
+        );
+      },
     );
   }
 }
