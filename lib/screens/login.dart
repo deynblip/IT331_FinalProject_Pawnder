@@ -57,6 +57,7 @@ class _LoginPageState extends State<LoginPage> {
 
     // 4. Login successful. Admins go to the dashboard, everyone else to the app.
     final String name = AuthService.nameOf(email) ?? '';
+    AuthService.signIn(email); // <-- ADD: remembers who is logged in
 
     Navigator.pushAndRemoveUntil(
       context,

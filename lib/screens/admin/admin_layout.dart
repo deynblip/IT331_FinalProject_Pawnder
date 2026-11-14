@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../services/auth_service.dart';
 import '../../utils/app_colors.dart';
 import '../login.dart';
 import 'admin_dashboard.dart';
+import 'admin_posts_screen.dart';
 
 // Admin shell: bottom navigation + the four admin tabs.
 class AdminLayout extends StatefulWidget {
@@ -44,6 +46,7 @@ class _AdminLayoutState extends State<AdminLayout> {
     );
 
     if (confirmed == true && mounted) {
+      AuthService.signOut();
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -72,7 +75,7 @@ class _AdminLayoutState extends State<AdminLayout> {
   Widget build(BuildContext context) {
     final pages = <Widget>[
       AdminDashboard(name: widget.name, onLogout: _confirmLogout),
-      _placeholder('Adoption Posts'),
+      const AdminPostsScreen(), // <-- the new Animal Adoptions page
       _placeholder('Adoption Applications'),
       _placeholder('Reported Content'),
     ];

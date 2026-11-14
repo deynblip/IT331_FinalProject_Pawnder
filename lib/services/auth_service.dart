@@ -34,6 +34,16 @@ class AuthService {
   static int get userCount =>
       _accounts.values.where((a) => !a.isAdmin).length;
 
+  // ---- Current session (so services can check who is logged in) ----
+  static String? _currentEmail;
+
+  static void signIn(String email) => _currentEmail = _key(email);
+
+  static void signOut() => _currentEmail = null;
+
+  static bool get isCurrentAdmin =>
+      _currentEmail != null && isAdmin(_currentEmail!);
+
   static void updatePassword(String email, String newPassword) {
     final old = _accounts[_key(email)];
     if (old == null) return;

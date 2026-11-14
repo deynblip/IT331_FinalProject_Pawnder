@@ -2,7 +2,7 @@ enum ApplicationStatus { pendingScreening, approved, rejected }
 
 extension ApplicationStatusX on ApplicationStatus {
   String get label => switch (this) {
-    ApplicationStatus.pendingScreening => 'Pending Screening',
+    ApplicationStatus.pendingScreening => 'Pending',
     ApplicationStatus.approved => 'Approved',
     ApplicationStatus.rejected => 'Rejected',
   };
@@ -58,4 +58,26 @@ class AdoptionApplication {
 
   /// Example: "Alangilan, Batangas City, Batangas"
   String get location => '$barangay, $city, $province';
+
+  AdoptionApplication copyWith({ApplicationStatus? status}) {
+    return AdoptionApplication(
+      id: id,
+      petId: petId,
+      petName: petName,
+      posterName: posterName,
+      fullName: fullName,
+      phone: phone,
+      email: email,
+      province: province,
+      city: city,
+      barangay: barangay,
+      street: street,
+      homeEnvironment: homeEnvironment,
+      householdMembers: householdMembers,
+      previousPets: previousPets,
+      careExperience: careExperience,
+      status: status ?? this.status,
+      createdAt: createdAt,
+    );
+  }
 }
