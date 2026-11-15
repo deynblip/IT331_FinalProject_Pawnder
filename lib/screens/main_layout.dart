@@ -160,7 +160,10 @@ class _MainLayoutState extends State<MainLayout> {
       AdoptPage(
         posterName: widget.name.trim().isNotEmpty ? widget.name : 'Dane Angela',
       ),
-      ProfilePage(name: widget.name),
+      ProfilePage(
+        name: widget.name,
+        onBrowseAdoptions: () => setState(() => _selectedIndex = 2),
+      ),
     ];
 
     return PopScope(

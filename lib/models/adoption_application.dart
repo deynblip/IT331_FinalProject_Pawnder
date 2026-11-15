@@ -1,8 +1,14 @@
-enum ApplicationStatus { pendingScreening, approved, rejected }
+enum ApplicationStatus {
+  pendingScreening,
+  forwardedToOwner,
+  approved,
+  rejected,
+}
 
 extension ApplicationStatusX on ApplicationStatus {
   String get label => switch (this) {
-    ApplicationStatus.pendingScreening => 'Pending',
+    ApplicationStatus.pendingScreening => 'Pending Review',
+    ApplicationStatus.forwardedToOwner => 'Forwarded to Pet Owner',
     ApplicationStatus.approved => 'Approved',
     ApplicationStatus.rejected => 'Rejected',
   };
@@ -36,6 +42,10 @@ class AdoptionApplication {
   final ApplicationStatus status;
   final DateTime createdAt;
 
+  // Who submitted it, and why it was rejected (if it was).
+  final String applicantEmail;
+  final String? rejectionReason;
+
   const AdoptionApplication({
     required this.id,
     required this.petId,
@@ -54,7 +64,18 @@ class AdoptionApplication {
     required this.careExperience,
     required this.status,
     required this.createdAt,
+    required this.applicantEmail,
+    this.rejectionReason,
   });
+
+  /// Example: "November 12, 2026"
+  String get dateText {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June', 'July',
+      'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${months[createdAt.month - 1]} ${createdAt.day}, ${createdAt.year}';
+  }
 
   /// Example: "Alangilan, Batangas City, Batangas"
   String get location => '$barangay, $city, $province';
@@ -78,6 +99,8 @@ class AdoptionApplication {
       careExperience: careExperience,
       status: status ?? this.status,
       createdAt: createdAt,
+      applicantEmail: applicantEmail,
+      rejectionReason: rejectionReason,
     );
   }
 }

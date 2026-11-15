@@ -40,6 +40,7 @@ class AuthService {
   static void signIn(String email) => _currentEmail = _key(email);
 
   static void signOut() => _currentEmail = null;
+  static String? get currentEmail => _currentEmail;
 
   static bool get isCurrentAdmin =>
       _currentEmail != null && isAdmin(_currentEmail!);

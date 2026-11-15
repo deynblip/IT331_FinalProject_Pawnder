@@ -13,6 +13,12 @@ class AdoptionService {
   static final List<AdoptionPet> _pets = List.of(mockAdoptionPets);
 
   static List<AdoptionPet> get all => List.unmodifiable(_pets);
+  static AdoptionPet? byId(String id) {
+    for (final p in _pets) {
+      if (p.id == id) return p;
+    }
+    return null;
+  }
 
   /// Publishes a pet directly. There is NO admin approval step.
   static Future<void> publish({

@@ -7,19 +7,21 @@ import 'package:image_picker/image_picker.dart';
 import '../data/mock_reports.dart';
 import '../utils/app_colors.dart';
 import 'my_reports_screen.dart';
+import '../services/application_service.dart';
+import 'my_applications_screen.dart';
 
 class ProfilePage extends StatefulWidget {
   final String name;
 
-  const ProfilePage({super.key, required this.name});
+  final VoidCallback? onBrowseAdoptions;
+
+  const ProfilePage({super.key, required this.name, this.onBrowseAdoptions});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  // TEMP: papalitan ng totoong bilang galing backend kapag tapos na ang Adoption
-  static const int _applicationsCount = 1;
   static const int _postsCount = 1;
 
   final ImagePicker _picker = ImagePicker();
@@ -159,6 +161,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final reportsCount = mockReports.where((r) => r.isMine).length;
+    final applicationsCount = ApplicationService.forCurrentUser().length;
     final displayName =
     widget.name.trim().isNotEmpty ? widget.name : 'Pawnder User';
 
@@ -227,8 +230,17 @@ class _ProfilePageState extends State<ProfilePage> {
                 _activityRow(
                   icon: Icons.pets,
                   title: 'Adoption Applications',
-                  count: _applicationsCount,
-                  onTap: () => _comingSoon('Adoption Applications'),
+                  count: applicationsCount,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MyApplicationsScreen(
+                        onBrowseAdoptions: widget.onBrowseAdoptions,
+                      ),
+                    ),
+                  ).then((_) {
+                    if (mounted) setState(() {}); // refresh the count
+                  }),
                 ),
                 const Divider(height: 1, color: Color(0xFFE3E5EA)),
                 _activityRow(

@@ -31,6 +31,7 @@ Color _statusBg(AdoptionApplication? app) {
   if (app == null) return const Color(0xFFDCE6F7);
   return switch (app.status) {
     ApplicationStatus.pendingScreening => const Color(0xFFFFF3B0),
+    ApplicationStatus.forwardedToOwner => const Color(0xFFD6E4FF),
     ApplicationStatus.approved => const Color(0xFF8ED16F),
     ApplicationStatus.rejected => const Color(0xFFFFB3B3),
   };
@@ -40,6 +41,7 @@ Color _statusFg(AdoptionApplication? app) {
   if (app == null) return kNavy;
   return switch (app.status) {
     ApplicationStatus.pendingScreening => const Color(0xFF8A6D00),
+    ApplicationStatus.forwardedToOwner => const Color(0xFF1E3968),
     ApplicationStatus.approved => const Color(0xFF1F5E10),
     ApplicationStatus.rejected => const Color(0xFF9B1C1C),
   };

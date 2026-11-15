@@ -19,6 +19,82 @@ class ApplicationService {
 
   static void _notify() => changes.value++;
 
+  // TEMP: sample applications so you can SEE all 4 statuses before the
+  // admin and pet-owner screens exist. Set to false to hide them.
+  // They are NOT saved, so the admin page and its counts ignore them.
+  static const bool kShowDemoApplications = true;
+
+  static AdoptionApplication _demo({
+    required String id,
+    required String petId,
+    required String petName,
+    required String posterName,
+    required ApplicationStatus status,
+    required DateTime createdAt,
+    String? rejectionReason,
+  }) {
+    return AdoptionApplication(
+      id: id,
+      petId: petId,
+      petName: petName,
+      posterName: posterName,
+      fullName: 'Sample Applicant',
+      phone: '0993 456 7891',
+      email: 'applicant@example.com',
+      province: 'Batangas',
+      city: 'Batangas City',
+      barangay: 'Alangilan',
+      street: 'Sample Street',
+      homeEnvironment: 'House with a small fenced yard.',
+      householdMembers: '4 (parents and siblings)',
+      previousPets: '1 cat',
+      careExperience: 'Has cared for pets for 3 years.',
+      status: status,
+      createdAt: createdAt,
+      applicantEmail: '',
+      rejectionReason: rejectionReason,
+    );
+  }
+
+  static final List<AdoptionApplication> _demoApplications = [
+    _demo(
+      id: 'demo1',
+      petId: 'a2',
+      petName: 'Buddy',
+      posterName: 'Shanea Mae',
+      status: ApplicationStatus.forwardedToOwner,
+      createdAt: DateTime(2026, 11, 12),
+    ),
+    _demo(
+      id: 'demo2',
+      petId: 'a3',
+      petName: 'Mingming',
+      posterName: 'Maria Santos',
+      status: ApplicationStatus.approved,
+      createdAt: DateTime(2026, 11, 10),
+    ),
+    _demo(
+      id: 'demo3',
+      petId: 'a5',
+      petName: 'Mimi',
+      posterName: 'Shanea Mae',
+      status: ApplicationStatus.rejected,
+      createdAt: DateTime(2026, 11, 8),
+      rejectionReason: 'The pet owner chose an applicant who lives closer.',
+    ),
+  ];
+
+  /// Applications of the logged-in user only, newest first.
+  static List<AdoptionApplication> forCurrentUser() {
+    final email = AuthService.currentEmail;
+    final mine = _applications
+        .where((a) => email != null && a.applicantEmail == email)
+        .toList();
+    if (kShowDemoApplications) mine.addAll(_demoApplications);
+    mine.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return mine;
+  }
+
   static List<AdoptionApplication> get all =>
       List.unmodifiable(_applications);
 
@@ -81,6 +157,7 @@ class ApplicationService {
         careExperience: careExperience,
         status: ApplicationStatus.pendingScreening, // waits for admin
         createdAt: DateTime.now(),
+        applicantEmail: AuthService.currentEmail ?? '',
       ),
     );
     _notify();
