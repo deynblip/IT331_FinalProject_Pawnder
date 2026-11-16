@@ -7,8 +7,10 @@ import 'package:image_picker/image_picker.dart';
 import '../data/mock_reports.dart';
 import '../utils/app_colors.dart';
 import 'my_reports_screen.dart';
+import '../services/adoption_service.dart';
 import '../services/application_service.dart';
 import 'my_applications_screen.dart';
+import 'my_posts_screen.dart';
 
 class ProfilePage extends StatefulWidget {
   final String name;
@@ -22,19 +24,11 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  static const int _postsCount = 1;
-
   final ImagePicker _picker = ImagePicker();
 
   // Naka-bytes para gumana sa phone at sa Chrome (web)
   // TEMP: mawawala ito kapag nag-restart ang app. Ise-save sa backend later.
   Uint8List? _photoBytes;
-
-  void _comingSoon(String page) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('$page is coming soon!')));
-  }
 
   Future<void> _pickPhoto(ImageSource source) async {
     try {
@@ -162,6 +156,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final reportsCount = mockReports.where((r) => r.isMine).length;
     final applicationsCount = ApplicationService.forCurrentUser().length;
+    final postsCount = AdoptionService.mine.length;
     final displayName =
     widget.name.trim().isNotEmpty ? widget.name : 'Pawnder User';
 
@@ -246,8 +241,15 @@ class _ProfilePageState extends State<ProfilePage> {
                 _activityRow(
                   icon: Icons.volunteer_activism_outlined,
                   title: 'My Adoption Posts',
-                  count: _postsCount,
-                  onTap: () => _comingSoon('My Adoption Posts'),
+                  count: postsCount,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MyPostsScreen(posterName: displayName),
+                    ),
+                  ).then((_) {
+                    if (mounted) setState(() {}); // refresh the count
+                  }),
                 ),
               ],
             ),

@@ -80,7 +80,10 @@ class AdoptionApplication {
   /// Example: "Alangilan, Batangas City, Batangas"
   String get location => '$barangay, $city, $province';
 
-  AdoptionApplication copyWith({ApplicationStatus? status}) {
+  AdoptionApplication copyWith({
+    ApplicationStatus? status,
+    String? rejectionReason,
+  }) {
     return AdoptionApplication(
       id: id,
       petId: petId,
@@ -100,7 +103,7 @@ class AdoptionApplication {
       status: status ?? this.status,
       createdAt: createdAt,
       applicantEmail: applicantEmail,
-      rejectionReason: rejectionReason,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
     );
   }
 }

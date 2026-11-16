@@ -3,12 +3,13 @@
 // =====================================
 // Single source of truth for adoption applications. The user's application
 // form writes here, and the admin Posts page + dashboard read from here.
-// Only an ADMIN can approve or reject.
+// An ADMIN screens applications. The PET OWNER makes the final decision.
 
 import 'package:flutter/foundation.dart';
 
 import '../models/adoption_application.dart';
 import '../models/adoption_pet.dart';
+import 'adoption_service.dart';
 import 'auth_service.dart';
 
 class ApplicationService {
@@ -56,6 +57,7 @@ class ApplicationService {
     );
   }
 
+  // Shown in "My Applications" (the applicant's side).
   static final List<AdoptionApplication> _demoApplications = [
     _demo(
       id: 'demo1',
@@ -84,6 +86,19 @@ class ApplicationService {
     ),
   ];
 
+  // TEMP: applications sent TO the logged-in user's own pet (Brownie, a4),
+  // so you can test the owner's decision in My Adoption Posts.
+  static final List<AdoptionApplication> _ownerDemo = [
+    _demo(
+      id: 'demo4',
+      petId: 'a4',
+      petName: 'Brownie',
+      posterName: 'Dane Angela',
+      status: ApplicationStatus.forwardedToOwner,
+      createdAt: DateTime(2026, 11, 14),
+    ),
+  ];
+
   /// Applications of the logged-in user only, newest first.
   static List<AdoptionApplication> forCurrentUser() {
     final email = AuthService.currentEmail;
@@ -93,6 +108,23 @@ class ApplicationService {
     if (kShowDemoApplications) mine.addAll(_demoApplications);
     mine.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return mine;
+  }
+
+  /// Applications for the logged-in user's OWN pets that already passed
+  /// admin screening (waiting for a decision, or already decided).
+  /// Newest first.
+  static List<AdoptionApplication> forMyPets() {
+    final myPetIds = AdoptionService.mine.map((p) => p.id).toSet();
+    final list = <AdoptionApplication>[
+      ..._applications,
+      if (kShowDemoApplications) ..._ownerDemo,
+    ]
+        .where((a) =>
+    myPetIds.contains(a.petId) &&
+        a.status != ApplicationStatus.pendingScreening)
+        .toList();
+    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return list;
   }
 
   static List<AdoptionApplication> get all =>
@@ -163,7 +195,7 @@ class ApplicationService {
     _notify();
   }
 
-  /// ADMIN ONLY: approve / reject an application.
+  /// ADMIN ONLY: screen an application (forward / approve / reject).
   static Future<void> setStatus(String id, ApplicationStatus status) async {
     if (!AuthService.isCurrentAdmin) {
       throw StateError('Only an admin can approve or reject applications.');
@@ -177,5 +209,48 @@ class ApplicationService {
 
     _applications[i] = _applications[i].copyWith(status: status);
     _notify();
+  }
+
+  /// PET OWNER ONLY: final decision on an application that the admin
+  /// forwarded to you. Only works on the owner's own pets.
+  static Future<void> decideAsOwner(
+      String id, {
+        required bool approve,
+        String? reason,
+      }) async {
+    // Simulates a network call.
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    final newStatus =
+    approve ? ApplicationStatus.approved : ApplicationStatus.rejected;
+
+    AdoptionApplication check(AdoptionApplication a) {
+      if (AdoptionService.byId(a.petId)?.isMine != true) {
+        throw StateError('You can only decide on applications for your pets.');
+      }
+      if (a.status != ApplicationStatus.forwardedToOwner) {
+        throw StateError('This application is not waiting for a decision.');
+      }
+      return a.copyWith(
+        status: newStatus,
+        rejectionReason: approve ? null : reason,
+      );
+    }
+
+    final i = _applications.indexWhere((a) => a.id == id);
+    if (i != -1) {
+      _applications[i] = check(_applications[i]);
+      _notify();
+      return;
+    }
+
+    final j = _ownerDemo.indexWhere((a) => a.id == id);
+    if (j != -1) {
+      _ownerDemo[j] = check(_ownerDemo[j]);
+      _notify();
+      return;
+    }
+
+    throw StateError('Application not found.');
   }
 }

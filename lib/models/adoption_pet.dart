@@ -44,4 +44,38 @@ class AdoptionPet {
   String get healthInfoOrDefault => healthInfo.trim().isEmpty
       ? 'No health information provided.'
       : healthInfo;
+
+  /// Used when the owner edits a post. id, posterName and isMine never change.
+  AdoptionPet copyWith({
+    String? name,
+    String? animalType,
+    String? age,
+    String? sex,
+    String? location,
+    String? description,
+    String? healthInfo,
+    String? reasonForAdoption,
+    List<String>? photos,
+    String? contactPerson,
+    String? contactPhone,
+    String? contactEmail,
+  }) {
+    return AdoptionPet(
+      id: id,
+      name: name ?? this.name,
+      animalType: animalType ?? this.animalType,
+      age: age ?? this.age,
+      sex: sex ?? this.sex,
+      location: location ?? this.location,
+      posterName: posterName,
+      description: description ?? this.description,
+      healthInfo: healthInfo ?? this.healthInfo,
+      photos: photos ?? this.photos,
+      isMine: isMine,
+      reasonForAdoption: reasonForAdoption ?? this.reasonForAdoption,
+      contactPerson: contactPerson ?? this.contactPerson,
+      contactPhone: contactPhone ?? this.contactPhone,
+      contactEmail: contactEmail ?? this.contactEmail,
+    );
+  }
 }

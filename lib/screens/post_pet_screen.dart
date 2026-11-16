@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../models/adoption_pet.dart';
 import '../services/adoption_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/validators.dart';
@@ -13,10 +14,16 @@ const String _kProvince = 'Batangas';
 
 /// "Post a Pet for Adoption" (4 steps). Opened with Navigator.push from the
 /// + button in the Adoption Bulletin. Pops with `true` when a pet is published.
+/// If [pet] is given, the same form is used to EDIT that post.
 class PostPetScreen extends StatefulWidget {
   final String posterName;
 
-  const PostPetScreen({super.key, required this.posterName});
+  /// Kapag may laman, Edit mode ito (ine-edit ang existing post).
+  final AdoptionPet? pet;
+
+  const PostPetScreen({super.key, required this.posterName, this.pet});
+
+  bool get isEditing => pet != null;
 
   @override
   State<PostPetScreen> createState() => _PostPetScreenState();
@@ -61,7 +68,27 @@ class _PostPetScreenState extends State<PostPetScreen> {
   @override
   void initState() {
     super.initState();
-    _contactPerson.text = widget.posterName; // user can still edit it
+    final pet = widget.pet;
+    if (pet == null) {
+      _contactPerson.text = widget.posterName; // user can still edit it
+      return;
+    }
+    // Edit mode: ilagay ang dating laman
+    _photos.addAll(pet.photos);
+    _animalType = pet.animalType;
+    _sex = pet.sex;
+    _name.text = pet.name;
+    _age.text = pet.age;
+    _description.text = pet.description;
+    _health.text = pet.healthInfo;
+    _reason.text = pet.reasonForAdoption;
+    // location ay "Barangay, City, Province"
+    final parts = pet.location.split(', ');
+    _barangay.text = parts.isNotEmpty ? parts[0] : '';
+    _city.text = parts.length > 1 ? parts[1] : '';
+    _contactPerson.text = pet.contactPerson;
+    _phone.text = pet.contactPhone;
+    _email.text = pet.contactEmail;
   }
 
   @override
@@ -153,15 +180,6 @@ class _PostPetScreenState extends State<PostPetScreen> {
               ),
 
             ListTile(
-              leading: const Icon(Icons.photo_camera, color: kBlue),
-              title: const Text('Take a photo'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _pickPhoto(ImageSource.camera);
-              },
-
-            ),
-            ListTile(
               leading: const Icon(Icons.photo_library, color: kBlue),
               title: const Text('Choose from gallery'),
               onTap: () {
@@ -184,34 +202,55 @@ class _PostPetScreenState extends State<PostPetScreen> {
     final sex = _sex;
     if (sex == null) return;
 
+    final editing = widget.pet;
     setState(() => _publishing = true);
     try {
-      await AdoptionService.publish(
-        name: _name.text.trim(),
-        animalType: _animalType,
-        age: _age.text.trim(),
-        sex: sex,
-        location: _location, // street is NOT shown publicly
-        description: _description.text.trim(),
-        healthInfo: _health.text.trim(),
-        reasonForAdoption: _reason.text.trim(),
-        posterName: widget.posterName,
-        photos: List.of(_photos),
-        contactPerson: _contactPerson.text.trim(),
-        contactPhone: _phone.text.trim(),
-        contactEmail: _email.text.trim(),
-      );
+      if (editing == null) {
+        await AdoptionService.publish(
+          name: _name.text.trim(),
+          animalType: _animalType,
+          age: _age.text.trim(),
+          sex: sex,
+          location: _location, // street is NOT shown publicly
+          description: _description.text.trim(),
+          healthInfo: _health.text.trim(),
+          reasonForAdoption: _reason.text.trim(),
+          posterName: widget.posterName,
+          photos: List.of(_photos),
+          contactPerson: _contactPerson.text.trim(),
+          contactPhone: _phone.text.trim(),
+          contactEmail: _email.text.trim(),
+        );
+      } else {
+        await AdoptionService.update(
+          editing.id,
+          name: _name.text.trim(),
+          animalType: _animalType,
+          age: _age.text.trim(),
+          sex: sex,
+          location: _location,
+          description: _description.text.trim(),
+          healthInfo: _health.text.trim(),
+          reasonForAdoption: _reason.text.trim(),
+          photos: List.of(_photos),
+          contactPerson: _contactPerson.text.trim(),
+          contactPhone: _phone.text.trim(),
+          contactEmail: _email.text.trim(),
+        );
+      }
       if (!mounted) return;
 
       await showDialog<void>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text(
-            'Pet published!',
-            style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+          title: Text(
+            editing == null ? 'Pet published!' : 'Changes saved!',
+            style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
           ),
           content: Text(
-            '${_name.text.trim()} is now listed in the Adoption Bulletin.',
+            editing == null
+                ? '${_name.text.trim()} is now listed in the Adoption Bulletin.'
+                : 'Your post for ${_name.text.trim()} was updated.',
           ),
           actions: [
             TextButton(
@@ -225,7 +264,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
 
       Navigator.pop(context, true); // tells the Bulletin to reload
     } catch (_) {
-      _snack('Could not publish the post. Please try again.');
+      _snack('Could not save the post. Please try again.');
     } finally {
       if (mounted) setState(() => _publishing = false);
     }
@@ -276,9 +315,11 @@ class _PostPetScreenState extends State<PostPetScreen> {
                       onPressed: _back,
                       icon: const Icon(Icons.arrow_back_ios_new, color: kBlue),
                     ),
-                    const Text(
-                      'Post a Pet for Adoption',
-                      style: TextStyle(
+                    Text(
+                      widget.isEditing
+                          ? 'Edit Pet Post'
+                          : 'Post a Pet for Adoption',
+                      style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                         color: kNavy,
@@ -412,9 +453,9 @@ class _PostPetScreenState extends State<PostPetScreen> {
                     color: Colors.white,
                   ),
                 )
-                    : const Text(
-                  'Publish',
-                  style: TextStyle(fontWeight: FontWeight.w700),
+                    : Text(
+                  widget.isEditing ? 'Save Changes' : 'Publish',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
             ),
