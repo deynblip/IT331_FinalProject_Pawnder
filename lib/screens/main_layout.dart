@@ -12,6 +12,7 @@ import 'drawer/about.dart';
 import 'drawer/settings.dart';
 import 'drawer/help_support.dart';
 import 'drawer/terms_conditions.dart';
+import 'drawer/privacy_policy.dart';
 
 class MainLayout extends StatefulWidget {
   final String name;
@@ -86,6 +87,14 @@ class _MainLayoutState extends State<MainLayout> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const TermsConditionsPage()),
+    );
+  }
+
+  void _openPrivacyPolicy(BuildContext drawerContext) {
+    Navigator.pop(drawerContext);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PrivacyPolicyPage()),
     );
   }
 
@@ -276,6 +285,7 @@ class _MainLayoutState extends State<MainLayout> {
                 _drawerItem(
                   Icons.privacy_tip_outlined,
                   'Privacy Policy',
+                  onTap: _openPrivacyPolicy,
                 ),
 
                 const Spacer(),
