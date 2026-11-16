@@ -101,9 +101,9 @@ class HomePage extends StatelessWidget {
 
           const SizedBox(height: 25),
 
-          // Quick actions
+          // Report a Stray
           const Text(
-            'What would you like to do?',
+            'See an animal in need?',
             style: TextStyle(
               color: kNavy,
               fontSize: 18,
@@ -111,31 +111,34 @@ class HomePage extends StatelessWidget {
             ),
           ),
 
+          const SizedBox(height: 4),
+
+          const Text(
+            'Report it so rescuers can find it.',
+            style: TextStyle(
+              color: kHintGray,
+              fontSize: 13,
+            ),
+          ),
+
           const SizedBox(height: 15),
 
-          Row(
-            children: [
-              Expanded(
-                child: _actionCard(
-                  icon: Image.asset(
-                    'assets/images/report_icon.png',
-                    width: 48,
-                    height: 48,
-                    errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.photo_camera, color: kBlue, size: 44),
-                  ),
-                  title: 'Report a Stray',
-                  onTap: () {
-                    if (onReportTap != null) {
-                      onReportTap!();
-                    } else {
-                      _showComingSoon(context, 'Report a Stray');
-                    }
-                  },
-                ),
-              ),
-
-            ],
+          _actionCard(
+            icon: Image.asset(
+              'assets/images/report_icon.png',
+              width: 48,
+              height: 48,
+              errorBuilder: (_, __, ___) =>
+              const Icon(Icons.photo_camera, color: kBlue, size: 44),
+            ),
+            title: 'Report a Stray',
+            onTap: () {
+              if (onReportTap != null) {
+                onReportTap!();
+              } else {
+                _showComingSoon(context, 'Report a Stray');
+              }
+            },
           ),
 
           const SizedBox(height: 30),
@@ -267,6 +270,7 @@ class HomePage extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(15),
       child: Container(
+        width: double.infinity,
         height: 130,
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
