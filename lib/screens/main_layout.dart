@@ -8,6 +8,8 @@ import 'report_stray.dart';
 import 'adopt.dart';
 import 'profile.dart';
 import 'login.dart';
+import 'notifications_screen.dart';
+import '../services/notification_service.dart';
 import 'drawer/about.dart';
 import 'drawer/settings.dart';
 import 'drawer/help_support.dart';
@@ -53,6 +55,14 @@ class _MainLayoutState extends State<MainLayout> {
       MaterialPageRoute(
         builder: (_) => const ReportStrayPage(),
       ),
+    );
+  }
+
+  // Opens the Notifications screen (bell icon).
+  void _openNotifications() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NotificationsScreen()),
     );
   }
 
@@ -207,9 +217,20 @@ class _MainLayoutState extends State<MainLayout> {
           title: Image.asset('assets/logo.png', height: 40),
           centerTitle: true,
           actions: [
-            IconButton(
-              icon: Icon(Icons.notifications_none, color: iconColor),
-              onPressed: () => _showComingSoon('Notifications'),
+            // Bell with a badge showing the number of unread notifications
+            ListenableBuilder(
+              listenable: NotificationService.changes,
+              builder: (context, _) {
+                final unread = NotificationService.unreadCount;
+                return IconButton(
+                  icon: Badge(
+                    isLabelVisible: unread > 0,
+                    label: Text('$unread'),
+                    child: Icon(Icons.notifications_none, color: iconColor),
+                  ),
+                  onPressed: _openNotifications,
+                );
+              },
             ),
           ],
           bottom: PreferredSize(

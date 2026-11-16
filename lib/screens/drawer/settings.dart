@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/auth_service.dart';
+import '../../services/notification_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/theme_controller.dart';
 import '../../utils/validators.dart';
@@ -19,11 +20,9 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  // Kept as static so they survive leaving/re-opening this page.
-  // (They reset when the app restarts; save with shared_preferences later.)
-  static bool _pushNotifications = true;
-  static bool _reportUpdates = true;
-  static bool _adoptionUpdates = true;
+  // The notification switches live in NotificationService, so the bell and
+  // the Notifications screen follow them. (They reset when the app restarts;
+  // save with shared_preferences later.)
 
   bool get _isDark => themeModeNotifier.value == ThemeMode.dark;
 
@@ -151,24 +150,27 @@ class _SettingsPageState extends State<SettingsPage> {
               icon: Icons.notifications_active_outlined,
               title: 'Push Notifications',
               subtitle: 'Allow Pawnder to send you notifications',
-              value: _pushNotifications,
-              onChanged: (v) => setState(() => _pushNotifications = v),
+              value: NotificationService.pushEnabled,
+              onChanged: (v) =>
+                  setState(() => NotificationService.setPushEnabled(v)),
             ),
             divider(),
             switchTile(
               icon: Icons.assignment_turned_in_outlined,
               title: 'Report Updates',
               subtitle: 'Get notified when your report status changes',
-              value: _reportUpdates,
-              onChanged: (v) => setState(() => _reportUpdates = v),
+              value: NotificationService.reportUpdates,
+              onChanged: (v) =>
+                  setState(() => NotificationService.setReportUpdates(v)),
             ),
             divider(),
             switchTile(
               icon: Icons.pets_outlined,
               title: 'Adoption Updates',
               subtitle: 'Get notified about your adoption applications',
-              value: _adoptionUpdates,
-              onChanged: (v) => setState(() => _adoptionUpdates = v),
+              value: NotificationService.adoptionUpdates,
+              onChanged: (v) =>
+                  setState(() => NotificationService.setAdoptionUpdates(v)),
             ),
           ]),
 

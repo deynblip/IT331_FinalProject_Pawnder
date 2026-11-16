@@ -9,8 +9,10 @@ import 'package:flutter/foundation.dart';
 
 import '../models/adoption_application.dart';
 import '../models/adoption_pet.dart';
+import '../models/app_notification.dart';
 import 'adoption_service.dart';
 import 'auth_service.dart';
+import 'notification_service.dart';
 
 class ApplicationService {
   static final List<AdoptionApplication> _applications = [];
@@ -19,6 +21,46 @@ class ApplicationService {
   static final ValueNotifier<int> changes = ValueNotifier<int>(0);
 
   static void _notify() => changes.value++;
+
+  /// Tells the applicant that their application moved forward or was decided.
+  /// Only for the logged-in user's own real applications (the sample ones
+  /// are skipped). Later, the backend will send this to the right user.
+  static void _notifyApplicant(AdoptionApplication a) {
+    final email = AuthService.currentEmail;
+    if (email == null || a.applicantEmail != email) return;
+
+    final NotificationType type;
+    final String title;
+    final String message;
+    switch (a.status) {
+      case ApplicationStatus.forwardedToOwner:
+        type = NotificationType.applicationForwarded;
+        title = 'Application forwarded';
+        message = 'Your application for ${a.petName} passed screening and '
+            'was forwarded to ${a.posterName}, who will make the final '
+            'decision.';
+        break;
+      case ApplicationStatus.approved:
+        type = NotificationType.applicationApproved;
+        title = 'Application approved';
+        message = 'Good news! Your application for ${a.petName} was approved.';
+        break;
+      case ApplicationStatus.rejected:
+        type = NotificationType.applicationRejected;
+        title = 'Application not approved';
+        message = 'Your application for ${a.petName} was not approved.';
+        break;
+      case ApplicationStatus.pendingScreening:
+        return; // nothing to announce yet
+    }
+
+    NotificationService.add(
+      type: type,
+      title: title,
+      message: message,
+      targetId: a.id,
+    );
+  }
 
   // TEMP: sample applications so you can SEE all 4 statuses before the
   // admin and pet-owner screens exist. Set to false to hide them.
@@ -208,6 +250,7 @@ class ApplicationService {
     if (i == -1) throw StateError('Application not found.');
 
     _applications[i] = _applications[i].copyWith(status: status);
+    _notifyApplicant(_applications[i]);
     _notify();
   }
 
@@ -240,6 +283,7 @@ class ApplicationService {
     final i = _applications.indexWhere((a) => a.id == id);
     if (i != -1) {
       _applications[i] = check(_applications[i]);
+      _notifyApplicant(_applications[i]);
       _notify();
       return;
     }
