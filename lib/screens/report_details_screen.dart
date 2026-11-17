@@ -4,6 +4,8 @@ import '../models/stray_report.dart';
 import '../utils/report_style.dart';
 import '../widgets/report_image.dart';
 import '../widgets/status_chip.dart';
+import '../models/content_report.dart';
+import '../widgets/report_content_dialog.dart';
 
 class ReportDetailsScreen extends StatefulWidget {
   final StrayReport report;
@@ -159,6 +161,20 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                   ),
                   const Text('Reports',
                       style: TextStyle(color: ReportColors.navy, fontSize: 28, fontWeight: FontWeight.w800)),
+                  // Report button (not shown on your own report)
+                  if (!_report.isMine) ...[
+                    const Spacer(),
+                    IconButton(
+                      tooltip: 'Report this post',
+                      icon: const Icon(Icons.flag_outlined, color: ReportColors.grey),
+                      onPressed: () => showReportContentDialog(
+                        context,
+                        target: ReportTarget.strayReport,
+                        targetId: _report.id,
+                        targetTitle: _report.title,
+                      ),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 12),

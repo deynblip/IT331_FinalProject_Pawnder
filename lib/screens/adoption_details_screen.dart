@@ -6,6 +6,8 @@ import '../models/adoption_pet.dart';
 import '../utils/app_colors.dart';
 import '../utils/report_style.dart';
 import '../widgets/adopt_pet_photo.dart';
+import '../models/content_report.dart';
+import '../widgets/report_content_dialog.dart';
 
 class AdoptionDetailsScreen extends StatelessWidget {
   final AdoptionPet pet;
@@ -120,6 +122,23 @@ class AdoptionDetailsScreen extends StatelessWidget {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
+                        // Report button (not shown on your own post)
+                        if (!pet.isMine) ...[
+                          const Spacer(),
+                          IconButton(
+                            tooltip: 'Report this post',
+                            icon: const Icon(
+                              Icons.flag_outlined,
+                              color: ReportColors.grey,
+                            ),
+                            onPressed: () => showReportContentDialog(
+                              context,
+                              target: ReportTarget.adoptionPost,
+                              targetId: pet.id,
+                              targetTitle: pet.name,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 12),

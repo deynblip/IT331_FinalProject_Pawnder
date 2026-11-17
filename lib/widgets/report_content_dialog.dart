@@ -1,22 +1,3 @@
-// ===================================================================
-// USER SIDE "Report this content" dialog  (NOT wired to any screen yet)
-// ===================================================================
-// When you are ready to add the Report button, call this from it, e.g.
-// on the adoption details screen's AppBar:
-//
-//   IconButton(
-//     icon: const Icon(Icons.flag_outlined),
-//     onPressed: () => showReportContentDialog(
-//       context,
-//       target: ReportTarget.adoptionPost,
-//       targetId: pet.id,
-//       targetTitle: pet.name,
-//     ),
-//   ),
-//
-// For a stray report use ReportTarget.strayReport with report.id / report.title.
-// The report then appears in the admin "Reported" tab.
-
 import 'package:flutter/material.dart';
 
 import '../models/content_report.dart';
