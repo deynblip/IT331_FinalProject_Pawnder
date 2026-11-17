@@ -5,6 +5,7 @@ import '../../utils/app_colors.dart';
 import '../login.dart';
 import 'admin_dashboard.dart';
 import 'admin_posts_screen.dart';
+import 'admin_applications_screen.dart';
 
 // Admin shell: bottom navigation + the four admin tabs.
 class AdminLayout extends StatefulWidget {
@@ -76,7 +77,7 @@ class _AdminLayoutState extends State<AdminLayout> {
     final pages = <Widget>[
       AdminDashboard(name: widget.name, onLogout: _confirmLogout),
       const AdminPostsScreen(), // <-- the new Animal Adoptions page
-      _placeholder('Adoption Applications'),
+      const AdminApplicationsScreen(),
       _placeholder('Reported Content'),
     ];
 

@@ -19,8 +19,7 @@ String applicationStatusMessage(AdoptionApplication a) => switch (a.status) {
   'Your application passed screening and was forwarded to '
       '${a.posterName}, the pet owner, who will make the final decision.',
   ApplicationStatus.approved =>
-  'Good news! ${a.posterName} approved your application for '
-      '${a.petName}.',
+  'Good news! Your application for ${a.petName} was approved.',
   ApplicationStatus.rejected =>
   'Unfortunately, your application for ${a.petName} was not approved.',
 };

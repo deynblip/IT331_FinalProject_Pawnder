@@ -15,7 +15,11 @@ import 'auth_service.dart';
 import 'notification_service.dart';
 
 class ApplicationService {
-  static final List<AdoptionApplication> _applications = [];
+  static final List<AdoptionApplication> _applications = [
+    // Sample applicants so the admin Application tab is not empty.
+    // Set kShowSampleAdminApplications to false to start with none.
+    if (kShowSampleAdminApplications) ..._adminSamples,
+  ];
 
   /// Bumps every time the data changes so screens can refresh.
   static final ValueNotifier<int> changes = ValueNotifier<int>(0);
@@ -26,8 +30,11 @@ class ApplicationService {
   /// Only for the logged-in user's own real applications (the sample ones
   /// are skipped). Later, the backend will send this to the right user.
   static void _notifyApplicant(AdoptionApplication a) {
-    final email = AuthService.currentEmail;
-    if (email == null || a.applicantEmail != email) return;
+    // Samples have no applicantEmail, so they are skipped. Real applicants
+    // are told even though the ADMIN is the one logged in right now (the
+    // temporary notification store is shared; the backend will target the
+    // right user later).
+    if (a.applicantEmail.isEmpty) return;
 
     final NotificationType type;
     final String title;
@@ -68,6 +75,8 @@ class ApplicationService {
   static const bool kShowDemoApplications = true;
 
   static AdoptionApplication _demo({
+    String fullName = 'Sample Applicant',
+    String email = 'applicant@example.com',
     required String id,
     required String petId,
     required String petName,
@@ -81,9 +90,9 @@ class ApplicationService {
       petId: petId,
       petName: petName,
       posterName: posterName,
-      fullName: 'Sample Applicant',
+      fullName: fullName,
       phone: '0993 456 7891',
-      email: 'applicant@example.com',
+      email: email,
       province: 'Batangas',
       city: 'Batangas City',
       barangay: 'Alangilan',
@@ -98,6 +107,53 @@ class ApplicationService {
       rejectionReason: rejectionReason,
     );
   }
+
+  // Sample applicants shown in the ADMIN Application tab. Tiwi has TWO
+  // applicants so you can test picking one (the other gets auto-rejected).
+  static const bool kShowSampleAdminApplications = true;
+
+  static final List<AdoptionApplication> _adminSamples = [
+    _demo(
+      id: 'seed1',
+      petId: 'a1',
+      petName: 'Tiwi',
+      posterName: 'Angela May',
+      fullName: 'Dane Angela',
+      email: 'dane@example.com',
+      status: ApplicationStatus.pendingScreening,
+      createdAt: DateTime(2026, 11, 15),
+    ),
+    _demo(
+      id: 'seed2',
+      petId: 'a1',
+      petName: 'Tiwi',
+      posterName: 'Angela May',
+      fullName: 'Maria Lopez',
+      email: 'maria@example.com',
+      status: ApplicationStatus.pendingScreening,
+      createdAt: DateTime(2026, 11, 14),
+    ),
+    _demo(
+      id: 'seed3',
+      petId: 'a2',
+      petName: 'Buddy',
+      posterName: 'Shanea Mae',
+      fullName: 'Joshua Garcia',
+      email: 'joshua@example.com',
+      status: ApplicationStatus.pendingScreening,
+      createdAt: DateTime(2026, 11, 15),
+    ),
+    _demo(
+      id: 'seed4',
+      petId: 'a3',
+      petName: 'Mingming',
+      posterName: 'Maria Santos',
+      fullName: 'Ed Sheeran',
+      email: 'ed@example.com',
+      status: ApplicationStatus.approved,
+      createdAt: DateTime(2026, 11, 13),
+    ),
+  ];
 
   // Shown in "My Applications" (the applicant's side).
   static final List<AdoptionApplication> _demoApplications = [
@@ -185,9 +241,18 @@ class ApplicationService {
     return null;
   }
 
-  /// True if the user already applied for this pet.
-  static bool hasApplied(String petId) =>
-      _applications.any((a) => a.petId == petId);
+  /// Every application for one pet (the admin compares them to pick one).
+  static List<AdoptionApplication> forPet(String petId) =>
+      _applications.where((a) => a.petId == petId).toList();
+
+  /// True if THE LOGGED-IN USER already applied for this pet.
+  /// (Other people may apply for the same pet; the admin picks one.)
+  static bool hasApplied(String petId) {
+    final email = AuthService.currentEmail;
+    if (email == null) return false;
+    return _applications
+        .any((a) => a.petId == petId && a.applicantEmail == email);
+  }
 
   static Future<void> submit({
     required AdoptionPet pet,
@@ -206,7 +271,7 @@ class ApplicationService {
     // Simulates a network call.
     await Future.delayed(const Duration(milliseconds: 700));
 
-    // Safety net: one application per pet.
+    // Safety net: one application per pet PER USER.
     if (hasApplied(pet.id)) {
       throw StateError('Already applied for this pet.');
     }
@@ -237,8 +302,14 @@ class ApplicationService {
     _notify();
   }
 
-  /// ADMIN ONLY: screen an application (forward / approve / reject).
-  static Future<void> setStatus(String id, ApplicationStatus status) async {
+  /// ADMIN ONLY: approve or reject an application.
+  /// Approving one applicant automatically rejects the other waiting
+  /// applicants for the same pet, so only ONE person is picked per pet.
+  static Future<void> setStatus(
+      String id,
+      ApplicationStatus status, {
+        String? reason,
+      }) async {
     if (!AuthService.isCurrentAdmin) {
       throw StateError('Only an admin can approve or reject applications.');
     }
@@ -248,9 +319,41 @@ class ApplicationService {
 
     final i = _applications.indexWhere((a) => a.id == id);
     if (i == -1) throw StateError('Application not found.');
+    final target = _applications[i];
 
-    _applications[i] = _applications[i].copyWith(status: status);
+    if (status == ApplicationStatus.approved) {
+      final alreadyPicked = _applications.any((a) =>
+      a.petId == target.petId &&
+          a.id != id &&
+          a.status == ApplicationStatus.approved);
+      if (alreadyPicked) {
+        throw StateError('Another applicant was already approved for '
+            '${target.petName}. Reject that application first.');
+      }
+    }
+
+    _applications[i] = target.copyWith(
+      status: status,
+      rejectionReason: status == ApplicationStatus.rejected ? reason : null,
+    );
     _notifyApplicant(_applications[i]);
+
+    // The admin picked this applicant -> close the others for this pet.
+    if (status == ApplicationStatus.approved) {
+      for (var k = 0; k < _applications.length; k++) {
+        final a = _applications[k];
+        final waiting = a.status == ApplicationStatus.pendingScreening ||
+            a.status == ApplicationStatus.forwardedToOwner;
+        if (a.petId == target.petId && a.id != id && waiting) {
+          _applications[k] = a.copyWith(
+            status: ApplicationStatus.rejected,
+            rejectionReason: 'Another applicant was selected for this pet.',
+          );
+          _notifyApplicant(_applications[k]);
+        }
+      }
+    }
+
     _notify();
   }
 
