@@ -5,6 +5,7 @@ import '../../services/adoption_service.dart';
 import '../../services/application_service.dart';
 import '../../services/auth_service.dart';
 import '../../utils/app_colors.dart';
+import '../../services/content_report_service.dart';
 
 class AdminDashboard extends StatelessWidget {
   final String name;
@@ -113,11 +114,12 @@ class AdminDashboard extends StatelessWidget {
                 listenable: Listenable.merge([
                   ApplicationService.changes,
                   AdoptionService.changes,
+                  ContentReportService.changes,
                 ]),
                 builder: (context, _) {
                   final int posts = AdoptionService.all.length;
                   final int applications = ApplicationService.all.length;
-                  final int reported = mockReports.length;
+                  final int reported = ContentReportService.pendingCount;
                   final int users = AuthService.userCount;
 
                   return Column(

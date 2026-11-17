@@ -151,6 +151,32 @@ class AdoptionService {
     _notify();
   }
 
+  /// ADMIN ONLY: remove any post (used for reported content).
+  /// Tells the poster. Does nothing if the post is already gone.
+  static Future<void> removeAsAdmin(String id) async {
+    if (!AuthService.isCurrentAdmin) {
+      throw StateError('Only an admin can remove posts.');
+    }
+
+    // Simulates a network call.
+    await Future.delayed(const Duration(milliseconds: 250));
+
+    final i = _pets.indexWhere((p) => p.id == id);
+    if (i == -1) return;
+
+    final pet = _pets.removeAt(i);
+    if (pet.isMine) {
+      NotificationService.add(
+        type: NotificationType.postRemoved,
+        title: 'Post removed by admin',
+        message: 'Your adoption post for ${pet.name} was removed by an '
+            'administrator because it did not follow the community '
+            'guidelines.',
+      );
+    }
+    _notify();
+  }
+
   /// ADMIN ONLY: approve or reject a pet post.
   /// Approved = shows on the Adopt board. Rejected = hidden from it.
   static Future<void> setPostStatus(String id, PostStatus status) async {
