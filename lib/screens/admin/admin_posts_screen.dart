@@ -1,56 +1,29 @@
 import 'package:flutter/material.dart';
 
-import '../../models/adoption_application.dart';
 import '../../models/adoption_pet.dart';
 import '../../services/adoption_service.dart';
-import '../../services/application_service.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/adopt_pet_photo.dart';
 
 // ---------------------------------------------------------------- Helpers
 
-/// The application for this pet, or null if nobody applied yet.
-AdoptionApplication? _applicationOf(String petId) {
-  for (final a in ApplicationService.all) {
-    if (a.petId == petId) return a;
-  }
-  return null;
-}
+Color _statusBg(PostStatus s) => switch (s) {
+  PostStatus.pending => const Color(0xFFFFF3B0),
+  PostStatus.approved => const Color(0xFF8ED16F),
+  PostStatus.rejected => const Color(0xFFFFB3B3),
+};
 
-AdoptionPet? _petById(String petId) {
-  for (final p in AdoptionService.all) {
-    if (p.id == petId) return p;
-  }
-  return null;
-}
-
-String _statusLabel(AdoptionApplication? app) =>
-    app == null ? 'Available' : app.status.label;
-
-Color _statusBg(AdoptionApplication? app) {
-  if (app == null) return const Color(0xFFDCE6F7);
-  return switch (app.status) {
-    ApplicationStatus.pendingScreening => const Color(0xFFFFF3B0),
-    ApplicationStatus.forwardedToOwner => const Color(0xFFD6E4FF),
-    ApplicationStatus.approved => const Color(0xFF8ED16F),
-    ApplicationStatus.rejected => const Color(0xFFFFB3B3),
-  };
-}
-
-Color _statusFg(AdoptionApplication? app) {
-  if (app == null) return kNavy;
-  return switch (app.status) {
-    ApplicationStatus.pendingScreening => const Color(0xFF8A6D00),
-    ApplicationStatus.forwardedToOwner => const Color(0xFF1E3968),
-    ApplicationStatus.approved => const Color(0xFF1F5E10),
-    ApplicationStatus.rejected => const Color(0xFF9B1C1C),
-  };
-}
+Color _statusFg(PostStatus s) => switch (s) {
+  PostStatus.pending => const Color(0xFF8A6D00),
+  PostStatus.approved => const Color(0xFF1F5E10),
+  PostStatus.rejected => const Color(0xFF9B1C1C),
+};
 
 const Color _kRejectPink = Color(0xFFFF9F9F);
 const Color _kRejectText = Color(0xFF7A1F1F);
 
-String _dateText(DateTime d) {
+String _dateText(DateTime? d) {
+  if (d == null) return '';
   const months = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -58,22 +31,55 @@ String _dateText(DateTime d) {
   return '${months[d.month - 1]} ${d.day}, ${d.year}';
 }
 
-/// Approve / reject through the service (the service itself checks that the
-/// logged-in account is an admin).
-Future<void> _changeStatus(
+/// Approve / reject a post through the service (the service itself checks
+/// that the logged-in account is an admin). Asks first before rejecting.
+Future<void> _changePostStatus(
     BuildContext context,
-    AdoptionApplication app,
-    ApplicationStatus status,
+    AdoptionPet pet,
+    PostStatus status,
     ) async {
   final messenger = ScaffoldMessenger.of(context);
+
+  if (status == PostStatus.rejected) {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Reject ${pet.name}?',
+          style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+        ),
+        content: const Text(
+          'This post will not be shown on the Adopt board.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text(
+              'Reject',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+  }
+
   try {
-    await ApplicationService.setStatus(app.id, status);
+    await AdoptionService.setPostStatus(pet.id, status);
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
           content: Text(
-            'Application for ${app.petName} marked as ${status.label}.',
+            status == PostStatus.approved
+                ? '${pet.name} was approved and is now on the Adopt board.'
+                : '${pet.name} was rejected.',
           ),
         ),
       );
@@ -85,21 +91,21 @@ Future<void> _changeStatus(
 }
 
 class _StatusPill extends StatelessWidget {
-  final AdoptionApplication? app;
-  const _StatusPill(this.app);
+  final PostStatus status;
+  const _StatusPill(this.status);
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
-        color: _statusBg(app),
+        color: _statusBg(status),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        _statusLabel(app),
+        status.label,
         style: TextStyle(
-          color: _statusFg(app),
+          color: _statusFg(status),
           fontSize: 11,
           fontWeight: FontWeight.w700,
         ),
@@ -131,7 +137,6 @@ class AdminPostsScreen extends StatefulWidget {
 class _AdminPostsScreenState extends State<AdminPostsScreen> {
   static const List<String> _filters = [
     'All',
-    'Available',
     'Pending',
     'Approved',
     'Rejected',
@@ -139,16 +144,14 @@ class _AdminPostsScreenState extends State<AdminPostsScreen> {
 
   String _selected = 'All';
 
-  bool _matches(AdoptionApplication? app) {
+  bool _matches(AdoptionPet pet) {
     switch (_selected) {
-      case 'Available':
-        return app == null;
       case 'Pending':
-        return app?.status == ApplicationStatus.pendingScreening;
+        return pet.status == PostStatus.pending;
       case 'Approved':
-        return app?.status == ApplicationStatus.approved;
+        return pet.status == PostStatus.approved;
       case 'Rejected':
-        return app?.status == ApplicationStatus.rejected;
+        return pet.status == PostStatus.rejected;
       default:
         return true;
     }
@@ -206,7 +209,7 @@ class _AdminPostsScreenState extends State<AdminPostsScreen> {
                   const Divider(color: Colors.white54, height: 12),
                   const SizedBox(height: 14),
                   const Text(
-                    'Animal Adoptions',
+                    'Animal Listing',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 24,
@@ -252,13 +255,12 @@ class _AdminPostsScreenState extends State<AdminPostsScreen> {
               ),
             ),
             Expanded(
-              // Rebuilds whenever an application changes.
+              // Rebuilds whenever a post is added, edited or reviewed.
               child: ValueListenableBuilder<int>(
-                valueListenable: ApplicationService.changes,
+                valueListenable: AdoptionService.changes,
                 builder: (context, _, __) {
-                  final pets = AdoptionService.all
-                      .where((p) => _matches(_applicationOf(p.id)))
-                      .toList();
+                  final pets =
+                  AdoptionService.all.where(_matches).toList();
 
                   if (pets.isEmpty) {
                     return Center(
@@ -277,19 +279,16 @@ class _AdminPostsScreenState extends State<AdminPostsScreen> {
                     separatorBuilder: (_, __) => const SizedBox(height: 14),
                     itemBuilder: (_, i) {
                       final pet = pets[i];
-                      final app = _applicationOf(pet.id);
                       return _PostCard(
                         pet: pet,
-                        app: app,
                         onView: () => _openDetails(pet),
-                        onToggle: app == null
-                            ? null
-                            : () => _changeStatus(
+                        // Approved -> Reject.  Pending / Rejected -> Approve.
+                        onAction: () => _changePostStatus(
                           context,
-                          app,
-                          app.status == ApplicationStatus.approved
-                              ? ApplicationStatus.rejected
-                              : ApplicationStatus.approved,
+                          pet,
+                          pet.status == PostStatus.approved
+                              ? PostStatus.rejected
+                              : PostStatus.approved,
                         ),
                       );
                     },
@@ -306,20 +305,18 @@ class _AdminPostsScreenState extends State<AdminPostsScreen> {
 
 class _PostCard extends StatelessWidget {
   final AdoptionPet pet;
-  final AdoptionApplication? app;
   final VoidCallback onView;
-  final VoidCallback? onToggle; // null = no application yet
+  final VoidCallback onAction;
 
   const _PostCard({
     required this.pet,
-    required this.app,
     required this.onView,
-    required this.onToggle,
+    required this.onAction,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bool isApproved = app?.status == ApplicationStatus.approved;
+    final bool isApproved = pet.status == PostStatus.approved;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -367,7 +364,7 @@ class _PostCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        _StatusPill(app),
+                        _StatusPill(pet.status),
                       ],
                     ),
                     const SizedBox(height: 2),
@@ -381,12 +378,12 @@ class _PostCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: kHintGray, fontSize: 12),
                     ),
-                    Text(
-                      app == null
-                          ? 'No application yet'
-                          : 'Applied ${_dateText(app!.createdAt)}',
-                      style: const TextStyle(color: kHintGray, fontSize: 12),
-                    ),
+                    if (pet.postedAt != null)
+                      Text(
+                        _dateText(pet.postedAt),
+                        style:
+                        const TextStyle(color: kHintGray, fontSize: 12),
+                      ),
                   ],
                 ),
               ),
@@ -419,21 +416,17 @@ class _PostCard extends StatelessWidget {
                 child: SizedBox(
                   height: 36,
                   child: ElevatedButton(
-                    onPressed: onToggle, // disabled when no application
+                    onPressed: onAction,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isApproved ? _kRejectPink : kBlue,
                       foregroundColor: isApproved ? _kRejectText : Colors.white,
-                      disabledBackgroundColor: const Color(0xFFE3E5EA),
-                      disabledForegroundColor: kHintGray,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                     child: Text(
-                      app == null
-                          ? 'No Applicant'
-                          : (isApproved ? 'Reject' : 'Approve'),
+                      isApproved ? 'Reject' : 'Approve',
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -533,9 +526,9 @@ class AdminPostDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<int>(
-      valueListenable: ApplicationService.changes,
+      valueListenable: AdoptionService.changes,
       builder: (context, _, __) {
-        final pet = _petById(petId);
+        final pet = AdoptionService.byId(petId);
 
         if (pet == null) {
           return Scaffold(
@@ -544,9 +537,8 @@ class AdminPostDetailsScreen extends StatelessWidget {
           );
         }
 
-        final app = _applicationOf(petId);
-        final bool isApproved = app?.status == ApplicationStatus.approved;
-        final bool isRejected = app?.status == ApplicationStatus.rejected;
+        final bool isApproved = pet.status == PostStatus.approved;
+        final bool isRejected = pet.status == PostStatus.rejected;
 
         return Scaffold(
           backgroundColor: Colors.white,
@@ -576,7 +568,7 @@ class AdminPostDetailsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  _StatusPill(app),
+                  _StatusPill(pet.status),
                 ],
               ),
               const SizedBox(height: 14),
@@ -593,37 +585,15 @@ class AdminPostDetailsScreen extends StatelessWidget {
               const Divider(height: 28),
               _section('Pet Owner'),
               _row('Posted by', pet.posterName),
+              if (pet.postedAt != null)
+                _row('Date Posted', _dateText(pet.postedAt)),
               _row('Contact Person', _orDash(pet.contactPerson)),
               _row('Phone', _orDash(pet.contactPhone)),
               _row('Email', _orDash(pet.contactEmail)),
-
-              const Divider(height: 28),
-              _section('Applicant'),
-              if (app == null)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    'No one has applied for this pet yet.',
-                    style: TextStyle(color: kHintGray, fontSize: 14),
-                  ),
-                )
-              else ...[
-                _row('Full Name', app.fullName),
-                _row('Phone', app.phone),
-                _row('Email', app.email),
-                _row('Address', '${app.street}, ${app.location}'),
-                _row('Date Applied', _dateText(app.createdAt)),
-                _row('Home Environment', _orDash(app.homeEnvironment)),
-                _row('Household Members', _orDash(app.householdMembers)),
-                _row('Previous Pets', _orDash(app.previousPets)),
-                _row('Pet Care Experience', _orDash(app.careExperience)),
-              ],
             ],
           ),
-          // Approve / Reject only appear when there is an application.
-          bottomNavigationBar: app == null
-              ? null
-              : SafeArea(
+          // Pending: Reject + Approve.  Approved: Reject.  Rejected: Approve.
+          bottomNavigationBar: SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
               child: Row(
@@ -633,10 +603,10 @@ class AdminPostDetailsScreen extends StatelessWidget {
                       text: 'Reject',
                       bg: _kRejectPink,
                       fg: _kRejectText,
-                      onPressed: () => _changeStatus(
+                      onPressed: () => _changePostStatus(
                         context,
-                        app,
-                        ApplicationStatus.rejected,
+                        pet,
+                        PostStatus.rejected,
                       ),
                     ),
                   if (!isRejected && !isApproved) const SizedBox(width: 12),
@@ -645,10 +615,10 @@ class AdminPostDetailsScreen extends StatelessWidget {
                       text: 'Approve',
                       bg: kBlue,
                       fg: Colors.white,
-                      onPressed: () => _changeStatus(
+                      onPressed: () => _changePostStatus(
                         context,
-                        app,
-                        ApplicationStatus.approved,
+                        pet,
+                        PostStatus.approved,
                       ),
                     ),
                 ],

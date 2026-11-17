@@ -5,6 +5,7 @@ enum NotificationType {
   applicationApproved,
   applicationRejected,
   postRemoved, // an adoption post was removed by an admin
+  postApproved,
 }
 
 class AppNotification {

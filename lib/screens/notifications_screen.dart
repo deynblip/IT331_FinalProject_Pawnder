@@ -68,7 +68,7 @@ class NotificationsScreen extends StatelessWidget {
             builder: (_) => OwnerApplicationScreen(application: app),
           ),
         );
-
+      case NotificationType.postApproved:
       case NotificationType.postRemoved:
       // Nothing to open (the post is gone), so show the full message.
         showDialog<void>(
@@ -181,10 +181,12 @@ class _NotificationCard extends StatelessWidget {
     NotificationType.applicationApproved => Icons.check_circle_outline,
     NotificationType.applicationRejected => Icons.cancel_outlined,
     NotificationType.postRemoved => Icons.remove_circle_outline,
+    NotificationType.postApproved => Icons.check_circle_outline, // ADD
   };
 
   Color get _color => switch (notification.type) {
     NotificationType.applicationApproved => ReportColors.green,
+    NotificationType.postApproved => ReportColors.green,
     NotificationType.applicationRejected => ReportColors.red,
     NotificationType.postRemoved => ReportColors.orange,
     _ => ReportColors.blue,

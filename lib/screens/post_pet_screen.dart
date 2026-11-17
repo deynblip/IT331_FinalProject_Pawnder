@@ -244,13 +244,15 @@ class _PostPetScreenState extends State<PostPetScreen> {
         context: context,
         builder: (dialogContext) => AlertDialog(
           title: Text(
-            editing == null ? 'Pet published!' : 'Changes saved!',
+            editing == null ? 'Post submitted!' : 'Changes saved!',
             style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
           ),
           content: Text(
             editing == null
-                ? '${_name.text.trim()} is now listed in the Adoption Bulletin.'
-                : 'Your post for ${_name.text.trim()} was updated.',
+                ? '${_name.text.trim()} was sent to the admin for approval. '
+                'It will appear on the Adopt board once approved.'
+                : 'Your post for ${_name.text.trim()} was updated and will '
+                'be reviewed by the admin again.',
           ),
           actions: [
             TextButton(

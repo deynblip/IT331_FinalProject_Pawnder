@@ -1,3 +1,19 @@
+/// Admin review state of a pet post.
+///   pending  = just posted by a user, waiting for the admin
+///   approved = admin allowed it -> visible on the Adopt board
+///   rejected = admin did not allow it -> hidden from the Adopt board
+enum PostStatus {
+  pending,
+  approved,
+  rejected;
+
+  String get label => switch (this) {
+    PostStatus.pending => 'Pending',
+    PostStatus.approved => 'Approved',
+    PostStatus.rejected => 'Rejected',
+  };
+}
+
 class AdoptionPet {
   final String id;
   final String name;
@@ -15,6 +31,12 @@ class AdoptionPet {
   final String contactPhone;
   final String contactEmail;
 
+  /// NEW: admin review state. New posts start as pending.
+  final PostStatus status;
+
+  /// NEW: when the user posted it (shown on the admin Posts page).
+  final DateTime? postedAt;
+
   const AdoptionPet({
     required this.id,
     required this.name,
@@ -31,6 +53,8 @@ class AdoptionPet {
     this.contactPerson = '',
     this.contactPhone = '',
     this.contactEmail = '',
+    this.status = PostStatus.pending,
+    this.postedAt,
   });
 
   /// Example: "1 year · Male"
@@ -45,7 +69,8 @@ class AdoptionPet {
       ? 'No health information provided.'
       : healthInfo;
 
-  /// Used when the owner edits a post. id, posterName and isMine never change.
+  /// Used when the owner edits a post (or the admin changes its status).
+  /// id, posterName, isMine and postedAt never change.
   AdoptionPet copyWith({
     String? name,
     String? animalType,
@@ -59,6 +84,7 @@ class AdoptionPet {
     String? contactPerson,
     String? contactPhone,
     String? contactEmail,
+    PostStatus? status,
   }) {
     return AdoptionPet(
       id: id,
@@ -76,6 +102,8 @@ class AdoptionPet {
       contactPerson: contactPerson ?? this.contactPerson,
       contactPhone: contactPhone ?? this.contactPhone,
       contactEmail: contactEmail ?? this.contactEmail,
+      status: status ?? this.status,
+      postedAt: postedAt,
     );
   }
 }

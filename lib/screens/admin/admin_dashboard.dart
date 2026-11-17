@@ -109,9 +109,12 @@ class AdminDashboard extends StatelessWidget {
               const SizedBox(height: 20),
 
               // STAT CARDS (2 x 2). Rebuilds when applications change.
-              ValueListenableBuilder<int>(
-                valueListenable: ApplicationService.changes,
-                builder: (context, _, __) {
+              ListenableBuilder(
+                listenable: Listenable.merge([
+                  ApplicationService.changes,
+                  AdoptionService.changes,
+                ]),
+                builder: (context, _) {
                   final int posts = AdoptionService.all.length;
                   final int applications = ApplicationService.all.length;
                   final int reported = mockReports.length;

@@ -20,17 +20,16 @@ class _AdoptPageState extends State<AdoptPage> {
   static const List<String> _filters = ['Dogs', 'Cats', 'All Pets'];
   String _selected = 'All Pets';
 
-  // TEMP: in-memory data. Will be replaced by data from the backend.
-  List<AdoptionPet> _pets = AdoptionService.all;
-
+  // Only ADMIN-APPROVED posts are shown here. Read fresh on every build.
   List<AdoptionPet> get _visible {
+    final pets = AdoptionService.approved;
     switch (_selected) {
       case 'Dogs':
-        return _pets.where((p) => p.animalType == 'Dog').toList();
+        return pets.where((p) => p.animalType == 'Dog').toList();
       case 'Cats':
-        return _pets.where((p) => p.animalType == 'Cat').toList();
+        return pets.where((p) => p.animalType == 'Cat').toList();
       default:
-        return _pets;
+        return pets;
     }
   }
 
@@ -51,16 +50,22 @@ class _AdoptPageState extends State<AdoptPage> {
       ),
     );
 
+    // The new post is PENDING, so it is not on this board until an admin
+    // approves it (see "My Adoption Posts" for its status).
     if (published == true && mounted) {
-      setState(() {
-        _pets = AdoptionService.all; // reload, newest post is first
-        _selected = 'All Pets'; // make sure the new post is visible
-      });
+      setState(() => _selected = 'All Pets');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<int>(
+      valueListenable: AdoptionService.changes,
+      builder: (context, _, __) => _buildBoard(),
+    );
+  }
+
+  Widget _buildBoard() {
     final items = _visible;
 
     return Scaffold(

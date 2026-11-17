@@ -1,8 +1,9 @@
 import '../models/adoption_pet.dart';
 
 // TEMPORARY DATA. Will be replaced by data from the backend.
+// NOTE: no `const` on the pets anymore, because postedAt uses DateTime(...).
 final List<AdoptionPet> mockAdoptionPets = [
-  const AdoptionPet(
+  AdoptionPet(
     id: 'a1',
     name: 'Tiwi',
     animalType: 'Cat',
@@ -15,8 +16,10 @@ final List<AdoptionPet> mockAdoptionPets = [
         'He is litter trained and gets along well with other cats.',
     healthInfo: 'Vaccinated and dewormed. No known medical issues.',
     photos: ['assets/images/sick_cat.jpg'],
+    status: PostStatus.pending, // waiting for admin
+    postedAt: DateTime(2026, 11, 12),
   ),
-  const AdoptionPet(
+  AdoptionPet(
     id: 'a2',
     name: 'Buddy',
     animalType: 'Dog',
@@ -28,8 +31,10 @@ final List<AdoptionPet> mockAdoptionPets = [
     'Buddy is a friendly and loyal dog. He is good with kids and loves walks.',
     healthInfo: 'Vaccinated. Dewormed last month.',
     photos: ['assets/images/injured_dog.jpg', 'assets/images/sick_dog.jpg'],
+    status: PostStatus.pending, // waiting for admin
+    postedAt: DateTime(2026, 11, 11),
   ),
-  const AdoptionPet(
+  AdoptionPet(
     id: 'a3',
     name: 'Mingming',
     animalType: 'Cat',
@@ -40,8 +45,10 @@ final List<AdoptionPet> mockAdoptionPets = [
     description: 'Mingming is calm and sweet. She likes quiet homes.',
     healthInfo: 'Spayed. Up to date on vaccines.',
     photos: ['assets/images/injured_cat.jpg'],
+    status: PostStatus.approved,
+    postedAt: DateTime(2026, 11, 10),
   ),
-  const AdoptionPet(
+  AdoptionPet(
     id: 'a4',
     name: 'Brownie',
     animalType: 'Dog',
@@ -53,8 +60,10 @@ final List<AdoptionPet> mockAdoptionPets = [
     healthInfo: '',
     photos: ['assets/images/sick_dog.jpg'],
     isMine: true,
+    status: PostStatus.approved,
+    postedAt: DateTime(2026, 11, 9),
   ),
-  const AdoptionPet(
+  AdoptionPet(
     id: 'a5',
     name: 'Mimi',
     animalType: 'Cat',
@@ -65,5 +74,7 @@ final List<AdoptionPet> mockAdoptionPets = [
     description: 'Mimi is a curious kitten who loves to explore.',
     healthInfo: 'Dewormed. First vaccine done.',
     photos: ['assets/images/stray_kitten.jpg'],
+    status: PostStatus.approved,
+    postedAt: DateTime(2026, 11, 8),
   ),
 ];

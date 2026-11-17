@@ -331,6 +331,16 @@ class _PetPostCard extends StatelessWidget {
                         style:
                         const TextStyle(color: kHintGray, fontSize: 13),
                       ),
+                      const SizedBox(height: 6),
+                      StatusChip(
+                        label: pet.status.label,
+                        color: pet.status == PostStatus.approved
+                            ? const Color(0xFF3FA34D)
+                            : pet.status == PostStatus.rejected
+                            ? const Color(0xFFD9534F)
+                            : const Color(0xFFE0A800),
+                        fontSize: 11,
+                      ),
                       if (waitingCount > 0) ...[
                         const SizedBox(height: 6),
                         StatusChip(
