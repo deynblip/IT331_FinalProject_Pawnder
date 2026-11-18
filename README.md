@@ -30,7 +30,7 @@ The name combines **"paw"** (animals) and **"finder"** (the act of finding): hel
 
 **Group 2**
 
-- Aninon, Shanea May B.
+- Aniñon, Shanea May B.
 - Banaag, Ace Angela P.
 - Cura, Dane Mercy J.
 
@@ -119,7 +119,7 @@ Pawnder keeps reports, locations, rescue status, and adoption screening together
 
 ### Run the app
 ```bash
-git clone <repo-url>
+git clone <https://github.com/deynblip/IT331_FinalProject_Pawnder.git>
 cd IT331_FinalProject_Pawnder
 flutter pub get
 flutter run
