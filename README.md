@@ -57,7 +57,7 @@ Pawnder keeps reports, locations, rescue status, and adoption screening together
 2. Display reported animals on an interactive map and in a Reports Bulletin so users can easily locate nearby cases.
 3. Enable users to respond to reports and track each animal's rescue status from **Needs Rescue** to **Rescued**.
 4. Provide an Adoption Bulletin where pets can be posted and browsed, supported by administrator screening of applications and a final decision by the original poster.
-5. Provide an administrator dashboard for reviewing reported content and monitoring platform activity.
+5. Provide an administrator dashboard for reviewing adoption posts and reported content, and monitoring platform activity.
 
 ---
 
@@ -69,7 +69,7 @@ Pawnder keeps reports, locations, rescue status, and adoption screening together
 | **Pet owners and rescuers** | Post animals for adoption to find them new homes |
 | **Potential adopters** | Browse available pets and submit adoption applications |
 | **Verified Rescuers** *(planned)* | Members of rescue organizations, vets, or LGU animal welfare offices who are verified by the admin and get extra rescue permissions |
-| **Administrators** | Screen adoption applications, review reported content, approve Verified Rescuer applications, and send status updates |
+| **Administrators** | Review adoption posts before they are published, screen adoption applications, review reported content, approve Verified Rescuer applications, and send status updates |
 
 ---
 
@@ -83,14 +83,14 @@ Pawnder keeps reports, locations, rescue status, and adoption screening together
 - **Reports Bulletin and Report Details**: filter by urgency, full report info, responder count, and *Get Directions*
 - **Rescue response**: *I'm on my way!* and *Mark as Rescued* (Needs Rescue → Rescue in Progress → Rescued)
 - **Adoption Bulletin and Animal Profile**: filter by Dogs, Cats, or All Pets; *Apply to Adopt* and *Report Post*
-- **Post a Pet for Adoption**: 4-step form; posters can edit or remove their own posts
+- **Post a Pet for Adoption**: 4-step form; posts are reviewed by an admin before they appear in the Adoption Bulletin, and posters can track the status (Pending, Approved, Rejected) in My Adoption Posts
 - **Adoption Application**: applicant info, living environment, pet ownership experience, and reason for applying
 - **Profile and My Activity**: My Reports, Adoption Applications, and My Adoption Posts (posters can accept or decline forwarded applications)
 - **Side drawer**: Help & Support, About, Settings, Terms & Conditions, Privacy Policy, Sign Out
 
 ### Administrators
 - **Admin Dashboard**: counts of adoption posts, applications, reported content, and registered users
-- **Adoption Posts Management**: view, search, filter, and remove posts
+- **Adoption Posts Management**: review pending posts, then approve them (published to the Adoption Bulletin) or reject them; the poster is notified either way
 - **Adoption Application Management**: screen applications, then forward to the poster or reject with a reason
 - **Reported Content Management**: review user reports, then dismiss or remove the content
 
@@ -119,7 +119,7 @@ Pawnder keeps reports, locations, rescue status, and adoption screening together
 
 ### Run the app
 ```bash
-git clone https://github.com/deynblip/IT331_FinalProject_Pawnder.git
+git clone <repo-url>
 cd IT331_FinalProject_Pawnder
 flutter pub get
 flutter run
@@ -256,37 +256,45 @@ Administrators will be **authorized representatives of a partner animal welfare 
 - Admin accounts are issued by the Pawnder team (as developers and maintainers) and cannot be self-assigned.
 - Pawnder will only partner with rescue groups that **rehome** animals rather than euthanize them. Rescued animals are directed to fosters, shelters, or the Adoption Bulletin.
 
-### 5. Adoption Post Moderation: Post-moderation
-New adoption posts are **published directly** to the Adoption Bulletin **without prior admin approval**. Admins only review posts that users **report**.
+### 5. Adoption Post Review: Pre-approval
+Every new adoption post is **reviewed by an admin before it appears** in the Adoption Bulletin. This is already how the current code works; the changes below complete it and update the documentation to match.
 
 **Flow:**
-1. A user posts a pet → it appears in the Adoption Bulletin right away.
-2. Another user taps **Report Post** and picks a reason (scam, misleading, inappropriate, ...).
-3. The report goes to the admin's **Reported Content** section.
-4. The admin opens the report, then:
-   - **Dismiss** → the post stays up, or
-   - **Remove** → the post is taken down and the poster is notified with a reason.
+1. A user posts a pet → the post is saved with a **Pending** status and is **not** shown in the Adoption Bulletin yet.
+2. The post appears in the admin's **Adoption Posts** section under **Pending**.
+3. The admin opens **Post Details** and checks the photos, information, and contact details.
+4. The admin decides:
+    - **Approve** → the post is published to the Adoption Bulletin and the poster is notified.
+    - **Reject** → the post stays hidden, and the poster is notified **with the reason**.
+5. If the poster **edits** an approved post, it goes back to **Pending** for re-review.
+6. Posters can see each post's status (**Pending, Approved, Rejected**) in **My Adoption Posts**.
 
-**What the admin checks:** real and clear photos, complete information, no selling or fees, valid contact details, no duplicate posts, and no signs of scams.
+**What the admin checks:**
+- Real and clear photos of the animal (not taken from the internet)
+- Complete information: age, sex, health status, and location
+- No selling, prices, or fees (a common sign of scams)
+- Valid contact details, and not a duplicate of a rejected post
+- The animal's described condition and care are acceptable
 
-The current code still uses **pre-approval**, so it will be updated:
-- `services/adoption_service.dart`: new posts are published immediately (not `PostStatus.pending`), and edits do not send posts back to review
-- `screens/adopt.dart`: show all published posts, not only approved ones
-- `screens/admin/admin_posts_screen.dart`: remove Approve/Reject and the Pending/Approved/Rejected tabs; keep View and Remove
-- Notifications: replace "post approved/rejected" with "post removed by admin"
-- My Adoption Posts: replace the Pending/Approved/Rejected status with Active/Removed
-- Documentation: remove "Listing Status: Pending, Approved, or Rejected" and admin "Approve / Reject" from the screen descriptions
+**Common rejection reasons:** unclear or suspicious photos, incomplete information, selling or asking for fees, duplicate post, or inappropriate content.
+
+**Extra protection after approval:** users can still tap **Report Post** on an approved post. The report goes to **Reported Content**, where the admin can dismiss it or remove the post.
+
+Code changes involved:
+- `screens/admin/admin_posts_screen.dart`: the Reject dialog currently only asks for confirmation. Add a **required rejection reason** (a dropdown of common reasons plus an optional note).
+- `services/adoption_service.dart`: include the rejection reason in the *"Post not approved"* notification and in My Adoption Posts.
+- Documentation: replace *"published directly without prior admin approval"* with the pre-approval flow above, and remove *"Admin approval of every submitted adoption post"* from the excluded features.
 
 ### 6. Rescued Strays First in Adoption
 Pet owners can still post pets for rehoming, but **rescued stray animals are the priority**.
 
 - **New "Pet Source" field** in the Post a Pet form:
-  - **Rescued Stray**: an animal rescued from the street (can be linked to a stray report marked *Rescued*)
-  - **Owned Pet (Rehoming)**: a pet the owner can no longer care for; a **reason for rehoming is required**
+    - **Rescued Stray**: an animal rescued from the street (can be linked to a stray report marked *Rescued*)
+    - **Owned Pet (Rehoming)**: a pet the owner can no longer care for; a **reason for rehoming is required**
 - **Badges** on adoption cards and the Animal Profile: **Rescued Stray** (highlighted) and **Rehoming**
 - **Rescued Strays are shown first** in the Adoption Bulletin
 - **Extra filter row:** All / Rescued Strays / Rehoming (works together with Dogs / Cats / All Pets)
-- **Rules:** no selling, no prices or fees, and no breeding or "for stud" posts. Posts that break the rules can be reported and removed.
+- **Rules:** no selling, no prices or fees, and no breeding or "for stud" posts. Posts that break the rules are rejected during admin review, or reported and removed if already approved.
 
 ### 7. Possible Lost Pets *(proposed)*
 A reported "stray" may actually be someone's lost pet.
