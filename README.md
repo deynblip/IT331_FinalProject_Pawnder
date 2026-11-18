@@ -119,7 +119,7 @@ Pawnder keeps reports, locations, rescue status, and adoption screening together
 
 ### Run the app
 ```bash
-git clone <https://github.com/deynblip/IT331_FinalProject_Pawnder.git>
+git clone https://github.com/deynblip/IT331_FinalProject_Pawnder.git
 cd IT331_FinalProject_Pawnder
 flutter pub get
 flutter run
