@@ -4,7 +4,10 @@
 // Who is responding to which stray report, and each responder's history
 // (used as the "track record" the admin checks). Resets on app restart.
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../models/stray_report.dart';
 import 'auth_service.dart';
@@ -116,6 +119,10 @@ class ActionResult {
 class ResponseService {
   /// A report with no update for this long can be taken over by a rescuer.
   static const Duration inactiveAfter = Duration(hours: 24);
+
+  /// How close (in meters) a responder's GPS must be to the report's pin
+  /// before they can check in with "I've arrived".
+  static const double checkInRadiusMeters = 200;
 
   static DateTime _ago(Duration d) => DateTime.now().subtract(d);
 
@@ -240,8 +247,9 @@ class ResponseService {
       return const ActionResult.fail('You are already responding here.');
     }
 
+    // One active response at a time, for everyone.
     final org = RescuerService.organizationOf(email);
-    if (org == null && activeCount(email) > 0) {
+    if (activeCount(email) > 0) {
       return const ActionResult.fail(
         'You can only respond to one report at a time. Finish or withdraw '
             'from your current response first.',
@@ -267,15 +275,71 @@ class ResponseService {
     return const ActionResult.ok(RescueStatus.inProgress);
   }
 
-  /// "I've arrived" - needed before a regular user can mark as rescued.
-  static ActionResult checkIn(String reportId) {
+  /// Reads the phone's GPS and returns a failure unless it is within
+  /// [checkInRadiusMeters] of the report's pin (null = close enough).
+  static Future<ActionResult?> _requireNearby(StrayReport report) async {
+    final Position pos;
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        return const ActionResult.fail('Please turn on location services.');
+      }
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return const ActionResult.fail(
+          'Location permission is needed to check in at the animal\'s location.',
+        );
+      }
+      pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+    } on TimeoutException {
+      return const ActionResult.fail(
+        'Could not get a GPS fix. Move to an open area and try again.',
+      );
+    } catch (_) {
+      return const ActionResult.fail('Could not get your location.');
+    }
+
+    final meters = Geolocator.distanceBetween(
+      pos.latitude,
+      pos.longitude,
+      report.lat,
+      report.lng,
+    );
+    if (meters > checkInRadiusMeters) {
+      final away = meters >= 1000
+          ? '${(meters / 1000).toStringAsFixed(1)} km'
+          : '${meters.round()} m';
+      return ActionResult.fail(
+        'You are about $away away. You must be within '
+            '${checkInRadiusMeters.round()} m of the animal.',
+      );
+    }
+    return null;
+  }
+
+  /// "I've arrived" - the phone's GPS must be within [checkInRadiusMeters]
+  /// of the report's pin. Needed before a responder can mark as rescued.
+  static Future<ActionResult> checkIn(StrayReport report) async {
     final email = AuthService.currentEmail;
-    final list = _active[reportId];
-    if (email == null || list == null) {
+    if (email == null || mine(report.id) == null) {
       return const ActionResult.fail('You are not responding to this report.');
     }
-    final i = list.indexWhere((r) => r.email == email);
-    if (i == -1) {
+
+    final tooFar = await _requireNearby(report);
+    if (tooFar != null) return tooFar;
+
+    // Re-read the list: the state may have changed during the GPS wait.
+    final list = _active[report.id];
+    final i = list?.indexWhere((r) => r.email == email) ?? -1;
+    if (list == null || i == -1) {
       return const ActionResult.fail('You are not responding to this report.');
     }
     final updated = List.of(list);
@@ -283,7 +347,7 @@ class ResponseService {
       checkedIn: true,
       lastUpdate: DateTime.now(),
     );
-    _active[reportId] = updated;
+    _active[report.id] = updated;
     _notify();
     return const ActionResult.ok();
   }
@@ -299,6 +363,12 @@ class ResponseService {
     }
     if (!isInactive(report)) {
       return const ActionResult.fail('This report still has recent updates.');
+    }
+    if (activeCount(email) > 0 && mine(report.id) == null) {
+      return const ActionResult.fail(
+        'You can only respond to one report at a time. Finish or withdraw '
+            'from your current response first.',
+      );
     }
 
     final now = DateTime.now();
@@ -330,51 +400,83 @@ class ResponseService {
   }
 
   /// Mark as rescued / choose an outcome.
-  /// Regular users: "Rescued on site" only, and only after checking in.
+  /// Only the original reporter, or a responder who has checked in (GPS),
+  /// can mark an animal as rescued, and they must be within
+  /// [checkInRadiusMeters] of the pin at that moment. Regular users: "Rescued on site" only.
   /// Verified Rescuers: all outcomes. "Unable to locate" needs no check-in.
-  static ActionResult finish(StrayReport report, RescueOutcome outcome) {
+  static Future<ActionResult> finish(
+      StrayReport report,
+      RescueOutcome outcome,
+      ) async {
     final email = AuthService.currentEmail;
+    if (email == null) return const ActionResult.fail('Please log in first.');
+
     final list = _active[report.id] ?? const <ReportResponder>[];
     final me = list.where((r) => r.email == email).firstOrNull;
-
-    if (me == null) {
-      return const ActionResult.fail('You are not responding to this report.');
-    }
-    if (!me.isVerified && outcome != RescueOutcome.rescuedOnSite) {
-      return const ActionResult.fail(
-        'Only Verified Rescuers can choose this outcome.',
-      );
-    }
-    if (outcome.isSuccess && !me.checkedIn) {
-      return const ActionResult.fail(
-        'Please check in at the location first.',
-      );
-    }
-
-    final now = DateTime.now();
+    final isReporter = report.isMine;
+    final isVerified = RescuerService.organizationOf(email) != null;
 
     if (outcome == RescueOutcome.unableToLocate) {
+      if (me == null) {
+        return const ActionResult.fail('You are not responding to this report.');
+      }
+      if (!me.isVerified) {
+        return const ActionResult.fail(
+          'Only Verified Rescuers can choose this outcome.',
+        );
+      }
       _history.add(ResponseRecord(
         email: me.email,
         reportId: report.id,
         outcome: outcome,
         checkedIn: me.checkedIn,
-        date: now,
+        date: DateTime.now(),
       ));
       return _remove(report.id, me.email);
     }
+
+    // A rescue outcome: reporter, or a responder who has checked in.
+    if (me == null && !isReporter) {
+      return const ActionResult.fail(
+        'Only the person who reported this animal, or a responder who has '
+            'checked in, can mark it as rescued.',
+      );
+    }
+    if (!isReporter && !(me?.checkedIn ?? false)) {
+      return const ActionResult.fail('Please check in at the location first.');
+    }
+    if (!isVerified && outcome != RescueOutcome.rescuedOnSite) {
+      return const ActionResult.fail(
+        'Only Verified Rescuers can choose this outcome.',
+      );
+    }
+
+    // Must physically be at the animal when marking it as rescued.
+    final tooFar = await _requireNearby(report);
+    if (tooFar != null) return tooFar;
+
+    final now = DateTime.now();
+    final closer = me ??
+        ReportResponder(
+          email: email,
+          name: _nameOf(email),
+          organization: RescuerService.organizationOf(email),
+          role: ResponderRole.lead,
+          joinedAt: now,
+          lastUpdate: now,
+        );
 
     for (final r in list) {
       _history.add(ResponseRecord(
         email: r.email,
         reportId: report.id,
-        outcome: r.email == me.email ? outcome : null,
+        outcome: r.email == closer.email ? outcome : null,
         checkedIn: r.checkedIn,
         date: now,
       ));
     }
     _active.remove(report.id);
-    _closed[report.id] = RescueClosure(me, outcome);
+    _closed[report.id] = RescueClosure(closer, outcome);
     _notify();
     return const ActionResult.ok(RescueStatus.rescued);
   }

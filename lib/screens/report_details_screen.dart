@@ -23,6 +23,7 @@ class ReportDetailsScreen extends StatefulWidget {
 
 class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
   late StrayReport _report = widget.report;
+  bool _checkingIn = false;
 
   bool get _isVerified => RescuerService.isCurrentVerified;
 
@@ -90,9 +91,27 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     _handle(ResponseService.respond(_report));
   }
 
-  void _checkIn() => _handle(ResponseService.checkIn(_report.id));
+  /// "I've arrived": checks the phone's GPS against the report's pin.
+  Future<void> _checkIn() async {
+    if (_checkingIn) return;
+    setState(() => _checkingIn = true);
+    final result = await ResponseService.checkIn(_report);
+    if (!mounted) return;
+    setState(() => _checkingIn = false);
+    _handle(result);
+    if (result.ok) _snack('Checked in. You are now on site.');
+  }
 
-  void _withdraw() => _handle(ResponseService.withdraw(_report.id));
+  Future<void> _withdraw() async {
+    final ok = await _confirm(
+      "Can't make it?",
+      'You will be removed from this report. If nobody else is responding, '
+          'it goes back to Needs Rescue.',
+      'Withdraw',
+    );
+    if (!ok || !mounted) return;
+    _handle(ResponseService.withdraw(_report.id));
+  }
 
   Future<void> _takeOver() async {
     final ok = await _confirm(
@@ -149,7 +168,12 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
       outcome = picked;
     }
 
-    _handle(ResponseService.finish(_report, outcome));
+    if (_checkingIn) return;
+    setState(() => _checkingIn = true);
+    final result = await ResponseService.finish(_report, outcome);
+    if (!mounted) return;
+    setState(() => _checkingIn = false);
+    _handle(result);
   }
 
   Future<void> _openDirections() async {
@@ -195,7 +219,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     );
   }
 
-  Widget _secondaryButton(String text, VoidCallback onPressed) {
+  Widget _secondaryButton(String text, VoidCallback? onPressed) {
     return SizedBox(
       width: double.infinity,
       height: 46,
@@ -263,6 +287,10 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                 style: TextStyle(color: ReportColors.navy, fontSize: 15)),
             const SizedBox(height: 12),
             _primaryButton("I'm on my way!", _onMyWay),
+            if (_report.isMine) ...[
+              const SizedBox(height: 10),
+              _secondaryButton('Mark as Rescued', _markRescued),
+            ],
           ],
         );
         break;
@@ -286,6 +314,20 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                     style: const TextStyle(color: ReportColors.navy, fontSize: 15)),
               ],
             ),
+            if (responders.any((r) => r.checkedIn)) ...[
+              const SizedBox(height: 8),
+              const Row(
+                children: [
+                  Icon(Icons.location_on, color: ReportColors.green, size: 20),
+                  SizedBox(width: 6),
+                  Text('Responder on site',
+                      style: TextStyle(
+                          color: ReportColors.green,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ],
             if (responders.isNotEmpty) ...[
               const SizedBox(height: 12),
               ...responders.map(_responderTile),
@@ -303,18 +345,34 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                 const SizedBox(height: 10),
                 _secondaryButton('Take over this report', _takeOver),
               ],
+              if (_report.isMine) ...[
+                const SizedBox(height: 10),
+                _secondaryButton('Mark as Rescued', _markRescued),
+              ],
             ] else ...[
               if (!me.checkedIn) ...[
-                _secondaryButton("I've arrived · Check in", _checkIn),
+                _secondaryButton(
+                  _checkingIn
+                      ? 'Checking your location…'
+                      : "I've arrived · Check in",
+                  _checkingIn ? null : _checkIn,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'You must be within ${ResponseService.checkInRadiusMeters.round()} m of the animal.',
+                  style: const TextStyle(color: ReportColors.grey, fontSize: 12),
+                ),
                 const SizedBox(height: 10),
               ],
               // Regular users must check in first. Verified Rescuers can
               // always open the outcome choices (e.g. "Unable to locate").
               _primaryButton(
                 'Mark as Rescued',
-                (me.checkedIn || me.isVerified) ? _markRescued : null,
+                (me.checkedIn || me.isVerified || _report.isMine)
+                    ? _markRescued
+                    : null,
               ),
-              if (!me.checkedIn && !me.isVerified) ...[
+              if (!me.checkedIn && !me.isVerified && !_report.isMine) ...[
                 const SizedBox(height: 6),
                 const Text(
                   'Check in at the location before you can mark this as rescued.',
@@ -325,7 +383,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                 alignment: Alignment.center,
                 child: TextButton(
                   onPressed: _withdraw,
-                  child: const Text('Withdraw from this report',
+                  child: const Text("Cancel · I can't make it",
                       style: TextStyle(color: ReportColors.grey)),
                 ),
               ),
