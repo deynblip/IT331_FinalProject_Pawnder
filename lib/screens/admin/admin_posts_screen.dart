@@ -31,62 +31,166 @@ String _dateText(DateTime? d) {
   return '${months[d.month - 1]} ${d.day}, ${d.year}';
 }
 
-/// Approve / reject a post through the service (the service itself checks
-/// that the logged-in account is an admin). Asks first before rejecting.
-Future<void> _changePostStatus(
-    BuildContext context,
-    AdoptionPet pet,
-    PostStatus status,
-    ) async {
+/// Common rejection reasons the admin can tick.
+const List<String> _kRejectReasons = [
+  'Unclear or suspicious photos',
+  'Incomplete information',
+  'Selling or asking for fees',
+  'Duplicate post',
+  'Inappropriate content',
+];
+
+/// APPROVE: publishes the post to the Adoption Bulletin and notifies the
+/// poster. Returns true when it worked.
+Future<bool> _approvePost(BuildContext context, AdoptionPet pet) async {
   final messenger = ScaffoldMessenger.of(context);
 
-  if (status == PostStatus.rejected) {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Reject ${pet.name}?',
-          style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
-        ),
-        content: const Text(
-          'This post will not be shown on the Adopt board.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text(
-              'Reject',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.w800),
-            ),
-          ),
-        ],
-      ),
-    );
-    if (ok != true) return;
-  }
-
   try {
-    await AdoptionService.setPostStatus(pet.id, status);
+    await AdoptionService.setPostStatus(pet.id, PostStatus.approved);
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
           content: Text(
-            status == PostStatus.approved
-                ? '${pet.name} was approved and is now on the Adopt board.'
-                : '${pet.name} was rejected.',
+            '${pet.name} was approved and is now in the Adoption Bulletin.',
           ),
         ),
       );
+    return true;
   } on StateError catch (e) {
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(e.message)));
+    return false;
+  }
+}
+
+/// REJECT: asks for a reason first (required), hides the post and notifies
+/// the poster with that reason. Returns true when it worked.
+Future<bool> _rejectPost(BuildContext context, AdoptionPet pet) async {
+  final messenger = ScaffoldMessenger.of(context);
+
+  final reason = await showDialog<String>(
+    context: context,
+    builder: (_) => _RejectPostDialog(petName: pet.name),
+  );
+  if (reason == null) return false;
+
+  try {
+    await AdoptionService.setPostStatus(
+      pet.id,
+      PostStatus.rejected,
+      reason: reason,
+    );
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text('${pet.name} was rejected.')),
+      );
+    return true;
+  } on StateError catch (e) {
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(e.message)));
+    return false;
+  }
+}
+
+/// Dialog with the common rejection reasons + an optional note.
+/// Returns the combined reason text, or null if cancelled.
+class _RejectPostDialog extends StatefulWidget {
+  final String petName;
+  const _RejectPostDialog({required this.petName});
+
+  @override
+  State<_RejectPostDialog> createState() => _RejectPostDialogState();
+}
+
+class _RejectPostDialogState extends State<_RejectPostDialog> {
+  final Set<String> _selected = {};
+  final TextEditingController _note = TextEditingController();
+
+  @override
+  void dispose() {
+    _note.dispose();
+    super.dispose();
+  }
+
+  bool get _hasReason => _selected.isNotEmpty || _note.text.trim().isNotEmpty;
+
+  String get _reasonText {
+    final parts = <String>[
+      ..._kRejectReasons.where(_selected.contains),
+      if (_note.text.trim().isNotEmpty) _note.text.trim(),
+    ];
+    return parts.join('; ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text(
+        'Reject ${widget.petName}?',
+        style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'The post stays hidden and the poster is told why. '
+                  'Choose at least one reason.',
+              style: TextStyle(color: kHintGray, fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: _kRejectReasons.map((r) {
+                return FilterChip(
+                  label: Text(r, style: const TextStyle(fontSize: 12)),
+                  selected: _selected.contains(r),
+                  selectedColor: const Color(0xFFFFD6D6),
+                  onSelected: (on) => setState(() {
+                    if (on) {
+                      _selected.add(r);
+                    } else {
+                      _selected.remove(r);
+                    }
+                  }),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _note,
+              maxLines: 2,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                hintText: 'Extra note for the poster (optional)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed:
+          _hasReason ? () => Navigator.pop(context, _reasonText) : null,
+          child: const Text(
+            'Reject',
+            style: TextStyle(color: Colors.red, fontWeight: FontWeight.w800),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -136,13 +240,14 @@ class AdminPostsScreen extends StatefulWidget {
 
 class _AdminPostsScreenState extends State<AdminPostsScreen> {
   static const List<String> _filters = [
-    'All',
     'Pending',
     'Approved',
     'Rejected',
+    'All',
   ];
 
-  String _selected = 'All';
+  // Opens on Pending: that is the review queue.
+  String _selected = 'Pending';
 
   bool _matches(AdoptionPet pet) {
     switch (_selected) {
@@ -154,6 +259,19 @@ class _AdminPostsScreenState extends State<AdminPostsScreen> {
         return pet.status == PostStatus.rejected;
       default:
         return true;
+    }
+  }
+
+  int _count(String filter) {
+    switch (filter) {
+      case 'Pending':
+        return AdoptionService.byPostStatus(PostStatus.pending).length;
+      case 'Approved':
+        return AdoptionService.byPostStatus(PostStatus.approved).length;
+      case 'Rejected':
+        return AdoptionService.byPostStatus(PostStatus.rejected).length;
+      default:
+        return AdoptionService.all.length;
     }
   }
 
@@ -217,37 +335,41 @@ class _AdminPostsScreenState extends State<AdminPostsScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: _filters.map((f) {
-                        final selected = _selected == f;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: GestureDetector(
-                            onTap: () => setState(() => _selected = f),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: selected ? kBlue : Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: kNavy),
-                              ),
-                              child: Text(
-                                f,
-                                style: TextStyle(
-                                  color: selected ? Colors.white : kNavy,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
+                  // Filter chips with live counts
+                  ValueListenableBuilder<int>(
+                    valueListenable: AdoptionService.changes,
+                    builder: (context, _, __) => SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _filters.map((f) {
+                          final selected = _selected == f;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: GestureDetector(
+                              onTap: () => setState(() => _selected = f),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: selected ? kBlue : Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: kNavy),
+                                ),
+                                child: Text(
+                                  '$f (${_count(f)})',
+                                  style: TextStyle(
+                                    color: selected ? Colors.white : kNavy,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        );
-                      }).toList(),
+                          );
+                        }).toList(),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -267,6 +389,8 @@ class _AdminPostsScreenState extends State<AdminPostsScreen> {
                       child: Text(
                         _selected == 'All'
                             ? 'No adoption posts yet.'
+                            : _selected == 'Pending'
+                            ? 'No posts waiting for review.'
                             : 'No ${_selected.toLowerCase()} posts.',
                         style: const TextStyle(color: kHintGray),
                       ),
@@ -282,14 +406,15 @@ class _AdminPostsScreenState extends State<AdminPostsScreen> {
                       return _PostCard(
                         pet: pet,
                         onView: () => _openDetails(pet),
-                        // Approved -> Reject.  Pending / Rejected -> Approve.
-                        onAction: () => _changePostStatus(
-                          context,
-                          pet,
-                          pet.status == PostStatus.approved
-                              ? PostStatus.rejected
-                              : PostStatus.approved,
-                        ),
+                        // Approved -> Reject.  Rejected -> Approve.
+                        // (Pending posts are reviewed in Post Details.)
+                        onAction: () {
+                          if (pet.status == PostStatus.approved) {
+                            _rejectPost(context, pet);
+                          } else {
+                            _approvePost(context, pet);
+                          }
+                        },
                       );
                     },
                   );
@@ -316,6 +441,7 @@ class _PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isPending = pet.status == PostStatus.pending;
     final bool isApproved = pet.status == PostStatus.approved;
 
     return Container(
@@ -384,59 +510,96 @@ class _PostCard extends StatelessWidget {
                         style:
                         const TextStyle(color: kHintGray, fontSize: 12),
                       ),
+                    if (isPending && pet.resubmitted)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 3),
+                        child: Text(
+                          'Edited by owner - needs re-review',
+                          style: TextStyle(
+                            color: kBlue,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 36,
-                  child: OutlinedButton(
-                    onPressed: onView,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: kNavy,
-                      side: const BorderSide(color: kNavy),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+          if (isPending)
+          // Pending posts are reviewed in Post Details (photos, info,
+          // contact details) before the admin decides.
+            SizedBox(
+              width: double.infinity,
+              height: 38,
+              child: ElevatedButton(
+                onPressed: onView,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kBlue,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Review Post',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+              ),
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 36,
+                    child: OutlinedButton(
+                      onPressed: onView,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: kNavy,
+                        side: const BorderSide(color: kNavy),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      'View Details',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      child: const Text(
+                        'View Details',
+                        style: TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SizedBox(
-                  height: 36,
-                  child: ElevatedButton(
-                    onPressed: onAction,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isApproved ? _kRejectPink : kBlue,
-                      foregroundColor: isApproved ? _kRejectText : Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 36,
+                    child: ElevatedButton(
+                      onPressed: onAction,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isApproved ? _kRejectPink : kBlue,
+                        foregroundColor:
+                        isApproved ? _kRejectText : Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      isApproved ? 'Reject' : 'Approve',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
+                      child: Text(
+                        isApproved ? 'Reject' : 'Approve',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
     );
@@ -445,11 +608,17 @@ class _PostCard extends StatelessWidget {
 
 // ---------------------------------------------------------- Details page
 
-class AdminPostDetailsScreen extends StatelessWidget {
+class AdminPostDetailsScreen extends StatefulWidget {
   final String petId;
 
   const AdminPostDetailsScreen({super.key, required this.petId});
 
+  @override
+  State<AdminPostDetailsScreen> createState() =>
+      _AdminPostDetailsScreenState();
+}
+
+class _AdminPostDetailsScreenState extends State<AdminPostDetailsScreen> {
   String _orDash(String v) => v.trim().isEmpty ? '—' : v;
 
   Widget _section(String title) => Padding(
@@ -498,6 +667,46 @@ class AdminPostDetailsScreen extends StatelessWidget {
     );
   }
 
+  Widget _banner({
+    required IconData icon,
+    required Color color,
+    required Color bg,
+    required String text,
+  }) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(color: color, fontSize: 13, height: 1.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _approve(AdoptionPet pet) async {
+    final ok = await _approvePost(context, pet);
+    if (ok && mounted) Navigator.pop(context); // back to the queue
+  }
+
+  Future<void> _reject(AdoptionPet pet) async {
+    final ok = await _rejectPost(context, pet);
+    if (ok && mounted) Navigator.pop(context); // back to the queue
+  }
+
   Widget _actionButton({
     required String text,
     required Color bg,
@@ -528,7 +737,7 @@ class AdminPostDetailsScreen extends StatelessWidget {
     return ValueListenableBuilder<int>(
       valueListenable: AdoptionService.changes,
       builder: (context, _, __) {
-        final pet = AdoptionService.byId(petId);
+        final pet = AdoptionService.byId(widget.petId);
 
         if (pet == null) {
           return Scaffold(
@@ -537,6 +746,7 @@ class AdminPostDetailsScreen extends StatelessWidget {
           );
         }
 
+        final bool isPending = pet.status == PostStatus.pending;
         final bool isApproved = pet.status == PostStatus.approved;
         final bool isRejected = pet.status == PostStatus.rejected;
 
@@ -573,6 +783,22 @@ class AdminPostDetailsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 14),
 
+              if (isPending && pet.resubmitted)
+                _banner(
+                  icon: Icons.edit_note,
+                  color: kNavy,
+                  bg: const Color(0xFFE8EEF8),
+                  text: 'The owner edited this post. Please review it again.',
+                ),
+              if (isRejected)
+                _banner(
+                  icon: Icons.cancel_outlined,
+                  color: const Color(0xFF9B1C1C),
+                  bg: const Color(0xFFFFE3E3),
+                  text:
+                  'Rejected. Reason: ${pet.rejectionReason ?? 'No reason given.'}',
+                ),
+
               _section('Pet'),
               _row('Animal Type', pet.animalType),
               _row('Age', pet.age),
@@ -603,23 +829,15 @@ class AdminPostDetailsScreen extends StatelessWidget {
                       text: 'Reject',
                       bg: _kRejectPink,
                       fg: _kRejectText,
-                      onPressed: () => _changePostStatus(
-                        context,
-                        pet,
-                        PostStatus.rejected,
-                      ),
+                      onPressed: () => _reject(pet),
                     ),
-                  if (!isRejected && !isApproved) const SizedBox(width: 12),
+                  if (isPending) const SizedBox(width: 12),
                   if (!isApproved)
                     _actionButton(
                       text: 'Approve',
                       bg: kBlue,
                       fg: Colors.white,
-                      onPressed: () => _changePostStatus(
-                        context,
-                        pet,
-                        PostStatus.approved,
-                      ),
+                      onPressed: () => _approve(pet),
                     ),
                 ],
               ),

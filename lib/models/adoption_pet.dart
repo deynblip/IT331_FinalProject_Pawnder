@@ -31,14 +31,23 @@ class AdoptionPet {
   final String contactPhone;
   final String contactEmail;
 
-  /// NEW: admin review state. New posts start as pending.
+  /// Admin review state. New posts start as pending.
   final PostStatus status;
 
-  /// NEW: when the user posted it (shown on the admin Posts page).
+  /// When the user posted it (shown on the admin Posts page).
   final DateTime? postedAt;
 
-  /// NEW: set when a Verified Rescuer posts it -> "Rescued by [Organization]".
+  /// Set when a Verified Rescuer posts it -> "Rescued by [Organization]".
   final String? rescuedBy;
+
+  /// Why the admin rejected the post (only set while status = rejected).
+  final String? rejectionReason;
+
+  /// true = the owner edited a reviewed post, so the admin must re-check it.
+  final bool resubmitted;
+
+  /// Account email of the poster (used to send the review notification).
+  final String? ownerEmail;
 
   const AdoptionPet({
     required this.id,
@@ -59,6 +68,9 @@ class AdoptionPet {
     this.status = PostStatus.pending,
     this.postedAt,
     this.rescuedBy,
+    this.rejectionReason,
+    this.resubmitted = false,
+    this.ownerEmail,
   });
 
   /// Example: "1 year · Male"
@@ -74,7 +86,10 @@ class AdoptionPet {
       : healthInfo;
 
   /// Used when the owner edits a post (or the admin changes its status).
-  /// id, posterName, isMine, postedAt and rescuedBy never change.
+  /// id, posterName, isMine, postedAt, rescuedBy and ownerEmail never change.
+  ///
+  /// The rejection reason is kept only while the post is rejected: when the
+  /// status changes to pending or approved it is cleared automatically.
   AdoptionPet copyWith({
     String? name,
     String? animalType,
@@ -89,7 +104,11 @@ class AdoptionPet {
     String? contactPhone,
     String? contactEmail,
     PostStatus? status,
+    String? rejectionReason,
+    bool? resubmitted,
   }) {
+    final newStatus = status ?? this.status;
+
     return AdoptionPet(
       id: id,
       name: name ?? this.name,
@@ -106,9 +125,18 @@ class AdoptionPet {
       contactPerson: contactPerson ?? this.contactPerson,
       contactPhone: contactPhone ?? this.contactPhone,
       contactEmail: contactEmail ?? this.contactEmail,
-      status: status ?? this.status,
+      status: newStatus,
       postedAt: postedAt,
       rescuedBy: rescuedBy,
+      rejectionReason: newStatus == PostStatus.rejected
+          ? (rejectionReason ?? this.rejectionReason)
+          : null,
+      // A finished review (approve / reject) clears the "edited" flag.
+      resubmitted: resubmitted ??
+          ((status != null && status != PostStatus.pending)
+              ? false
+              : this.resubmitted),
+      ownerEmail: ownerEmail,
     );
   }
 }

@@ -13,12 +13,42 @@ import 'post_pet_screen.dart';
 
 /// Pets posted by the logged-in user, plus the applications forwarded to
 /// them for the final decision (Profile > My Activity > My Adoption Posts).
+/// Each post shows its review status: Pending, Approved or Rejected.
 class MyPostsScreen extends StatelessWidget {
   final String posterName;
 
   const MyPostsScreen({super.key, required this.posterName});
 
   Future<void> _edit(BuildContext context, AdoptionPet pet) async {
+    // Editing an approved post sends it back to Pending: warn first.
+    if (pet.status == PostStatus.approved) {
+      final go = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text(
+            'Edit approved post?',
+            style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+          ),
+          content: const Text(
+            'Saving changes sends this post back to Pending. It will be '
+                'hidden from the Adoption Bulletin until the admin approves '
+                'it again.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Continue'),
+            ),
+          ],
+        ),
+      );
+      if (go != true || !context.mounted) return;
+    }
+
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -290,8 +320,73 @@ class _PetPostCard extends StatelessWidget {
     required this.onRemove,
   });
 
+  /// Explains the review status to the poster.
+  Widget _reviewNote() {
+    switch (pet.status) {
+      case PostStatus.pending:
+        return _noteBox(
+          icon: Icons.hourglass_top,
+          color: const Color(0xFF8A6D00),
+          bg: const Color(0xFFFFF8D6),
+          text: pet.resubmitted
+              ? 'Your changes are waiting for admin review. This post is '
+              'hidden from the Adoption Bulletin until it is approved.'
+              : 'Waiting for admin review. This post is not in the '
+              'Adoption Bulletin yet.',
+        );
+      case PostStatus.rejected:
+        return _noteBox(
+          icon: Icons.cancel_outlined,
+          color: const Color(0xFF9B1C1C),
+          bg: const Color(0xFFFFE3E3),
+          text: 'Not approved. Reason: '
+              '${pet.rejectionReason ?? 'No reason given.'}\n'
+              'Edit the post and resubmit it for review.',
+        );
+      case PostStatus.approved:
+        return _noteBox(
+          icon: Icons.check_circle_outline,
+          color: const Color(0xFF1F5E10),
+          bg: const Color(0xFFE6F6DE),
+          text: 'Approved. This post is live in the Adoption Bulletin.',
+        );
+    }
+  }
+
+  Widget _noteBox({
+    required IconData icon,
+    required Color color,
+    required Color bg,
+    required String text,
+  }) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(color: color, fontSize: 12.5, height: 1.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bool rejected = pet.status == PostStatus.rejected;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Container(
@@ -356,6 +451,7 @@ class _PetPostCard extends StatelessWidget {
                 ),
               ],
             ),
+            _reviewNote(),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -363,7 +459,7 @@ class _PetPostCard extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: onEdit,
                     icon: const Icon(Icons.edit_outlined, size: 18),
-                    label: const Text('Edit'),
+                    label: Text(rejected ? 'Resubmit' : 'Edit'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: kNavy,
                       side: const BorderSide(color: kNavy),

@@ -1,8 +1,9 @@
 // ===================================
 // TEMPORARY IN-MEMORY ADOPTION STORE
 // ===================================
-// Pets posted by users are stored here. Every new post starts as PENDING and
-// only shows on the Adopt board after an ADMIN approves it.
+// PRE-APPROVAL: every new post starts as PENDING and only shows on the
+// Adopt board (Adoption Bulletin) after an ADMIN approves it.
+// An edited post goes back to PENDING for re-review.
 // Replace publish() and all with your real backend later.
 
 import 'package:flutter/foundation.dart';
@@ -39,6 +40,10 @@ class AdoptionService {
   static List<AdoptionPet> byPostStatus(PostStatus? status) => status == null
       ? List.of(_pets)
       : _pets.where((p) => p.status == status).toList();
+
+  /// How many posts are waiting for the admin.
+  static int get pendingCount =>
+      _pets.where((p) => p.status == PostStatus.pending).length;
 
   static AdoptionPet? byId(String id) {
     for (final p in _pets) {
@@ -90,14 +95,16 @@ class AdoptionService {
         status: PostStatus.pending, // <-- waits for admin
         postedAt: DateTime.now(),
         rescuedBy: RescuerService.currentOrganization, // null if not verified
+        ownerEmail: AuthService.currentEmail,
       ),
     );
     _notify();
   }
 
   /// OWNER ONLY: edit one of your own posts.
-  /// An edited post goes back to PENDING so the admin re-checks it.
-  /// (Delete the `status:` line below if edits should keep the old status.)
+  /// ANY edit sends the post back to PENDING (hidden from the Adoption
+  /// Bulletin) so the admin re-checks it. A rejected post that is edited is
+  /// resubmitted the same way.
   static Future<void> update(
       String id, {
         required String name,
@@ -122,6 +129,8 @@ class AdoptionService {
       throw StateError('You can only edit your own posts.');
     }
 
+    final wasReviewed = _pets[i].status != PostStatus.pending;
+
     _pets[i] = _pets[i].copyWith(
       name: name,
       animalType: animalType,
@@ -136,6 +145,7 @@ class AdoptionService {
       contactPhone: contactPhone,
       contactEmail: contactEmail,
       status: PostStatus.pending, // re-review after an edit
+      resubmitted: _pets[i].resubmitted || wasReviewed,
     );
     _notify();
   }
@@ -176,16 +186,26 @@ class AdoptionService {
         message: 'Your adoption post for ${pet.name} was removed by an '
             'administrator because it did not follow the community '
             'guidelines.',
+        userEmail: pet.ownerEmail,
       );
     }
     _notify();
   }
 
   /// ADMIN ONLY: approve or reject a pet post.
-  /// Approved = shows on the Adopt board. Rejected = hidden from it.
-  static Future<void> setPostStatus(String id, PostStatus status) async {
+  /// Approved = shows on the Adopt board and the poster is notified.
+  /// Rejected = hidden from it, a [reason] is REQUIRED and the poster is
+  /// notified with that reason.
+  static Future<void> setPostStatus(
+      String id,
+      PostStatus status, {
+        String? reason,
+      }) async {
     if (!AuthService.isCurrentAdmin) {
       throw StateError('Only an admin can approve or reject posts.');
+    }
+    if (status == PostStatus.rejected && (reason?.trim().isEmpty ?? true)) {
+      throw StateError('Please give a reason for rejecting this post.');
     }
 
     // Simulates a network call.
@@ -194,7 +214,10 @@ class AdoptionService {
     final i = _pets.indexWhere((p) => p.id == id);
     if (i == -1) throw StateError('Pet not found.');
 
-    _pets[i] = _pets[i].copyWith(status: status);
+    _pets[i] = _pets[i].copyWith(
+      status: status,
+      rejectionReason: reason?.trim(),
+    );
     _notifyPoster(_pets[i]);
     _notify();
   }
@@ -210,14 +233,17 @@ class AdoptionService {
           type: NotificationType.postApproved,
           title: 'Post approved',
           message: 'Your adoption post for ${pet.name} was approved and is '
-              'now listed on the Adopt board.',
+              'now listed in the Adoption Bulletin.',
+          userEmail: pet.ownerEmail,
         );
       case PostStatus.rejected:
         NotificationService.add(
           type: NotificationType.postRemoved,
           title: 'Post not approved',
-          message: 'Your adoption post for ${pet.name} was not approved by '
-              'an administrator, so it is not shown on the Adopt board.',
+          message: 'Your adoption post for ${pet.name} was not approved. '
+              'Reason: ${pet.rejectionReason ?? 'No reason given.'} '
+              'You can edit the post and submit it again.',
+          userEmail: pet.ownerEmail,
         );
       case PostStatus.pending:
         break; // nothing to announce

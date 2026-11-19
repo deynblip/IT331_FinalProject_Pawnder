@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../services/adoption_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/rescuer_service.dart';
 import '../../utils/app_colors.dart';
@@ -59,6 +60,14 @@ class _AdminLayoutState extends State<AdminLayout> {
     }
   }
 
+  Widget _badged(IconData icon, int count) {
+    return Badge(
+      isLabelVisible: count > 0,
+      label: Text('$count'),
+      child: Icon(icon),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
@@ -73,9 +82,13 @@ class _AdminLayoutState extends State<AdminLayout> {
       backgroundColor: Colors.white,
       body: IndexedStack(index: _selectedIndex, children: pages),
       bottomNavigationBar: ListenableBuilder(
-        listenable: RescuerService.changes,
+        listenable: Listenable.merge([
+          RescuerService.changes,
+          AdoptionService.changes,
+        ]),
         builder: (context, _) {
-          final pending = RescuerService.pendingCount;
+          final pendingRescuers = RescuerService.pendingCount;
+          final pendingPosts = AdoptionService.pendingCount;
 
           return BottomNavigationBar(
             currentIndex: _selectedIndex,
@@ -93,9 +106,9 @@ class _AdminLayoutState extends State<AdminLayout> {
                 activeIcon: Icon(Icons.home),
                 label: 'Home',
               ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.pets_outlined),
-                activeIcon: Icon(Icons.pets),
+              BottomNavigationBarItem(
+                icon: _badged(Icons.pets_outlined, pendingPosts),
+                activeIcon: _badged(Icons.pets, pendingPosts),
                 label: 'Posts',
               ),
               const BottomNavigationBarItem(
@@ -109,16 +122,8 @@ class _AdminLayoutState extends State<AdminLayout> {
                 label: 'Reported',
               ),
               BottomNavigationBarItem(
-                icon: Badge(
-                  isLabelVisible: pending > 0,
-                  label: Text('$pending'),
-                  child: const Icon(Icons.verified_user_outlined),
-                ),
-                activeIcon: Badge(
-                  isLabelVisible: pending > 0,
-                  label: Text('$pending'),
-                  child: const Icon(Icons.verified_user),
-                ),
+                icon: _badged(Icons.verified_user_outlined, pendingRescuers),
+                activeIcon: _badged(Icons.verified_user, pendingRescuers),
                 label: 'Rescuers',
               ),
             ],
