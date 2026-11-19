@@ -37,6 +37,9 @@ class AdoptionPet {
   /// NEW: when the user posted it (shown on the admin Posts page).
   final DateTime? postedAt;
 
+  /// NEW: set when a Verified Rescuer posts it -> "Rescued by [Organization]".
+  final String? rescuedBy;
+
   const AdoptionPet({
     required this.id,
     required this.name,
@@ -55,6 +58,7 @@ class AdoptionPet {
     this.contactEmail = '',
     this.status = PostStatus.pending,
     this.postedAt,
+    this.rescuedBy,
   });
 
   /// Example: "1 year · Male"
@@ -70,7 +74,7 @@ class AdoptionPet {
       : healthInfo;
 
   /// Used when the owner edits a post (or the admin changes its status).
-  /// id, posterName, isMine and postedAt never change.
+  /// id, posterName, isMine, postedAt and rescuedBy never change.
   AdoptionPet copyWith({
     String? name,
     String? animalType,
@@ -104,6 +108,7 @@ class AdoptionPet {
       contactEmail: contactEmail ?? this.contactEmail,
       status: status ?? this.status,
       postedAt: postedAt,
+      rescuedBy: rescuedBy,
     );
   }
 }

@@ -6,6 +6,8 @@ enum NotificationType {
   applicationRejected,
   postRemoved, // an adoption post was removed by an admin
   postApproved,
+  rescuerApproved, // the admin approved the Verified Rescuer application
+  rescuerRejected, // the admin rejected the Verified Rescuer application
 }
 
 class AppNotification {
@@ -19,6 +21,9 @@ class AppNotification {
   /// The report / application the notification is about (may be null).
   final String? targetId;
 
+  /// If set, only this user sees the notification (null = everyone).
+  final String? userEmail;
+
   const AppNotification({
     required this.id,
     required this.type,
@@ -27,6 +32,7 @@ class AppNotification {
     required this.createdAt,
     this.read = false,
     this.targetId,
+    this.userEmail,
   });
 
   AppNotification copyWith({bool? read}) {
@@ -38,6 +44,7 @@ class AppNotification {
       createdAt: createdAt,
       read: read ?? this.read,
       targetId: targetId,
+      userEmail: userEmail,
     );
   }
 

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../services/rescuer_service.dart';
 import '../utils/validators.dart';
 import '../utils/app_colors.dart';
 import '../widgets/auth_layout.dart';
 import '../widgets/auth_widgets.dart';
+import '../widgets/rescuer_form.dart';
 
 import 'login.dart';
 
@@ -28,11 +30,15 @@ class _SignUpPageState extends State<SignUpPage> {
 
   bool _agreedToTerms = false;
 
+  AccountType _accountType = AccountType.community;
+  final RescuerFormControllers _rescuer = RescuerFormControllers();
+
   @override
   void dispose() {
     nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
+    _rescuer.dispose();
     super.dispose();
   }
 
@@ -283,7 +289,28 @@ class _SignUpPageState extends State<SignUpPage> {
       passwordController.text,
     );
 
-    showMessage(context, 'Account created! Please log in.');
+    // Professional Rescuer: the account is a regular one until the admin
+    // approves the application (status = Pending Verification).
+    final bool applying = _accountType == AccountType.professional;
+    if (applying) {
+      RescuerService.submit(
+        email: email,
+        applicantName: nameController.text.trim(),
+        organization: _rescuer.organization.text,
+        roleInOrg: _rescuer.roleInOrg.text,
+        contactPerson: _rescuer.contactPerson.text,
+        contactNumber: _rescuer.contactNumber.text,
+        officialPage: _rescuer.officialPage.text,
+      );
+    }
+
+    showMessage(
+      context,
+      applying
+          ? 'Account created! Your rescuer application is pending '
+          'verification. Please log in.'
+          : 'Account created! Please log in.',
+    );
 
     Navigator.pushReplacement(
       context,
@@ -327,6 +354,21 @@ class _SignUpPageState extends State<SignUpPage> {
                 obscure: true,
                 validator: validatePassword,
               ),
+
+              const SizedBox(height: 14),
+
+              // ACCOUNT TYPE: Community Member / Professional Rescuer
+              AccountTypeSelector(
+                value: _accountType,
+                onChanged: (v) => setState(() => _accountType = v),
+              ),
+
+              if (_accountType == AccountType.professional) ...[
+                const SizedBox(height: 14),
+                const RescuerPendingNote(),
+                const SizedBox(height: 14),
+                RescuerFormFields(controllers: _rescuer),
+              ],
 
               const SizedBox(height: 14),
 

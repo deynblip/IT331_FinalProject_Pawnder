@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../../services/auth_service.dart';
+import '../../services/rescuer_service.dart';
 import '../../utils/app_colors.dart';
 import '../login.dart';
 import 'admin_dashboard.dart';
 import 'admin_posts_screen.dart';
 import 'admin_applications_screen.dart';
 import 'admin_reported_screen.dart';
+import 'admin_rescuers_screen.dart';
 
-// Admin shell: bottom navigation + the four admin tabs.
+// Admin shell: bottom navigation + the five admin tabs.
 class AdminLayout extends StatefulWidget {
   final String name;
 
@@ -57,66 +59,71 @@ class _AdminLayoutState extends State<AdminLayout> {
     }
   }
 
-  Widget _placeholder(String title) {
-    return SafeArea(
-      child: Center(
-        child: Text(
-          '$title\n(coming soon)',
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: kNavy,
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
       AdminDashboard(name: widget.name, onLogout: _confirmLogout),
-      const AdminPostsScreen(), // <-- the new Animal Adoptions page
+      const AdminPostsScreen(),
       const AdminApplicationsScreen(),
       const AdminReportedScreen(),
+      const AdminRescuersScreen(), // Verified Rescuer applications
     ];
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: IndexedStack(index: _selectedIndex, children: pages),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: kBlue,
-        unselectedItemColor: kHintGray,
-        showUnselectedLabels: true,
-        selectedFontSize: 11,
-        unselectedFontSize: 11,
-        onTap: (i) => setState(() => _selectedIndex = i),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.pets_outlined),
-            activeIcon: Icon(Icons.pets),
-            label: 'Posts',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.insert_drive_file_outlined),
-            activeIcon: Icon(Icons.insert_drive_file),
-            label: 'Application',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.flag_outlined),
-            activeIcon: Icon(Icons.flag),
-            label: 'Reported',
-          ),
-        ],
+      bottomNavigationBar: ListenableBuilder(
+        listenable: RescuerService.changes,
+        builder: (context, _) {
+          final pending = RescuerService.pendingCount;
+
+          return BottomNavigationBar(
+            currentIndex: _selectedIndex,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            selectedItemColor: kBlue,
+            unselectedItemColor: kHintGray,
+            showUnselectedLabels: true,
+            selectedFontSize: 11,
+            unselectedFontSize: 11,
+            onTap: (i) => setState(() => _selectedIndex = i),
+            items: [
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.home_outlined),
+                activeIcon: Icon(Icons.home),
+                label: 'Home',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.pets_outlined),
+                activeIcon: Icon(Icons.pets),
+                label: 'Posts',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.insert_drive_file_outlined),
+                activeIcon: Icon(Icons.insert_drive_file),
+                label: 'Application',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.flag_outlined),
+                activeIcon: Icon(Icons.flag),
+                label: 'Reported',
+              ),
+              BottomNavigationBarItem(
+                icon: Badge(
+                  isLabelVisible: pending > 0,
+                  label: Text('$pending'),
+                  child: const Icon(Icons.verified_user_outlined),
+                ),
+                activeIcon: Badge(
+                  isLabelVisible: pending > 0,
+                  label: Text('$pending'),
+                  child: const Icon(Icons.verified_user),
+                ),
+                label: 'Rescuers',
+              ),
+            ],
+          );
+        },
       ),
     );
   }

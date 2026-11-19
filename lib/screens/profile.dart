@@ -5,12 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../data/mock_reports.dart';
+import '../models/rescuer_application.dart';
 import '../utils/app_colors.dart';
 import 'my_reports_screen.dart';
 import '../services/adoption_service.dart';
 import '../services/application_service.dart';
+import '../services/rescuer_service.dart';
+import '../widgets/rescuer_badge.dart';
 import 'my_applications_screen.dart';
 import 'my_posts_screen.dart';
+import 'rescuer_application_screen.dart';
 
 class ProfilePage extends StatefulWidget {
   final String name;
@@ -152,6 +156,137 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // ---------------------------------------------------------------------
+  // VERIFIED RESCUER SECTION
+  // ---------------------------------------------------------------------
+
+  Widget _rescuerCard({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String message,
+    String? buttonText,
+    VoidCallback? onPressed,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE3E5EA)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: kNavy,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: const TextStyle(color: kHintGray, fontSize: 13, height: 1.4),
+          ),
+          if (buttonText != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onPressed,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kBlue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Text(buttonText),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _openRescuerForm(RescuerApplication? previous) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RescuerApplicationScreen(previous: previous),
+      ),
+    );
+  }
+
+  Widget _rescuerSection() {
+    return ListenableBuilder(
+      listenable: RescuerService.changes,
+      builder: (context, _) {
+        final app = RescuerService.currentApplication;
+        final status = RescuerService.currentStatus;
+
+        switch (status) {
+          case RescuerStatus.verified:
+            return Center(
+              child: RescuerBadge(organization: app!.organization),
+            );
+
+          case RescuerStatus.pending:
+            return _rescuerCard(
+              icon: Icons.hourglass_top,
+              color: const Color(0xFFC17F5E),
+              title: 'Rescuer status: Pending Verification',
+              message: 'An admin is confirming your application with '
+                  '${app!.organization}. You can keep using Pawnder as a '
+                  'regular user while you wait.',
+            );
+
+          case RescuerStatus.rejected:
+            return _rescuerCard(
+              icon: Icons.cancel_outlined,
+              color: const Color(0xFFB85A5A),
+              title: 'Rescuer application not approved',
+              message: 'Reason: ${app!.rejectionReason ?? '-'}\n'
+                  'You are still a regular user. You can apply again.',
+              buttonText: 'Apply Again',
+              onPressed: () => _openRescuerForm(app),
+            );
+
+          case RescuerStatus.none:
+            return _rescuerCard(
+              icon: Icons.verified_user_outlined,
+              color: kBlue,
+              title: 'Are you part of a rescue group?',
+              message: 'Rescue organizations, vets and LGU animal welfare '
+                  'offices can apply to become Verified Rescuers.',
+              buttonText: 'Apply as Verified Rescuer',
+              onPressed: () => _openRescuerForm(null),
+            );
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final reportsCount = mockReports.where((r) => r.isMine).length;
@@ -178,7 +313,12 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
 
-          const SizedBox(height: 36),
+          const SizedBox(height: 12),
+
+          // Verified Rescuer badge, or the apply / pending / rejected card
+          _rescuerSection(),
+
+          const SizedBox(height: 28),
 
           const Align(
             alignment: Alignment.centerLeft,

@@ -26,6 +26,29 @@ String? validateName(String? value) {
   return null;
 }
 
+String? Function(String?) requiredField(String message) {
+  return (value) => (value?.trim().isEmpty ?? true) ? message : null;
+}
+
+String? validateContactNumber(String? value) {
+  final v = value?.trim() ?? '';
+  if (v.isEmpty) return 'Please enter a contact number';
+  final digits = v.replaceAll(RegExp(r'[\s\-+()]'), '');
+  if (!RegExp(r'^\d{7,13}$').hasMatch(digits)) {
+    return 'Please enter a valid contact number';
+  }
+  return null;
+}
+
+String? validateOfficialPage(String? value) {
+  final v = value?.trim() ?? '';
+  if (v.isEmpty) return 'Please enter the official page or website';
+  if (v.contains(' ') || !v.contains('.')) {
+    return 'Please enter a valid page or website link';
+  }
+  return null;
+}
+
 void showMessage(BuildContext context, String message) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()

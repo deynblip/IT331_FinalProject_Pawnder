@@ -9,6 +9,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/app_notification.dart';
+import 'auth_service.dart';
 
 class NotificationService {
   static DateTime _ago(Duration d) => DateTime.now().subtract(d);
@@ -104,8 +105,17 @@ class NotificationService {
   /// Is this notification allowed by the user's Settings?
   static bool _visible(AppNotification n) {
     if (!pushEnabled) return false;
+
+    // Notifications made for one specific user are hidden from everyone else.
+    if (n.userEmail != null && n.userEmail != AuthService.currentEmail) {
+      return false;
+    }
+
     return switch (n.type) {
       NotificationType.rescueResponse => reportUpdates,
+      NotificationType.rescuerApproved ||
+      NotificationType.rescuerRejected =>
+      true,
       _ => adoptionUpdates,
     };
   }
@@ -137,11 +147,13 @@ class NotificationService {
 
   /// Adds a new (unread) notification. Used by the app/backend when
   /// something happens that the user should know about.
+  /// Pass [userEmail] to show it only to that user.
   static void add({
     required NotificationType type,
     required String title,
     required String message,
     String? targetId,
+    String? userEmail,
   }) {
     _items.add(
       AppNotification(
@@ -151,6 +163,7 @@ class NotificationService {
         message: message,
         createdAt: DateTime.now(),
         targetId: targetId,
+        userEmail: userEmail,
       ),
     );
     _notify();

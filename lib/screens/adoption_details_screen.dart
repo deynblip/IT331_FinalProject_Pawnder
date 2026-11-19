@@ -6,6 +6,7 @@ import '../models/adoption_pet.dart';
 import '../utils/app_colors.dart';
 import '../utils/report_style.dart';
 import '../widgets/adopt_pet_photo.dart';
+import '../widgets/rescuer_badge.dart';
 import '../models/content_report.dart';
 import '../widgets/report_content_dialog.dart';
 
@@ -155,6 +156,11 @@ class AdoptionDetailsScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // "Rescued by [Organization]" (Verified Rescuer posts)
+                              if (pet.rescuedBy != null) ...[
+                                RescuedByTag(organization: pet.rescuedBy!),
+                                const SizedBox(height: 6),
+                              ],
                               Text(
                                 pet.name.toUpperCase(),
                                 style: const TextStyle(

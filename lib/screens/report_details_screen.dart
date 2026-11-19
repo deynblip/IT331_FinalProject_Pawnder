@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/stray_report.dart';
+import '../services/auth_service.dart';
+import '../services/rescuer_service.dart';
+import '../services/response_service.dart';
 import '../utils/report_style.dart';
 import '../widgets/report_image.dart';
 import '../widgets/status_chip.dart';
+import '../widgets/rescuer_badge.dart';
 import '../models/content_report.dart';
 import '../widgets/report_content_dialog.dart';
 
@@ -20,17 +24,133 @@ class ReportDetailsScreen extends StatefulWidget {
 class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
   late StrayReport _report = widget.report;
 
+  bool get _isVerified => RescuerService.isCurrentVerified;
+
   void _apply(StrayReport updated) {
     setState(() => _report = updated);
     widget.onChanged(updated); // para mag-update din ang list
   }
 
-  void _onMyWay() => _apply(_report.copyWith(
-    status: RescueStatus.inProgress,
-    responders: _report.responders + 1,
-  ));
+  void _snack(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
 
-  void _markRescued() => _apply(_report.copyWith(status: RescueStatus.rescued));
+  /// Shows an error, or updates the report from the service result.
+  void _handle(ActionResult result) {
+    if (!result.ok) {
+      _snack(result.error!);
+      return;
+    }
+    final newStatus = result.status ?? _report.status;
+    _apply(_report.copyWith(
+      status: newStatus,
+      responders: newStatus == RescueStatus.rescued
+          ? _report.responders
+          : ResponseService.forReport(_report.id).length,
+    ));
+  }
+
+  Future<bool> _confirm(String title, String message, String yes) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(title,
+            style: const TextStyle(color: ReportColors.navy, fontWeight: FontWeight.w800)),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(yes, style: const TextStyle(fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+    return ok == true;
+  }
+
+  Future<void> _onMyWay() async {
+    // Regular users get a safety warning on Urgent reports.
+    if (_report.urgency == Urgency.urgent && !_isVerified) {
+      final ok = await _confirm(
+        'Safety first',
+        'This is an Urgent report. The animal may be injured, frightened or '
+            'aggressive. Keep a safe distance, do not handle it bare-handed, '
+            'and consider waiting for a Verified Rescuer.',
+        "I understand, I'm going",
+      );
+      if (!ok || !mounted) return;
+    }
+    _handle(ResponseService.respond(_report));
+  }
+
+  void _checkIn() => _handle(ResponseService.checkIn(_report.id));
+
+  void _withdraw() => _handle(ResponseService.withdraw(_report.id));
+
+  Future<void> _takeOver() async {
+    final ok = await _confirm(
+      'Take over this report?',
+      'There have been no recent updates. You will become the lead '
+          'responder and the current responders will be assisting.',
+      'Take over',
+    );
+    if (!ok || !mounted) return;
+    _handle(ResponseService.takeOver(_report));
+  }
+
+  IconData _outcomeIcon(RescueOutcome o) => switch (o) {
+    RescueOutcome.rescuedOnSite => Icons.check_circle_outline,
+    RescueOutcome.broughtToVetShelter => Icons.local_hospital_outlined,
+    RescueOutcome.unableToLocate => Icons.search_off,
+  };
+
+  Future<void> _markRescued() async {
+    var outcome = RescueOutcome.rescuedOnSite;
+
+    // Verified Rescuers can choose other outcomes too.
+    if (_isVerified) {
+      final picked = await showModalBottomSheet<RescueOutcome>(
+        context: context,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (sheetContext) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('How did this end?',
+                    style: TextStyle(
+                        color: ReportColors.navy, fontSize: 20, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 8),
+                for (final o in RescueOutcome.values)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(_outcomeIcon(o), color: ReportColors.navy),
+                    title: Text(o.label),
+                    onTap: () => Navigator.pop(sheetContext, o),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      );
+      if (picked == null || !mounted) return;
+      outcome = picked;
+    }
+
+    _handle(ResponseService.finish(_report, outcome));
+  }
 
   Future<void> _openDirections() async {
     final uri = Uri.parse(
@@ -59,7 +179,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     );
   }
 
-  Widget _primaryButton(String text, VoidCallback onPressed) {
+  Widget _primaryButton(String text, VoidCallback? onPressed) {
     return SizedBox(
       width: double.infinity,
       height: 50,
@@ -71,6 +191,61 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
         ),
         child: Text(text, style: const TextStyle(fontSize: 17)),
+      ),
+    );
+  }
+
+  Widget _secondaryButton(String text, VoidCallback onPressed) {
+    return SizedBox(
+      width: double.infinity,
+      height: 46,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: ReportColors.navy,
+          side: const BorderSide(color: ReportColors.navy),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        ),
+        child: Text(text, style: const TextStyle(fontSize: 15)),
+      ),
+    );
+  }
+
+  Widget _responderTile(ReportResponder r) {
+    final isMe = r.email == AuthService.currentEmail;
+    final isLead = r.role == ResponderRole.lead;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            r.checkedIn ? Icons.check_circle : Icons.person_outline,
+            color: r.checkedIn ? ReportColors.green : ReportColors.grey,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${r.name}${isMe ? ' (you)' : ''}  ·  ${isLead ? 'Lead' : 'Assisting'}',
+                  style: TextStyle(
+                    color: ReportColors.navy,
+                    fontSize: 14,
+                    fontWeight: isLead ? FontWeight.w800 : FontWeight.w600,
+                  ),
+                ),
+                if (r.organization != null) ...[
+                  const SizedBox(height: 3),
+                  RescuerBadge(organization: r.organization!, compact: true),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -91,7 +266,13 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
           ],
         );
         break;
+
       case RescueStatus.inProgress:
+        final me = ResponseService.mine(_report.id);
+        final responders = ResponseService.forReport(_report.id);
+        final inactive = ResponseService.isInactive(_report);
+        final count = responders.isEmpty ? _report.responders : responders.length;
+
         content = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -101,27 +282,80 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
               children: [
                 const Icon(Icons.groups, color: ReportColors.navy),
                 const SizedBox(width: 8),
-                Text('${_report.responders} community members responding',
+                Text('$count responding',
                     style: const TextStyle(color: ReportColors.navy, fontSize: 15)),
               ],
             ),
+            if (responders.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ...responders.map(_responderTile),
+            ],
+            if (inactive) ...[
+              const SizedBox(height: 4),
+              const Text('No recent updates on this report.',
+                  style: TextStyle(color: ReportColors.orange, fontSize: 13)),
+            ],
             const SizedBox(height: 12),
-            _primaryButton('Mark as Rescued', _markRescued),
+
+            if (me == null) ...[
+              _primaryButton("I'm on my way!", _onMyWay),
+              if (_isVerified && inactive) ...[
+                const SizedBox(height: 10),
+                _secondaryButton('Take over this report', _takeOver),
+              ],
+            ] else ...[
+              if (!me.checkedIn) ...[
+                _secondaryButton("I've arrived · Check in", _checkIn),
+                const SizedBox(height: 10),
+              ],
+              // Regular users must check in first. Verified Rescuers can
+              // always open the outcome choices (e.g. "Unable to locate").
+              _primaryButton(
+                'Mark as Rescued',
+                (me.checkedIn || me.isVerified) ? _markRescued : null,
+              ),
+              if (!me.checkedIn && !me.isVerified) ...[
+                const SizedBox(height: 6),
+                const Text(
+                  'Check in at the location before you can mark this as rescued.',
+                  style: TextStyle(color: ReportColors.grey, fontSize: 12),
+                ),
+              ],
+              Align(
+                alignment: Alignment.center,
+                child: TextButton(
+                  onPressed: _withdraw,
+                  child: const Text('Withdraw from this report',
+                      style: TextStyle(color: ReportColors.grey)),
+                ),
+              ),
+            ],
           ],
         );
         break;
+
       case RescueStatus.rescued:
-        content = const Padding(
-          padding: EdgeInsets.symmetric(vertical: 16),
+        final closure = ResponseService.closureOf(_report.id);
+        content = Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
           child: Center(
             child: Column(
               children: [
-                Icon(Icons.check_circle, color: ReportColors.green, size: 28),
-                SizedBox(height: 8),
-                Text('Animal Successfully Rescued',
+                const Icon(Icons.check_circle, color: ReportColors.green, size: 28),
+                const SizedBox(height: 8),
+                const Text('Animal Successfully Rescued',
                     style: TextStyle(color: ReportColors.navy, fontSize: 18)),
-                SizedBox(height: 4),
-                Text('Thank you for everyone who helped!',
+                const SizedBox(height: 4),
+                if (closure != null) ...[
+                  Text(closure.outcome.label,
+                      style: const TextStyle(color: ReportColors.grey, fontSize: 13)),
+                  if (closure.by.organization != null) ...[
+                    const SizedBox(height: 8),
+                    RescuerBadge(organization: closure.by.organization!),
+                  ],
+                  const SizedBox(height: 6),
+                ],
+                const Text('Thank you for everyone who helped!',
                     style: TextStyle(color: ReportColors.blue, fontSize: 13)),
               ],
             ),

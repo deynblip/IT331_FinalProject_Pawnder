@@ -12,6 +12,7 @@ import '../models/adoption_pet.dart';
 import '../models/app_notification.dart';
 import 'auth_service.dart';
 import 'notification_service.dart';
+import 'rescuer_service.dart';
 
 class AdoptionService {
   static final List<AdoptionPet> _pets = List.of(mockAdoptionPets);
@@ -48,6 +49,8 @@ class AdoptionService {
 
   /// Submits a pet for review. It starts as PENDING and stays hidden from the
   /// Adopt board until an admin approves it.
+  /// If the poster is a Verified Rescuer, the post is tagged
+  /// "Rescued by [Organization]".
   static Future<void> publish({
     required String name,
     required String animalType,
@@ -86,6 +89,7 @@ class AdoptionService {
         isMine: true, // posted by the logged-in user
         status: PostStatus.pending, // <-- waits for admin
         postedAt: DateTime.now(),
+        rescuedBy: RescuerService.currentOrganization, // null if not verified
       ),
     );
     _notify();
