@@ -22,13 +22,14 @@ class PawnderApp extends StatelessWidget {
           themeMode: mode,
           theme: ThemeData(
             fontFamily: 'Nunito',
-            colorScheme: ColorScheme.fromSeed(seedColor: kBlue),
+            colorScheme: ColorScheme.fromSeed(seedColor: kOrange),
+            scaffoldBackgroundColor: kCream,
           ),
           darkTheme: ThemeData(
             fontFamily: 'Nunito',
             brightness: Brightness.dark,
             colorScheme: ColorScheme.fromSeed(
-              seedColor: kBlue,
+              seedColor: kOrange,
               brightness: Brightness.dark,
             ).copyWith(surface: kDarkSurface),
             scaffoldBackgroundColor: kDarkBg,
