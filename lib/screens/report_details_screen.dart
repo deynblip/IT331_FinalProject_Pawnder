@@ -11,6 +11,7 @@ import '../widgets/status_chip.dart';
 import '../widgets/rescuer_badge.dart';
 import '../models/content_report.dart';
 import '../widgets/report_content_dialog.dart';
+import '../utils/responsive.dart';
 
 class ReportDetailsScreen extends StatefulWidget {
   final StrayReport report;
@@ -145,7 +146,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
         ),
         builder: (sheetContext) => SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            padding: EdgeInsets.fromLTRB(context.hPad, 20, context.hPad, 12),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -502,7 +503,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
       backgroundColor: kCream,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          padding: EdgeInsets.fromLTRB(context.hPad, 12, context.hPad, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

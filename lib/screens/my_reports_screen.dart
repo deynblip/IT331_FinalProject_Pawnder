@@ -5,6 +5,7 @@ import '../models/stray_report.dart';
 import '../utils/app_colors.dart';
 import '../widgets/report_card.dart';
 import 'report_details_screen.dart';
+import '../utils/responsive.dart';
 
 /// Reports made by the logged-in user (Profile > My Reports).
 class MyReportsScreen extends StatelessWidget {
@@ -21,7 +22,7 @@ class MyReportsScreen extends StatelessWidget {
       backgroundColor: kCream,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.symmetric(horizontal: context.hPad),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

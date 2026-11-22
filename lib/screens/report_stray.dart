@@ -9,6 +9,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../services/report_service.dart';
 import '../utils/app_colors.dart';
+import '../utils/responsive.dart';
 
 const Color _kUrgent = Color(0xFFC0525A);
 const Color _kNeedsHelp = Color(0xFFC17F59);
@@ -141,7 +142,7 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
       backgroundColor: kCream,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -402,7 +403,8 @@ class _DetailsStepState extends State<_DetailsStep> {
                     onTap: () => setState(() => d.urgency = u),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
-                      height: 90,
+                      // Grows if the text wraps on small phones.
+                      constraints: const BoxConstraints(minHeight: 90),
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         color: u.color,
