@@ -30,11 +30,15 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
   // One Form per input step (steps 1-3). Step 4 is only the review.
   final List<GlobalKey<FormState>> _formKeys = List.generate(
     3,
-    (_) => GlobalKey<FormState>(),
+        (_) => GlobalKey<FormState>(),
   );
 
   int _step = 0;
   bool _submitting = false;
+
+  /// Required: the adopter agrees to show a valid ID in person.
+  /// No ID is uploaded or stored in the app (Data Privacy Act, RA 10173).
+  bool _agreesToShowId = false;
 
   // Step 1
   final _fullName = TextEditingController();
@@ -101,6 +105,16 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
       '${_barangay.text.trim()}, ${_city.text.trim()}, $_kProvince';
 
   Future<void> _submit() async {
+    if (!_agreesToShowId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please agree to present a valid ID during the meet-up or turnover.',
+          ),
+        ),
+      );
+      return;
+    }
     setState(() => _submitting = true);
     try {
       await ApplicationService.submit(
@@ -128,8 +142,8 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
           ),
           content: Text(
             'Your application for ${widget.pet.name} will be screened by an '
-            'admin first. You can contact the pet owner once it passes '
-            'screening.',
+                'admin first. You can contact the pet owner once it passes '
+                'screening.',
           ),
           actions: [
             TextButton(
@@ -331,17 +345,17 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
                 ),
                 child: _submitting
                     ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
                     : const Text(
-                        'Submit',
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
+                  'Submit',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
               ),
             ),
           ),
@@ -560,9 +574,27 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
           ),
         ),
         const SizedBox(height: 10),
+        CheckboxListTile(
+          value: _agreesToShowId,
+          onChanged: (v) => setState(() => _agreesToShowId = v ?? false),
+          contentPadding: EdgeInsets.zero,
+          controlAffinity: ListTileControlAffinity.leading,
+          activeColor: kBlue,
+          title: const Text(
+            'I agree to present a valid ID during the in-person meet-up or '
+                'turnover.',
+            style: TextStyle(color: kNavy, fontSize: 14),
+          ),
+          subtitle: const Text(
+            'Required. Your ID is checked in person and is not uploaded or '
+                'stored in the app.',
+            style: TextStyle(color: kHintGray, fontSize: 12),
+          ),
+        ),
+        const SizedBox(height: 6),
         const Text(
           'Your application will be screened by an admin before it is '
-          'forwarded to the pet owner.',
+              'forwarded to the pet owner.',
           style: TextStyle(fontSize: 12, color: kHintGray),
         ),
       ],
