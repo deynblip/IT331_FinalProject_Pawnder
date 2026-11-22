@@ -8,8 +8,10 @@ import '../utils/responsive.dart';
 
 const String _kProvince = 'Batangas';
 
-/// "Adoption Application" form (4 steps). Opened from the Apply for Adoption
-/// button on the Adoption Details screen. Pops with `true` when submitted.
+/// "Adoption Application": one scrolling form with a Submit button at the
+/// bottom and a short confirmation before it is sent. Opened from the Apply
+/// for Adoption button on the Adoption Details screen. Pops with `true` when
+/// submitted.
 class AdoptionApplicationScreen extends StatefulWidget {
   final AdoptionPet pet;
 
@@ -21,37 +23,34 @@ class AdoptionApplicationScreen extends StatefulWidget {
 }
 
 class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
-  static const List<String> _stepLabels = [
-    'Applicant\nInformation',
-    'Address',
-    'Experience/\nEnvironment',
-    'Review',
-  ];
-
-  // One Form per input step (steps 1-3). Step 4 is only the review.
+  // One Form per section, so the first section with an error can be found.
   final List<GlobalKey<FormState>> _formKeys = List.generate(
     3,
         (_) => GlobalKey<FormState>(),
   );
 
-  int _step = 0;
+  // Used to scroll to a section (or the ID agreement) that needs fixing.
+  final List<GlobalKey> _sectionKeys = List.generate(3, (_) => GlobalKey());
+  final GlobalKey _idAgreementKey = GlobalKey();
+
   bool _submitting = false;
+  bool _showIdError = false; // set after Submit is tapped without agreeing
 
   /// Required: the adopter agrees to show a valid ID in person.
   /// No ID is uploaded or stored in the app (Data Privacy Act, RA 10173).
   bool _agreesToShowId = false;
 
-  // Step 1
+  // Personal Information
   final _fullName = TextEditingController();
   final _phone = TextEditingController();
   final _email = TextEditingController();
 
-  // Step 2
+  // Current Address
   final _city = TextEditingController();
   final _barangay = TextEditingController();
   final _street = TextEditingController();
 
-  // Step 3
+  // Living Environment and Pet Ownership Experience
   final _home = TextEditingController();
   final _household = TextEditingController();
   final _previousPets = TextEditingController();
@@ -76,7 +75,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
     super.dispose();
   }
 
-  // ------------------------------------------------------------ Navigation
+  // ------------------------------------------------------------ Validation
 
   void _snack(String message) {
     ScaffoldMessenger.of(context)
@@ -84,20 +83,69 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _goTo(int step) => setState(() => _step = step);
-
-  void _next() {
-    // validate() shows the red error text under every invalid field.
-    if (!_formKeys[_step].currentState!.validate()) return;
-    _goTo(_step + 1);
+  void _scrollTo(GlobalKey key) {
+    final ctx = key.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 300),
+      alignment: 0.05,
+    );
   }
 
-  void _back() {
-    if (_step == 0) {
-      Navigator.pop(context); // leave the form, back to Details
-    } else {
-      _goTo(_step - 1);
+  /// Validates every section and the ID agreement. Shows the red error text
+  /// under each invalid field and scrolls to the first thing to fix.
+  bool _validateAll() {
+    final results = _formKeys.map((k) => k.currentState!.validate()).toList();
+    final firstInvalid = results.indexOf(false);
+    if (firstInvalid != -1) {
+      _scrollTo(_sectionKeys[firstInvalid]);
+      _snack('Please complete the highlighted fields.');
+      return false;
     }
+    if (!_agreesToShowId) {
+      setState(() => _showIdError = true);
+      _scrollTo(_idAgreementKey);
+      _snack('Please agree to present a valid ID during the meet-up or turnover.');
+      return false;
+    }
+    return true;
+  }
+
+  /// Short confirmation instead of a full review step.
+  Future<void> _confirmAndSubmit() async {
+    if (!_validateAll()) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          'Submit your application for ${widget.pet.name}?',
+          style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          '${_fullName.text.trim()}\n'
+              '${_phone.text.trim()} · ${_email.text.trim()}\n'
+              '$_location\n\n'
+              'The admin and the pet owner will use these details to contact '
+              'you. Please check that they are correct.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Edit'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text(
+              'Submit',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await _submit();
   }
 
   // ---------------------------------------------------------------- Submit
@@ -106,16 +154,6 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
       '${_barangay.text.trim()}, ${_city.text.trim()}, $_kProvince';
 
   Future<void> _submit() async {
-    if (!_agreesToShowId) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please agree to present a valid ID during the meet-up or turnover.',
-          ),
-        ),
-      );
-      return;
-    }
     setState(() => _submitting = true);
     try {
       await ApplicationService.submit(
@@ -189,190 +227,162 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Android Back button goes to the previous step instead of closing the form.
-    return PopScope(
-      canPop: _step == 0,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) _back();
-      },
-      child: Scaffold(
-        backgroundColor: kCream,
-        body: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: _back,
-                      icon: const Icon(Icons.arrow_back_ios_new, color: kBlue),
-                    ),
-                    const Expanded(
-                      child: Text(
-                        'Adoption Application',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: kNavy,
-                        ),
+    final double pad = context.hPad;
+
+    return Scaffold(
+      backgroundColor: kCream,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Padding(
+              padding: EdgeInsets.fromLTRB(pad - 8, 8, pad, 0),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back_ios_new, color: kBlue),
+                  ),
+                  const Expanded(
+                    child: Text(
+                      'Adoption Application',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: kNavy,
                       ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(pad + 40, 0, pad, 4),
+              child: Text(
+                'Applying for ${widget.pet.name}',
+                style: const TextStyle(fontSize: 13, color: kHintGray),
+              ),
+            ),
+
+            // Form
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(pad, 12, pad, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    KeyedSubtree(
+                      key: _sectionKeys[0],
+                      child: _buildApplicantSection(),
+                    ),
+                    const SizedBox(height: 28),
+                    KeyedSubtree(
+                      key: _sectionKeys[1],
+                      child: _buildAddressSection(),
+                    ),
+                    const SizedBox(height: 28),
+                    KeyedSubtree(
+                      key: _sectionKeys[2],
+                      child: _buildExperienceSection(),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildIdAgreement(),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Your application will be screened by an admin before '
+                          'it is forwarded to the pet owner.',
+                      style: TextStyle(fontSize: 12, color: kHintGray),
                     ),
                   ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 48, bottom: 8),
-                  child: Text(
-                    'Applying for ${widget.pet.name}',
-                    style: const TextStyle(fontSize: 13, color: kHintGray),
-                  ),
-                ),
-                _buildStepIndicator(),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: switch (_step) {
-                      0 => _buildApplicantStep(),
-                      1 => _buildAddressStep(),
-                      2 => _buildExperienceStep(),
-                      _ => _buildReviewStep(),
-                    },
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildButtons(),
-              ],
+              ),
             ),
-          ),
+
+            // Submit button, always visible at the bottom.
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.fromLTRB(pad, 12, pad, 12),
+              decoration: const BoxDecoration(
+                color: kCream,
+                border: Border(top: BorderSide(color: kCardBorder)),
+              ),
+              child: SizedBox(
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _submitting ? null : _confirmAndSubmit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: _submitting
+                      ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : const Text(
+                    'Submit Application',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildStepIndicator() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: List.generate(7, (i) {
-        if (i.isOdd) {
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 15),
-              child: Divider(color: Colors.grey.shade300, thickness: 1),
-            ),
-          );
-        }
-
-        final idx = i ~/ 2;
-        final isCurrent = idx == _step;
-
-        return SizedBox(
-          width: 62,
-          child: Column(
-            children: [
-              Container(
-                width: 30,
-                height: 30,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isCurrent ? kBlue : Colors.white,
-                  border: Border.all(color: kBlue),
-                ),
-                child: Text(
-                  '${idx + 1}',
-                  style: TextStyle(
-                    color: isCurrent ? Colors.white : kBlue,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _stepLabels[idx],
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: idx <= _step ? kNavy : kHintGray,
-                ),
-              ),
-            ],
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildButtons() {
-    if (_step == 0) {
-      return Align(
-        alignment: Alignment.centerRight,
-        child: _outlineBtn('Next', _next),
-      );
-    }
-
-    if (_step == 3) {
-      return Row(
+  /// Required agreement, shown at the end of the form.
+  Widget _buildIdAgreement() {
+    return Container(
+      key: _idAgreementKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: SizedBox(
-              height: 48,
-              child: OutlinedButton(
-                onPressed: _submitting ? null : _back,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: kNavy,
-                  side: const BorderSide(color: kNavy),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Back to Edit'),
-              ),
+          CheckboxListTile(
+            value: _agreesToShowId,
+            onChanged: (v) => setState(() {
+              _agreesToShowId = v ?? false;
+              if (_agreesToShowId) _showIdError = false;
+            }),
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            activeColor: kBlue,
+            title: const Text(
+              'I agree to present a valid ID during the in-person meet-up or '
+                  'turnover.',
+              style: TextStyle(color: kNavy, fontSize: 14),
+            ),
+            subtitle: const Text(
+              'Required. Your ID is checked in person and is not uploaded or '
+                  'stored in the app.',
+              style: TextStyle(color: kHintGray, fontSize: 12),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: SizedBox(
-              height: 48,
-              child: ElevatedButton(
-                onPressed: _submitting ? null : _submit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kBlue,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: _submitting
-                    ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-                    : const Text(
-                  'Submit',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
+          if (_showIdError)
+            const Padding(
+              padding: EdgeInsets.only(left: 4),
+              child: Text(
+                'Please agree before submitting.',
+                style: TextStyle(color: Colors.red, fontSize: 12),
               ),
             ),
-          ),
         ],
-      );
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [_outlineBtn('Back', _back), _outlineBtn('Next', _next)],
+      ),
     );
   }
 
-  // ---------------------------------------------------------------- Step 1
+  // -------------------------------------------------- Personal Information
 
-  Widget _buildApplicantStep() {
+  Widget _buildApplicantSection() {
     return Form(
       key: _formKeys[0],
       child: Column(
@@ -412,9 +422,9 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
     );
   }
 
-  // ---------------------------------------------------------------- Step 2
+  // ------------------------------------------------------- Current Address
 
-  Widget _buildAddressStep() {
+  Widget _buildAddressSection() {
     return Form(
       key: _formKeys[1],
       child: Column(
@@ -461,9 +471,9 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
     );
   }
 
-  // ---------------------------------------------------------------- Step 3
+  // ------------------------------------- Living Environment and Experience
 
-  Widget _buildExperienceStep() {
+  Widget _buildExperienceSection() {
     return Form(
       key: _formKeys[2],
       child: Column(
@@ -537,110 +547,6 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
     );
   }
 
-  // ---------------------------------------------------------------- Step 4
-
-  Widget _buildReviewStep() {
-    final street = _street.text.trim();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionHeading('Review Your Application'),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-          decoration: _cardDecoration(),
-          child: Column(
-            children: [
-              _reviewRow('Applying for', widget.pet.name, null),
-              _reviewRow(
-                'Applicant',
-                '${_fullName.text.trim()}\n'
-                    '${_phone.text.trim()}\n'
-                    '${_email.text.trim()}',
-                0,
-              ),
-              _reviewRow('Location', _location, 1),
-              if (street.isNotEmpty) _reviewRow('Street / Landmark', street, 1),
-              _reviewRow('Home Environment', _home.text.trim(), 2),
-              _reviewRow('Household Members', _household.text.trim(), 2),
-              _reviewRow(
-                'Previous or Current Pets',
-                _previousPets.text.trim(),
-                2,
-              ),
-              _reviewRow('Pet Care Experience', _care.text.trim(), 2),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        CheckboxListTile(
-          value: _agreesToShowId,
-          onChanged: (v) => setState(() => _agreesToShowId = v ?? false),
-          contentPadding: EdgeInsets.zero,
-          controlAffinity: ListTileControlAffinity.leading,
-          activeColor: kBlue,
-          title: const Text(
-            'I agree to present a valid ID during the in-person meet-up or '
-                'turnover.',
-            style: TextStyle(color: kNavy, fontSize: 14),
-          ),
-          subtitle: const Text(
-            'Required. Your ID is checked in person and is not uploaded or '
-                'stored in the app.',
-            style: TextStyle(color: kHintGray, fontSize: 12),
-          ),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Your application will be screened by an admin before it is '
-              'forwarded to the pet owner.',
-          style: TextStyle(fontSize: 12, color: kHintGray),
-        ),
-      ],
-    );
-  }
-
-  // editStep == null means the row has no Edit link.
-  Widget _reviewRow(String title, String value, int? editStep) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: kNavy,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(value, style: const TextStyle(fontSize: 13, color: kNavy)),
-              ],
-            ),
-          ),
-          if (editStep != null)
-            GestureDetector(
-              onTap: () => _goTo(editStep),
-              child: const Padding(
-                padding: EdgeInsets.only(left: 12, bottom: 8),
-                child: Text(
-                  'Edit',
-                  style: TextStyle(fontSize: 11, color: kBlue),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
   // ---------------------------------------------------------------- Shared
 
   Widget _title(String text) => Text(
@@ -660,19 +566,6 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
       color: kNavy,
     ),
   );
-
-  Widget _outlineBtn(String label, VoidCallback onPressed) {
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: kNavy,
-        side: const BorderSide(color: kNavy),
-        minimumSize: const Size(76, 36),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-      ),
-      child: Text(label),
-    );
-  }
 }
 
 // ------------------------------------------------------- Top-level helpers
@@ -697,16 +590,4 @@ InputDecoration _dec(String hint) => InputDecoration(
   focusedBorder: _border(kBlue),
   errorBorder: _border(Colors.red),
   focusedErrorBorder: _border(Colors.red),
-);
-
-BoxDecoration _cardDecoration() => BoxDecoration(
-  color: kCardColor,
-  borderRadius: BorderRadius.circular(16),
-  boxShadow: [
-    BoxShadow(
-      color: Colors.black.withValues(alpha: 0.08),
-      blurRadius: 12,
-      offset: const Offset(0, 4),
-    ),
-  ],
 );

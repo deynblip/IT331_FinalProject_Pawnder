@@ -13,9 +13,10 @@ import '../utils/responsive.dart';
 const int _kMaxPhotos = 5;
 const String _kProvince = 'Batangas';
 
-/// "Post a Pet for Adoption" (4 steps). Opened with Navigator.push from the
-/// + button in the Adoption Bulletin. Pops with `true` when a pet is published.
-/// If [pet] is given, the same form is used to EDIT that post.
+/// "Post a Pet for Adoption": one scrolling form with a Publish button at the
+/// bottom and a short confirmation before it is sent. Opened with
+/// Navigator.push from the + button in the Adoption Bulletin. Pops with `true`
+/// when a pet is published. If [pet] is given, the same form EDITS that post.
 class PostPetScreen extends StatefulWidget {
   final String posterName;
 
@@ -31,22 +32,17 @@ class PostPetScreen extends StatefulWidget {
 }
 
 class _PostPetScreenState extends State<PostPetScreen> {
-  static const List<String> _stepLabels = [
-    'Pet\nInformation',
-    'About\nthe Pet',
-    'Location &\nContact',
-    'Review',
-  ];
-
-  // One Form per input step (steps 1-3). Step 4 is only the review.
+  // One Form per section, so the first section with an error can be found.
   final List<GlobalKey<FormState>> _formKeys =
   List.generate(3, (_) => GlobalKey<FormState>());
+
+  // Section headings, used to scroll to a section that has an error.
+  final List<GlobalKey> _sectionKeys = List.generate(3, (_) => GlobalKey());
   final ImagePicker _picker = ImagePicker();
 
-  int _step = 0;
   bool _publishing = false;
 
-  // Step 1
+  // Pet Information
   final List<String> _photos = [];
   String _animalType = 'Dog';
 
@@ -56,12 +52,12 @@ class _PostPetScreenState extends State<PostPetScreen> {
   final _name = TextEditingController();
   final _age = TextEditingController();
 
-  // Step 2
+  // About the Pet
   final _description = TextEditingController();
   final _health = TextEditingController();
   final _reason = TextEditingController();
 
-  // Step 3
+  // Location & Contact
   final _city = TextEditingController();
   final _barangay = TextEditingController();
   final _street = TextEditingController();
@@ -116,7 +112,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
     super.dispose();
   }
 
-  // ------------------------------------------------------------ Navigation
+  // ------------------------------------------------------------ Validation
 
   void _snack(String message) {
     ScaffoldMessenger.of(context)
@@ -124,27 +120,73 @@ class _PostPetScreenState extends State<PostPetScreen> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _goTo(int step) => setState(() => _step = step);
-
-  void _next() {
-    // validate() shows the red error text under every invalid field.
-    final valid = _formKeys[_step].currentState!.validate();
-
-    if (_step == 0 && _photos.isEmpty) {
-      _snack('Please add at least one photo.');
-      return;
-    }
-    if (!valid) return;
-
-    _goTo(_step + 1);
+  void _scrollToSection(int index) {
+    final ctx = _sectionKeys[index].currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 300),
+      alignment: 0.05,
+    );
   }
 
-  void _back() {
-    if (_step == 0) {
-      Navigator.pop(context); // leave the form, back to the Bulletin
-    } else {
-      _goTo(_step - 1);
+  /// Validates every section. Shows the red error text under each invalid
+  /// field and scrolls to the first section that needs fixing.
+  bool _validateAll() {
+    final results = _formKeys.map((k) => k.currentState!.validate()).toList();
+
+    if (_photos.isEmpty) {
+      _scrollToSection(0);
+      _snack('Please add at least one photo.');
+      return false;
     }
+    final firstInvalid = results.indexOf(false);
+    if (firstInvalid != -1) {
+      _scrollToSection(firstInvalid);
+      _snack('Please complete the highlighted fields.');
+      return false;
+    }
+    return true;
+  }
+
+  /// Short confirmation instead of a full review step.
+  Future<void> _confirmAndPublish() async {
+    if (!_validateAll()) return;
+
+    final editing = widget.isEditing;
+    final reviewNote = editing
+        ? 'Your post will be reviewed by the admin again.'
+        : 'Your post will be sent to the admin for approval.';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          editing ? 'Save changes?' : 'Publish this post?',
+          style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          '${_name.text.trim()} · $_animalType · ${_source.label}\n'
+              '$_location\n\n'
+              'Contact: ${_phone.text.trim()} · ${_email.text.trim()}\n\n'
+              '$reviewNote Please check that your contact details are correct.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Edit'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(
+              editing ? 'Save' : 'Publish',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await _publish();
   }
 
   // ---------------------------------------------------------------- Photos
@@ -304,27 +346,25 @@ class _PostPetScreenState extends State<PostPetScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Android Back button goes to the previous step instead of closing the form.
-    return PopScope(
-      canPop: _step == 0,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) _back();
-      },
-      child: Scaffold(
-        backgroundColor: kCream,
-        body: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: _back,
-                      icon: const Icon(Icons.arrow_back_ios_new, color: kBlue),
-                    ),
-                    Text(
+    final double pad = context.hPad;
+
+    return Scaffold(
+      backgroundColor: kCream,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Padding(
+              padding: EdgeInsets.fromLTRB(pad - 8, 8, pad, 4),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back_ios_new, color: kBlue),
+                  ),
+                  Expanded(
+                    child: Text(
                       widget.isEditing
                           ? 'Edit Pet Post'
                           : 'Post a Pet for Adoption',
@@ -334,157 +374,83 @@ class _PostPetScreenState extends State<PostPetScreen> {
                         color: kNavy,
                       ),
                     ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Form
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(pad, 8, pad, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _sectionHeading('Pet Information', key: _sectionKeys[0]),
+                    const SizedBox(height: 12),
+                    _buildPetInfoSection(),
+                    const SizedBox(height: 28),
+                    _sectionHeading('About the Pet', key: _sectionKeys[1]),
+                    const SizedBox(height: 12),
+                    _buildAboutSection(),
+                    const SizedBox(height: 28),
+                    SizedBox(key: _sectionKeys[2]),
+                    _buildLocationSection(),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Your contact details stay hidden until an applicant '
+                          'passes admin screening.',
+                      style: TextStyle(fontSize: 12, color: kHintGray),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                _buildStepIndicator(),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: switch (_step) {
-                      0 => _buildPetInfoStep(),
-                      1 => _buildAboutStep(),
-                      2 => _buildLocationStep(),
-                      _ => _buildReviewStep(),
-                    },
+              ),
+            ),
+
+            // Publish button, always visible at the bottom.
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.fromLTRB(pad, 12, pad, 12),
+              decoration: const BoxDecoration(
+                color: kCream,
+                border: Border(top: BorderSide(color: kCardBorder)),
+              ),
+              child: SizedBox(
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _publishing ? null : _confirmAndPublish,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: _publishing
+                      ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : Text(
+                    widget.isEditing ? 'Save Changes' : 'Publish',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
-                const SizedBox(height: 12),
-                _buildButtons(),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildStepIndicator() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: List.generate(7, (i) {
-        if (i.isOdd) {
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 15),
-              child: Divider(color: Colors.grey.shade300, thickness: 1),
-            ),
-          );
-        }
+  // ------------------------------------------------------ Pet Information
 
-        final idx = i ~/ 2;
-        final isCurrent = idx == _step;
-
-        return SizedBox(
-          width: 62,
-          child: Column(
-            children: [
-              Container(
-                width: 30,
-                height: 30,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isCurrent ? kBlue : Colors.white,
-                  border: Border.all(color: kBlue),
-                ),
-                child: Text(
-                  '${idx + 1}',
-                  style: TextStyle(
-                    color: isCurrent ? Colors.white : kBlue,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _stepLabels[idx],
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: idx <= _step ? kNavy : kHintGray,
-                ),
-              ),
-            ],
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildButtons() {
-    if (_step == 0) {
-      return Align(
-        alignment: Alignment.centerRight,
-        child: _outlineBtn('Next', _next),
-      );
-    }
-
-    if (_step == 3) {
-      return Row(
-        children: [
-          Expanded(
-            child: SizedBox(
-              height: 48,
-              child: OutlinedButton(
-                onPressed: _publishing ? null : _back,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: kNavy,
-                  side: const BorderSide(color: kNavy),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Back to Edit'),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: SizedBox(
-              height: 48,
-              child: ElevatedButton(
-                onPressed: _publishing ? null : _publish,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kBlue,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: _publishing
-                    ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-                    : Text(
-                  widget.isEditing ? 'Save Changes' : 'Publish',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _outlineBtn('Back', _back),
-        _outlineBtn('Next', _next),
-      ],
-    );
-  }
-
-  // ---------------------------------------------------------------- Step 1
-
-  Widget _buildPetInfoStep() {
+  Widget _buildPetInfoSection() {
     return Form(
       key: _formKeys[0],
       child: Column(
@@ -675,9 +641,9 @@ class _PostPetScreenState extends State<PostPetScreen> {
     );
   }
 
-  // ---------------------------------------------------------------- Step 2
+  // -------------------------------------------------------- About the Pet
 
-  Widget _buildAboutStep() {
+  Widget _buildAboutSection() {
     return Form(
       key: _formKeys[1],
       child: Column(
@@ -741,9 +707,9 @@ class _PostPetScreenState extends State<PostPetScreen> {
     );
   }
 
-  // ---------------------------------------------------------------- Step 3
+  // --------------------------------------------------- Location & Contact
 
-  Widget _buildLocationStep() {
+  Widget _buildLocationSection() {
     return Form(
       key: _formKeys[2],
       child: Column(
@@ -818,127 +784,6 @@ class _PostPetScreenState extends State<PostPetScreen> {
     );
   }
 
-  // ---------------------------------------------------------------- Step 4
-
-  Widget _buildReviewStep() {
-    final street = _street.text.trim();
-    final health = _health.text.trim();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionHeading('Review Your Listing'),
-        const SizedBox(height: 12),
-        Container(
-          height: 170,
-          width: double.infinity,
-          decoration: _cardDecoration(),
-          clipBehavior: Clip.antiAlias,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              PetPhoto(
-                path: _photos.first,
-                fallback: const Center(
-                  child: Icon(Icons.pets, size: 40, color: kHintGray),
-                ),
-              ),
-              if (_photos.length > 1)
-                Positioned(
-                  right: 8,
-                  bottom: 8,
-                  child: Container(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '+${_photos.length - 1} more',
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-          decoration: _cardDecoration(),
-          child: Column(
-            children: [
-              _reviewRow(
-                'Pet',
-                '${_name.text.trim()}\n$_animalType · ${_age.text.trim()} · ${_sex ?? '-'}',
-                0,
-              ),
-              _reviewRow('Description', _description.text.trim(), 1),
-              _reviewRow(
-                'Health Information',
-                health.isEmpty ? 'No health information provided.' : health,
-                1,
-              ),
-              _reviewRow('Pet Source', _source.label, 0),
-              _reviewRow(_source.reasonLabel, _reason.text.trim(), 1),
-              _reviewRow('Location', _location, 2),
-              if (street.isNotEmpty) _reviewRow('Street / Landmark', street, 2),
-              _reviewRow(
-                'Contact Information',
-                'Contact Person: ${_contactPerson.text.trim()}\n'
-                    'Contact Number: ${_phone.text.trim()}\n'
-                    'Email: ${_email.text.trim()}',
-                2,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        const Text(
-          'Your contact details stay hidden until an applicant passes '
-              'admin screening.',
-          style: TextStyle(fontSize: 12, color: kHintGray),
-        ),
-      ],
-    );
-  }
-
-  Widget _reviewRow(String title, String value, int editStep) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: kNavy,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(value, style: const TextStyle(fontSize: 13, color: kNavy)),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: () => _goTo(editStep),
-            child: const Padding(
-              padding: EdgeInsets.only(left: 12, bottom: 8),
-              child: Text('Edit', style: TextStyle(fontSize: 11, color: kBlue)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   // ---------------------------------------------------------------- Shared
 
   Widget _title(String text) => Text(
@@ -950,27 +795,15 @@ class _PostPetScreenState extends State<PostPetScreen> {
     ),
   );
 
-  Widget _sectionHeading(String text) => Text(
+  Widget _sectionHeading(String text, {Key? key}) => Text(
     text,
+    key: key,
     style: const TextStyle(
       fontWeight: FontWeight.w800,
       fontSize: 18,
       color: kNavy,
     ),
   );
-
-  Widget _outlineBtn(String label, VoidCallback onPressed) {
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: kNavy,
-        side: const BorderSide(color: kNavy),
-        minimumSize: const Size(76, 36),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-      ),
-      child: Text(label),
-    );
-  }
 }
 
 // ------------------------------------------------------- Top-level helpers
