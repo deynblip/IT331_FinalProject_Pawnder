@@ -5,6 +5,7 @@ import '../../services/notification_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/theme_controller.dart';
 import '../../utils/validators.dart';
+import '../../utils/responsive.dart';
 
 // ===============================
 // SETTINGS PAGE
@@ -120,7 +121,7 @@ class _SettingsPageState extends State<SettingsPage> {
           child: Divider(
             height: 1,
             thickness: 1,
-            color: isDark ? Colors.white24 : const Color(0xFFE5E5E5),
+            color: isDark ? Colors.white24 : const Color(0xFFF0E2D6),
           ),
         ),
       ),
@@ -314,12 +315,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           child: Divider(
             height: 1,
             thickness: 1,
-            color: isDark ? Colors.white24 : const Color(0xFFE5E5E5),
+            color: isDark ? Colors.white24 : const Color(0xFFF0E2D6),
           ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.fromLTRB(context.hPad, 20, context.hPad, 20),
         child: Form(
           key: _formKey,
           child: Column(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../utils/app_colors.dart';
 import '../../utils/theme_controller.dart';
+import '../../utils/responsive.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
@@ -29,7 +30,7 @@ class AboutPage extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 22,
-              backgroundColor: kBlue.withOpacity(0.15),
+              backgroundColor: kBlue.withValues(alpha: 0.15),
               child: Icon(icon, color: accent, size: 21),
             ),
             const SizedBox(width: 12),
@@ -79,12 +80,12 @@ class AboutPage extends StatelessWidget {
           child: Divider(
             height: 1,
             thickness: 1,
-            color: isDark ? Colors.white24 : const Color(0xFFE5E5E5),
+            color: isDark ? Colors.white24 : const Color(0xFFF0E2D6),
           ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.fromLTRB(context.hPad, 20, context.hPad, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

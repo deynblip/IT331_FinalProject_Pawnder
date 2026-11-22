@@ -26,7 +26,7 @@ class AuthLayout extends StatelessWidget {
     const double curveRadius = 70;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kCream,
       body: Stack(
         children: [
           // Background image
@@ -107,4 +107,3 @@ class AuthLayout extends StatelessWidget {
     );
   }
 }
-

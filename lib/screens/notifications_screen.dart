@@ -9,6 +9,7 @@ import '../utils/report_style.dart';
 import 'application_details_screen.dart';
 import 'owner_application_screen.dart';
 import 'report_details_screen.dart';
+import '../utils/responsive.dart';
 
 /// Opened from the bell icon. Newest first. Tapping a notification opens the
 /// related report or application.
@@ -34,7 +35,7 @@ class NotificationsScreen extends StatelessWidget {
           MaterialPageRoute(
             builder: (_) => ReportDetailsScreen(
               report: report,
-              onChanged: (_) {}, // TEMP
+              onChanged: (_) {}, // TEMP: connect to the backend later
             ),
           ),
         );
@@ -99,7 +100,7 @@ class NotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kCream,
       appBar: AppBar(
         backgroundColor: Colors.white,
         foregroundColor: kNavy,
@@ -123,7 +124,7 @@ class NotificationsScreen extends StatelessWidget {
         ],
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
+          child: Divider(height: 1, thickness: 1, color: Color(0xFFF0E2D6)),
         ),
       ),
       body: ListenableBuilder(
@@ -156,7 +157,7 @@ class NotificationsScreen extends StatelessWidget {
           }
 
           return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            padding: EdgeInsets.fromLTRB(context.hPad, 16, context.hPad, 24),
             itemCount: items.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (_, i) => _NotificationCard(
@@ -211,9 +212,9 @@ class _NotificationCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: unread ? const Color(0xFFF0F4FA) : Colors.white,
+          color: unread ? const Color(0xFFFFF1E6) : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE3E5EA)),
+          border: Border.all(color: const Color(0xFFF5DEC8)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,

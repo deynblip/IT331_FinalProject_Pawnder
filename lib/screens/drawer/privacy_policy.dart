@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/responsive.dart';
 
 class PrivacyPolicyPage extends StatelessWidget {
   const PrivacyPolicyPage({super.key});
@@ -7,7 +8,7 @@ class PrivacyPolicyPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kCream,
       appBar: AppBar(
         backgroundColor: Colors.white,
         foregroundColor: kNavy,
@@ -25,12 +26,12 @@ class PrivacyPolicyPage extends StatelessWidget {
           child: Divider(
             height: 1,
             thickness: 1,
-            color: Color(0xFFE5E5E5),
+            color: Color(0xFFF0E2D6),
           ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.fromLTRB(context.hPad, 20, context.hPad, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

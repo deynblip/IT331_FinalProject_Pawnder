@@ -7,6 +7,7 @@ import '../utils/app_colors.dart';
 import '../utils/validators.dart';
 import '../widgets/auth_widgets.dart';
 import '../widgets/rescuer_form.dart';
+import '../utils/responsive.dart';
 
 /// Profile > Apply as Verified Rescuer (also used to apply again after a
 /// rejection). [previous] pre-fills the form.
@@ -68,7 +69,7 @@ class _RescuerApplicationScreenState extends State<RescuerApplicationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kCream,
       appBar: AppBar(
         backgroundColor: Colors.white,
         foregroundColor: kNavy,
@@ -82,7 +83,7 @@ class _RescuerApplicationScreenState extends State<RescuerApplicationScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 24),
           child: Form(
             key: _formKey,
             child: Column(
