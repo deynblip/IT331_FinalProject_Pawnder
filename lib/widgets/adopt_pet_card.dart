@@ -19,9 +19,9 @@ class AdoptionPetCard extends StatelessWidget {
 
   Widget _photo() {
     final fallback = Container(
-      color: const Color(0xFFE6E9EF),
+      color: const Color(0xFFFFE8D6),
       child: const Center(
-        child: Icon(Icons.pets, size: 40, color: Color(0xFF8A8F98)),
+        child: Icon(Icons.pets, size: 40, color: Color(0xFF8A746C)),
       ),
     );
 
@@ -41,7 +41,7 @@ class AdoptionPetCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE3E5EA)),
+          border: Border.all(color: const Color(0xFFF5DEC8)),
           boxShadow: const [
             BoxShadow(
               color: Color(0x14000000),

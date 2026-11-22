@@ -10,6 +10,7 @@ import '../widgets/pet_source_tag.dart';
 import '../widgets/rescuer_badge.dart';
 import '../models/content_report.dart';
 import '../widgets/report_content_dialog.dart';
+import '../utils/responsive.dart';
 
 class AdoptionDetailsScreen extends StatelessWidget {
   final AdoptionPet pet;
@@ -24,7 +25,7 @@ class AdoptionDetailsScreen extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+        padding: EdgeInsets.fromLTRB(context.hPad, 24, context.hPad, 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,13 +97,13 @@ class AdoptionDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kCream,
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                padding: EdgeInsets.fromLTRB(context.hPad, 12, context.hPad, 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -232,7 +233,7 @@ class AdoptionDetailsScreen extends StatelessWidget {
                         horizontal: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFD6E2F3),
+                        color: const Color(0xFFFFE8D6),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -253,7 +254,7 @@ class AdoptionDetailsScreen extends StatelessWidget {
                       children: [
                         const CircleAvatar(
                           radius: 26,
-                          backgroundColor: Color(0xFFE6E9EF),
+                          backgroundColor: Color(0xFFFFE8D6),
                           child: Icon(
                             Icons.person,
                             color: ReportColors.grey,
@@ -345,7 +346,7 @@ class AdoptionDetailsScreen extends StatelessWidget {
             // Hidden on your own post
             if (!pet.isMine)
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                padding: EdgeInsets.fromLTRB(context.hPad, 4, context.hPad, 16),
                 child: SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -398,7 +399,7 @@ class _PetPhotosState extends State<_PetPhotos> {
 
   Widget _fallback() {
     return Container(
-      color: const Color(0xFFE6E9EF),
+      color: const Color(0xFFFFE8D6),
       child: const Center(
         child: Icon(Icons.pets, size: 48, color: ReportColors.grey),
       ),

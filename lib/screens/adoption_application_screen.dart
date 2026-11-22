@@ -4,6 +4,7 @@ import '../models/adoption_pet.dart';
 import '../services/application_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/validators.dart';
+import '../utils/responsive.dart';
 
 const String _kProvince = 'Batangas';
 
@@ -195,10 +196,10 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
         if (!didPop) _back();
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: kCream,
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

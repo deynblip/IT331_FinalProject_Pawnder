@@ -8,6 +8,7 @@ import '../services/adoption_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/validators.dart';
 import '../widgets/adopt_pet_photo.dart';
+import '../utils/responsive.dart';
 
 const int _kMaxPhotos = 5;
 const String _kProvince = 'Batangas';
@@ -18,7 +19,7 @@ const String _kProvince = 'Batangas';
 class PostPetScreen extends StatefulWidget {
   final String posterName;
 
-  /// Kapag may laman, Edit mode ito (ine-edit ang existing post).
+  /// When set, the form edits this existing post.
   final AdoptionPet? pet;
 
   const PostPetScreen({super.key, required this.posterName, this.pet});
@@ -76,7 +77,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
       _contactPerson.text = widget.posterName; // user can still edit it
       return;
     }
-    // Edit mode: ilagay ang dating laman
+    // Edit mode: fill in the current values.
     _photos.addAll(pet.photos);
     _animalType = pet.animalType;
     _source = pet.source;
@@ -86,7 +87,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
     _description.text = pet.description;
     _health.text = pet.healthInfo;
     _reason.text = pet.reasonForAdoption;
-    // location ay "Barangay, City, Province"
+    // location is "Barangay, City, Province"
     final parts = pet.location.split(', ');
     _barangay.text = parts.isNotEmpty ? parts[0] : '';
     _city.text = parts.length > 1 ? parts[1] : '';
@@ -310,10 +311,10 @@ class _PostPetScreenState extends State<PostPetScreen> {
         if (!didPop) _back();
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: kCream,
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -649,7 +650,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
             child: PetPhoto(
               path: _photos[index],
               fallback: Container(
-                color: const Color(0xFFE6E9EF),
+                color: const Color(0xFFFFE8D6),
                 child: const Icon(Icons.pets, color: kHintGray),
               ),
             ),
