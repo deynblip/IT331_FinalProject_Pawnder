@@ -14,6 +14,23 @@ enum PostStatus {
   };
 }
 
+/// Where the pet comes from. Rescued strays are the priority on Pawnder.
+enum PetSource {
+  rescuedStray,
+  rehoming;
+
+  String get label => switch (this) {
+    PetSource.rescuedStray => 'Rescued Stray',
+    PetSource.rehoming => 'Rehoming',
+  };
+
+  /// Label of the reason field in the form and the details page.
+  String get reasonLabel => switch (this) {
+    PetSource.rescuedStray => 'Reason for Adoption',
+    PetSource.rehoming => 'Reason for Rehoming',
+  };
+}
+
 class AdoptionPet {
   final String id;
   final String name;
@@ -49,6 +66,9 @@ class AdoptionPet {
   /// Account email of the poster (used to send the review notification).
   final String? ownerEmail;
 
+  /// Rescued Stray (shown first on the board) or Owned Pet (Rehoming).
+  final PetSource source;
+
   const AdoptionPet({
     required this.id,
     required this.name,
@@ -71,6 +91,7 @@ class AdoptionPet {
     this.rejectionReason,
     this.resubmitted = false,
     this.ownerEmail,
+    this.source = PetSource.rescuedStray,
   });
 
   /// Example: "1 year · Male"
@@ -106,6 +127,7 @@ class AdoptionPet {
     PostStatus? status,
     String? rejectionReason,
     bool? resubmitted,
+    PetSource? source,
   }) {
     final newStatus = status ?? this.status;
 
@@ -137,6 +159,7 @@ class AdoptionPet {
               ? false
               : this.resubmitted),
       ownerEmail: ownerEmail,
+      source: source ?? this.source,
     );
   }
 }

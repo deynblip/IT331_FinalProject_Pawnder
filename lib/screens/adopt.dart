@@ -20,17 +20,48 @@ class _AdoptPageState extends State<AdoptPage> {
   static const List<String> _filters = ['Dogs', 'Cats', 'All Pets'];
   String _selected = 'All Pets';
 
+  // Second filter row: where the pet comes from (null = All).
+  PetSource? _source;
+
   // Only ADMIN-APPROVED posts are shown here. Read fresh on every build.
+  // Rescued Strays are always listed first (they are the priority).
   List<AdoptionPet> get _visible {
-    final pets = AdoptionService.approved;
+    var pets = AdoptionService.approved;
     switch (_selected) {
       case 'Dogs':
-        return pets.where((p) => p.animalType == 'Dog').toList();
+        pets = pets.where((p) => p.animalType == 'Dog').toList();
       case 'Cats':
-        return pets.where((p) => p.animalType == 'Cat').toList();
-      default:
-        return pets;
+        pets = pets.where((p) => p.animalType == 'Cat').toList();
     }
+    if (_source != null) {
+      pets = pets.where((p) => p.source == _source).toList();
+    }
+    // Stable sort: rescued strays first, the original order is kept otherwise.
+    final rescued =
+    pets.where((p) => p.source == PetSource.rescuedStray).toList();
+    final rehoming = pets.where((p) => p.source != PetSource.rescuedStray);
+    return [...rescued, ...rehoming];
+  }
+
+  Widget _sourceChip(String label, PetSource? value) {
+    final selected = _source == value;
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        showCheckmark: false,
+        visualDensity: VisualDensity.compact,
+        selectedColor: kNavy,
+        backgroundColor: const Color(0xFFFFF1E6),
+        side: BorderSide.none,
+        labelStyle: TextStyle(
+          color: selected ? Colors.white : kNavy,
+          fontSize: 12,
+        ),
+        onSelected: (_) => setState(() => _source = value),
+      ),
+    );
   }
 
   void _openDetails(AdoptionPet pet) {
@@ -106,7 +137,18 @@ class _AdoptPageState extends State<AdoptPage> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 6),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _sourceChip('All', null),
+                  _sourceChip('Rescued Strays', PetSource.rescuedStray),
+                  _sourceChip('Rehoming', PetSource.rehoming),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
             Expanded(
               child: items.isEmpty
                   ? const Center(

@@ -806,7 +806,8 @@ class _AdminPostDetailsScreenState extends State<AdminPostDetailsScreen> {
               _row('Location', pet.location),
               _row('Description', pet.descriptionOrDefault),
               _row('Health Information', pet.healthInfoOrDefault),
-              _row('Reason for Adoption', _orDash(pet.reasonForAdoption)),
+              _row('Pet Source', pet.source.label),
+              _row(pet.source.reasonLabel, _orDash(pet.reasonForAdoption)),
 
               const Divider(height: 28),
               _section('Pet Owner'),

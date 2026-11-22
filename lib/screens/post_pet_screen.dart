@@ -48,6 +48,9 @@ class _PostPetScreenState extends State<PostPetScreen> {
   // Step 1
   final List<String> _photos = [];
   String _animalType = 'Dog';
+
+  /// Rescued Stray (priority) or Owned Pet (Rehoming).
+  PetSource _source = PetSource.rescuedStray;
   String? _sex;
   final _name = TextEditingController();
   final _age = TextEditingController();
@@ -76,6 +79,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
     // Edit mode: ilagay ang dating laman
     _photos.addAll(pet.photos);
     _animalType = pet.animalType;
+    _source = pet.source;
     _sex = pet.sex;
     _name.text = pet.name;
     _age.text = pet.age;
@@ -220,6 +224,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
           contactPerson: _contactPerson.text.trim(),
           contactPhone: _phone.text.trim(),
           contactEmail: _email.text.trim(),
+          source: _source,
         );
       } else {
         await AdoptionService.update(
@@ -236,6 +241,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
           contactPerson: _contactPerson.text.trim(),
           contactPhone: _phone.text.trim(),
           contactEmail: _email.text.trim(),
+          source: _source,
         );
       }
       if (!mounted) return;
@@ -554,6 +560,39 @@ class _PostPetScreenState extends State<PostPetScreen> {
               );
             }).toList(),
           ),
+          const SizedBox(height: 14),
+          _title('Pet Source'),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 10,
+            runSpacing: 6,
+            children: PetSource.values.map((src) {
+              final selected = _source == src;
+              return ChoiceChip(
+                label: Text(
+                  src == PetSource.rescuedStray
+                      ? 'Rescued Stray'
+                      : 'Owned Pet (Rehoming)',
+                ),
+                selected: selected,
+                showCheckmark: false,
+                selectedColor: kBlue,
+                backgroundColor: Colors.white,
+                side: const BorderSide(color: kBlue),
+                labelStyle: TextStyle(color: selected ? Colors.white : kBlue),
+                onSelected: (_) => setState(() => _source = src),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _source == PetSource.rescuedStray
+                ? 'An animal rescued from the street. Rescued strays are shown '
+                'first in the Adoption Bulletin.'
+                : 'A pet you can no longer care for. You will be asked for '
+                'your reason for rehoming.',
+            style: const TextStyle(color: kHintGray, fontSize: 12),
+          ),
           const SizedBox(height: 20),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -671,15 +710,30 @@ class _PostPetScreenState extends State<PostPetScreen> {
             _dec('Vaccination, deworming, medical history, or unknown details...'),
           ),
           const SizedBox(height: 14),
-          _title('Reason for Adoption'),
+          _title(_source.reasonLabel),
           const SizedBox(height: 8),
           TextFormField(
             controller: _reason,
             maxLines: 3,
             maxLength: 300,
             textCapitalization: TextCapitalization.sentences,
-            decoration: _dec('Why does this pet need a new home?'),
-            validator: (v) => _required(v, 'Please tell us why'),
+            decoration: _dec(
+              _source == PetSource.rehoming
+                  ? 'Why can you no longer keep this pet? (e.g. moving, allergies)'
+                  : 'Why does this pet need a new home?',
+            ),
+            validator: (v) => _required(
+              v,
+              _source == PetSource.rehoming
+                  ? 'Please give your reason for rehoming'
+                  : 'Please tell us why',
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Selling, asking for fees, and breeding or "for stud" posts are '
+                'not allowed and will be rejected.',
+            style: TextStyle(color: kHintGray, fontSize: 12),
           ),
         ],
       ),
@@ -826,7 +880,8 @@ class _PostPetScreenState extends State<PostPetScreen> {
                 health.isEmpty ? 'No health information provided.' : health,
                 1,
               ),
-              _reviewRow('Reason for Adoption', _reason.text.trim(), 1),
+              _reviewRow('Pet Source', _source.label, 0),
+              _reviewRow(_source.reasonLabel, _reason.text.trim(), 1),
               _reviewRow('Location', _location, 2),
               if (street.isNotEmpty) _reviewRow('Street / Landmark', street, 2),
               _reviewRow(

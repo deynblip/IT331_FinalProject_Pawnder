@@ -18,6 +18,7 @@ final List<AdoptionPet> mockAdoptionPets = [
     photos: ['assets/images/sick_cat.jpg'],
     status: PostStatus.pending, // waiting for admin
     postedAt: DateTime(2026, 11, 12),
+    source: PetSource.rehoming,
   ),
   AdoptionPet(
     id: 'a2',
@@ -33,6 +34,7 @@ final List<AdoptionPet> mockAdoptionPets = [
     photos: ['assets/images/injured_dog.jpg', 'assets/images/sick_dog.jpg'],
     status: PostStatus.pending, // waiting for admin
     postedAt: DateTime(2026, 11, 11),
+    source: PetSource.rescuedStray,
   ),
   AdoptionPet(
     id: 'a3',
@@ -47,6 +49,7 @@ final List<AdoptionPet> mockAdoptionPets = [
     photos: ['assets/images/injured_cat.jpg'],
     status: PostStatus.approved,
     postedAt: DateTime(2026, 11, 10),
+    source: PetSource.rescuedStray,
   ),
   AdoptionPet(
     id: 'a4',
@@ -62,6 +65,7 @@ final List<AdoptionPet> mockAdoptionPets = [
     isMine: true,
     status: PostStatus.approved,
     postedAt: DateTime(2026, 11, 9),
+    source: PetSource.rehoming,
   ),
   AdoptionPet(
     id: 'a5',
@@ -76,5 +80,6 @@ final List<AdoptionPet> mockAdoptionPets = [
     photos: ['assets/images/stray_kitten.jpg'],
     status: PostStatus.approved,
     postedAt: DateTime(2026, 11, 8),
+    source: PetSource.rescuedStray,
   ),
 ];

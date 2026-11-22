@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/adoption_pet.dart';
 import '../utils/app_colors.dart';
 import 'adopt_pet_photo.dart';
+import 'pet_source_tag.dart';
 import 'rescuer_badge.dart';
 
 /// One pet card in the Adoption Bulletin grid.
@@ -59,20 +60,26 @@ class AdoptionPetCard extends StatelessWidget {
                   fit: StackFit.expand,
                   children: [
                     _photo(),
+                    // Rescued Stray / Rehoming, and
                     // "Rescued by [Organization]" (Verified Rescuer posts)
-                    if (pet.rescuedBy != null)
-                      Positioned(
-                        left: 8,
-                        right: 8,
-                        top: 8,
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: RescuedByTag(
-                            organization: pet.rescuedBy!,
-                            onPhoto: true,
-                          ),
-                        ),
+                    Positioned(
+                      left: 8,
+                      right: 8,
+                      top: 8,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          PetSourceTag(source: pet.source, onPhoto: true),
+                          if (pet.rescuedBy != null) ...[
+                            const SizedBox(height: 4),
+                            RescuedByTag(
+                              organization: pet.rescuedBy!,
+                              onPhoto: true,
+                            ),
+                          ],
+                        ],
                       ),
+                    ),
                   ],
                 ),
               ),
