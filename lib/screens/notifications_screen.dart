@@ -212,7 +212,7 @@ class _NotificationCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: unread ? const Color(0xFFFFF1E6) : Colors.white,
+          color: unread ? kPeach : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0xFFF5DEC8)),
         ),

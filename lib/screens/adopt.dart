@@ -54,7 +54,7 @@ class _AdoptPageState extends State<AdoptPage> {
         showCheckmark: false,
         visualDensity: VisualDensity.compact,
         selectedColor: kNavy,
-        backgroundColor: const Color(0xFFFFF1E6),
+        backgroundColor: kPeach,
         side: BorderSide.none,
         labelStyle: TextStyle(
           color: selected ? Colors.white : kNavy,

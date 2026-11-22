@@ -185,7 +185,8 @@ class _MapsPageState extends State<MapsPage> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF6EC),
+                color: kCardColor,
+                border: Border.all(color: kCardBorder),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Text(

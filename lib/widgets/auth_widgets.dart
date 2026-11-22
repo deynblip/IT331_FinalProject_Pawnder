@@ -43,7 +43,7 @@ class _AuthFieldState extends State<AuthField> {
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: kCardColor,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -144,4 +144,3 @@ class AuthLink extends StatelessWidget {
     );
   }
 }
-

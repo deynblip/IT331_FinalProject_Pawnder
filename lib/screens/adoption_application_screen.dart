@@ -700,7 +700,7 @@ InputDecoration _dec(String hint) => InputDecoration(
 );
 
 BoxDecoration _cardDecoration() => BoxDecoration(
-  color: Colors.white,
+  color: kCardColor,
   borderRadius: BorderRadius.circular(16),
   boxShadow: [
     BoxShadow(

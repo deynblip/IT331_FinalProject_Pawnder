@@ -170,12 +170,12 @@ class _ProfilePageState extends State<ProfilePage> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: kCardColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFF5DEC8)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x14000000),
+            color: Color(0x14C4531F),
             blurRadius: 12,
             offset: Offset(0, 4),
           ),
@@ -275,12 +275,12 @@ class _ProfilePageState extends State<ProfilePage> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: kCardColor,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: const Color(0xFFF5DEC8)),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x14000000),
+                color: Color(0x14C4531F),
                 blurRadius: 12,
                 offset: Offset(0, 4),
               ),
@@ -352,7 +352,7 @@ class _ProfilePageState extends State<ProfilePage> {
           case RescuerStatus.pending:
             return _rescuerCard(
               icon: Icons.hourglass_top,
-              color: const Color(0xFFC17F5E),
+              color: const Color(0xFFE9A23B),
               title: 'Rescuer status: Pending Verification',
               message: 'An admin is confirming your application with '
                   '${app!.organization}. You can keep using Pawnder as a '
@@ -362,7 +362,7 @@ class _ProfilePageState extends State<ProfilePage> {
           case RescuerStatus.rejected:
             return _rescuerCard(
               icon: Icons.cancel_outlined,
-              color: const Color(0xFFB85A5A),
+              color: const Color(0xFFE04F4F),
               title: 'Rescuer application not approved',
               message: 'Reason: ${app!.rejectionReason ?? '-'}\n'
                   'You are still a regular user. You can apply again.',
@@ -379,7 +379,7 @@ class _ProfilePageState extends State<ProfilePage> {
               if (trusted) {
                 return _rescuerCard(
                   icon: Icons.workspace_premium_outlined,
-                  color: const Color(0xFF5B9A3C),
+                  color: const Color(0xFF4CAF6E),
                   title: 'You are a Trusted Helper!',
                   message: 'Thank you for all your rescues. You can now apply '
                       'to become a Verified Rescuer, even without an '
@@ -460,12 +460,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: kCardColor,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: const Color(0xFFF5DEC8)),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x14000000),
+                  color: Color(0x14C4531F),
                   blurRadius: 12,
                   offset: Offset(0, 4),
                 ),

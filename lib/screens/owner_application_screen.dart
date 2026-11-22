@@ -206,7 +206,8 @@ class _OwnerApplicationScreenState extends State<OwnerApplicationScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF6EC),
+        color: kCardColor,
+        border: Border.all(color: kCardBorder),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(

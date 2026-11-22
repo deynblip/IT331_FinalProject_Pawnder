@@ -39,12 +39,12 @@ class AdoptionPetCard extends StatelessWidget {
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: kCardColor,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0xFFF5DEC8)),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x14000000),
+              color: Color(0x14C4531F),
               blurRadius: 10,
               offset: Offset(0, 3),
             ),

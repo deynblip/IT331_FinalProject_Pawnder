@@ -96,7 +96,7 @@ class AboutPage extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: kCardColor,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Image.asset('assets/logo.png', height: 80),

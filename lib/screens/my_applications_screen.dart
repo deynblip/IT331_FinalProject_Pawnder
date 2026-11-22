@@ -173,12 +173,12 @@ class _ApplicationCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: kCardColor,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: const Color(0xFFF5DEC8)),
             boxShadow: const [
               BoxShadow(
-                  color: Color(0x14000000), blurRadius: 10, offset: Offset(0, 3)),
+                  color: Color(0x14C4531F), blurRadius: 10, offset: Offset(0, 3)),
             ],
           ),
           child: Row(

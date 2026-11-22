@@ -167,7 +167,8 @@ class HomePage extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF6EC),
+                color: kCardColor,
+                border: Border.all(color: kCardBorder),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Column(
@@ -266,10 +267,18 @@ class HomePage extends StatelessWidget {
       borderRadius: BorderRadius.circular(15),
       child: Container(
         width: double.infinity,
-        height: 130,
+        constraints: const BoxConstraints(minHeight: 130),
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFF6EC),
+          color: kCardColor,
+          border: Border.all(color: kCardBorder),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x14C4531F),
+              blurRadius: 10,
+              offset: Offset(0, 3),
+            ),
+          ],
           borderRadius: BorderRadius.circular(15),
         ),
         child: Column(
@@ -303,7 +312,15 @@ class HomePage extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF6EC),
+        color: kCardColor,
+        border: Border.all(color: kCardBorder),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14C4531F),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

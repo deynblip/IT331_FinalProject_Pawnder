@@ -67,7 +67,7 @@ class AuthLayout extends StatelessWidget {
             bottom: 0,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: kCardColor,
                 borderRadius: BorderRadius.only(
                   topRight: curveOnRight
                       ? const Radius.circular(curveRadius)

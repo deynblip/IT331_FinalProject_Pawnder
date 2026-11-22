@@ -278,12 +278,12 @@ class MyPostsScreen extends StatelessWidget {
 const Color _kBorder = Color(0xFFF5DEC8);
 
 BoxDecoration _cardDecoration() => BoxDecoration(
-  color: Colors.white,
+  color: kCardColor,
   borderRadius: BorderRadius.circular(20),
   border: Border.all(color: _kBorder),
   boxShadow: const [
     BoxShadow(
-        color: Color(0x14000000), blurRadius: 10, offset: Offset(0, 3)),
+        color: Color(0x14C4531F), blurRadius: 10, offset: Offset(0, 3)),
   ],
 );
 
@@ -431,9 +431,9 @@ class _PetPostCard extends StatelessWidget {
                       StatusChip(
                         label: pet.status.label,
                         color: pet.status == PostStatus.approved
-                            ? const Color(0xFF3FA34D)
+                            ? const Color(0xFF4CAF6E)
                             : pet.status == PostStatus.rejected
-                            ? const Color(0xFFD9534F)
+                            ? const Color(0xFFE04F4F)
                             : const Color(0xFFE0A800),
                         fontSize: 11,
                       ),

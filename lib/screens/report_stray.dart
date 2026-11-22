@@ -11,8 +11,8 @@ import '../services/report_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/responsive.dart';
 
-const Color _kUrgent = Color(0xFFC0525A);
-const Color _kNeedsHelp = Color(0xFFC17F59);
+const Color _kUrgent = Color(0xFFE04F4F);
+const Color _kNeedsHelp = Color(0xFFE9A23B);
 
 extension _UrgencyX on Urgency {
   String get label => switch (this) {
@@ -907,7 +907,7 @@ class _OutlineBtn extends StatelessWidget {
 
 BoxDecoration _cardDecoration({double radius = 16}) {
   return BoxDecoration(
-    color: Colors.white,
+    color: kCardColor,
     borderRadius: BorderRadius.circular(radius),
     boxShadow: [
       BoxShadow(
