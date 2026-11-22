@@ -32,3 +32,6 @@ Color statusColor(RescueStatus s) {
       return ReportColors.green;
   }
 }
+
+/// Tag for reports marked "Possibly a lost pet".
+const Color lostPetColor = Color(0xFF7A5AA6);

@@ -106,7 +106,8 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     final ok = await _confirm(
       "Can't make it?",
       'You will be removed from this report. If nobody else is responding, '
-          'it goes back to Needs Rescue.',
+          'it goes back to Needs Rescue. This counts as a cancelled '
+          'response in your Rescue Record.',
       'Withdraw',
     );
     if (!ok || !mounted) return;
@@ -188,6 +189,53 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     }
   }
 
+  /// Shown when the reporter said the animal has a collar / looks owned.
+  Widget _lostPetNotice() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: lostPetColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: lostPetColor.withValues(alpha: 0.4)),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.pets, color: lostPetColor),
+          SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Possibly a lost pet',
+                  style: TextStyle(
+                    color: lostPetColor,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'The reporter said this animal has a collar or looks like '
+                      "someone's pet. Please don't take it home right away. Ask "
+                      'around the area or check with the barangay first.',
+                  style: TextStyle(
+                    color: ReportColors.navy,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _field(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -238,6 +286,10 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
   Widget _responderTile(ReportResponder r) {
     final isMe = r.email == AuthService.currentEmail;
     final isLead = r.role == ResponderRole.lead;
+    final stats = ResponseService.statsFor(r.email);
+    final record = r.isVerified
+        ? '${stats.rescues} rescues'
+        : '${stats.trustLevel.label} · ${stats.rescues} rescues';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -260,6 +312,14 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                     color: ReportColors.navy,
                     fontSize: 14,
                     fontWeight: isLead ? FontWeight.w800 : FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  record,
+                  style: const TextStyle(
+                    color: ReportColors.grey,
+                    fontSize: 12,
                   ),
                 ),
                 if (r.organization != null) ...[
@@ -521,7 +581,8 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                 ),
               ),
               const SizedBox(height: 18),
-              _field('Description', _report.descriptionOrDefault),
+              if (_report.possiblyLostPet) _lostPetNotice(),
+              _field('Condition and Behavior', _report.descriptionOrDefault),
               const SizedBox(height: 4),
               _statusCard(),
             ],

@@ -39,6 +39,7 @@ class _Draft {
   String animalType = 'Dog';
   Urgency? urgency;
   String description = '';
+  bool possiblyLostPet = false; // "Has a collar / looks like someone's pet"
   LatLng? location;
   String address = '';
 }
@@ -100,6 +101,7 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
         latitude: d.location!.latitude,
         longitude: d.location!.longitude,
         address: d.address,
+        possiblyLostPet: d.possiblyLostPet,
       );
       if (!mounted) return;
 
@@ -439,14 +441,14 @@ class _DetailsStepState extends State<_DetailsStep> {
             }).toList(),
           ),
           const SizedBox(height: 20),
-          const _SectionTitle('Description (optional)'),
+          const _SectionTitle('Condition and Behavior (optional)'),
           const SizedBox(height: 8),
           TextField(
             controller: _desc,
             maxLines: 3,
             onChanged: (v) => d.description = v,
             decoration: InputDecoration(
-              hintText: 'Add more details...',
+              hintText: 'e.g. limping, wound on leg, very thin; scared but not aggressive',
               hintStyle: const TextStyle(color: kHintGray),
               filled: true,
               fillColor: Colors.white,
@@ -464,7 +466,23 @@ class _DetailsStepState extends State<_DetailsStep> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+          CheckboxListTile(
+            value: d.possiblyLostPet,
+            onChanged: (v) => setState(() => d.possiblyLostPet = v ?? false),
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            activeColor: kBlue,
+            title: const Text(
+              "Has a collar / looks like someone's pet",
+              style: TextStyle(color: kNavy, fontSize: 14),
+            ),
+            subtitle: const Text(
+              'Responders will be reminded that it may be a lost pet.',
+              style: TextStyle(color: kHintGray, fontSize: 12),
+            ),
+          ),
+          const SizedBox(height: 4),
           Align(
             alignment: Alignment.centerRight,
             child: _OutlineBtn('Next', widget.onNext),
@@ -714,7 +732,7 @@ class _ReviewStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final description = draft.description.trim().isEmpty
-        ? 'No description provided.'
+        ? 'No details provided.'
         : draft.description.trim();
 
     return SingleChildScrollView(
@@ -758,7 +776,12 @@ class _ReviewStep extends StatelessWidget {
                   draft.address.isEmpty ? '-' : draft.address,
                       () => onEdit(1),
                 ),
-                _ReviewRow('Description', description, () => onEdit(0)),
+                _ReviewRow('Condition and Behavior', description, () => onEdit(0)),
+                _ReviewRow(
+                  'Possibly a lost pet',
+                  draft.possiblyLostPet ? 'Yes (has a collar / looks owned)' : 'No',
+                      () => onEdit(0),
+                ),
               ],
             ),
           ),

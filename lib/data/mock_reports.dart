@@ -70,5 +70,6 @@ final List<StrayReport> mockReports = [
     lat: 13.7650,
     lng: 121.0650,
     imageAsset: 'assets/images/sick_cat.jpg',
+    possiblyLostPet: true, // sample: has a collar
   ),
 ];

@@ -16,6 +16,7 @@ class StrayReport {
   final double latitude;
   final double longitude;
   final String address;
+  final bool possiblyLostPet;
   final DateTime createdAt;
 
   StrayReport({
@@ -27,6 +28,7 @@ class StrayReport {
     required this.latitude,
     required this.longitude,
     required this.address,
+    this.possiblyLostPet = false,
     required this.createdAt,
   });
 }
@@ -44,6 +46,7 @@ class ReportService {
     required double latitude,
     required double longitude,
     required String address,
+    bool possiblyLostPet = false,
   }) async {
     // Simulates a network call.
     await Future.delayed(const Duration(milliseconds: 700));
@@ -59,6 +62,7 @@ class ReportService {
         latitude: latitude,
         longitude: longitude,
         address: address,
+        possiblyLostPet: possiblyLostPet,
         createdAt: DateTime.now(),
       ),
     );

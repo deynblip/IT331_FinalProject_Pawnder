@@ -57,6 +57,12 @@ class ReportCard extends StatelessWidget {
                             color: statusColor(report.status),
                             outlined: true,
                           ),
+                        if (report.possiblyLostPet)
+                          const StatusChip(
+                            label: 'Possibly a lost pet',
+                            color: lostPetColor,
+                            outlined: true,
+                          ),
                       ],
                     ),
                     const SizedBox(height: 6),
