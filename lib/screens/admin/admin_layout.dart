@@ -87,7 +87,8 @@ class _AdminLayoutState extends State<AdminLayout> {
           AdoptionService.changes,
         ]),
         builder: (context, _) {
-          final pendingRescuers = RescuerService.pendingCount;
+          final pendingRescuers =
+              RescuerService.pendingCount + RescuerService.flaggedCount;
           final pendingPosts = AdoptionService.pendingCount;
 
           return BottomNavigationBar(

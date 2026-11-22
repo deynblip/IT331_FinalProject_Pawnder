@@ -11,6 +11,8 @@ import 'my_reports_screen.dart';
 import '../services/adoption_service.dart';
 import '../services/application_service.dart';
 import '../services/rescuer_service.dart';
+import '../services/response_service.dart';
+import '../services/auth_service.dart';
 import '../widgets/rescuer_badge.dart';
 import 'my_applications_screen.dart';
 import 'my_posts_screen.dart';
@@ -238,6 +240,106 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // ---------------------------------------------------------------------
+  // RESCUE RECORD (accountability + trust level)
+  // ---------------------------------------------------------------------
+
+  Widget _statBox(String value, String label) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              color: kNavy,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: kHintGray, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _recordCard() {
+    return ListenableBuilder(
+      listenable: ResponseService.changes,
+      builder: (context, _) {
+        final email = AuthService.currentEmail;
+        if (email == null) return const SizedBox.shrink();
+        final stats = ResponseService.statsFor(email);
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFF5DEC8)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x14000000),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'My Rescue Record',
+                      style: TextStyle(
+                        color: kNavy,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEAF3DE),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      stats.trustLevel.label,
+                      style: const TextStyle(
+                        color: Color(0xFF3B6D11),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  _statBox('${stats.rescues}', 'Completed\nrescues'),
+                  _statBox('${stats.cancelled}', 'Cancelled\nresponses'),
+                  _statBox(stats.completionRate, 'Completion\nrate'),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _rescuerSection() {
     return ListenableBuilder(
       listenable: RescuerService.changes,
@@ -273,15 +375,33 @@ class _ProfilePageState extends State<ProfilePage> {
             );
 
           case RescuerStatus.none:
-            return _rescuerCard(
-              icon: Icons.verified_user_outlined,
-              color: kBlue,
-              title: 'Are you part of a rescue group?',
-              message: 'Rescue organizations, vets and LGU animal welfare '
-                  'offices can apply to become Verified Rescuers.',
-              buttonText: 'Apply as Verified Rescuer',
-              onPressed: () => _openRescuerForm(null),
-            );
+            {
+              final email = AuthService.currentEmail;
+              final trusted = email != null &&
+                  ResponseService.statsFor(email).trustLevel ==
+                      TrustLevel.trustedHelper;
+              if (trusted) {
+                return _rescuerCard(
+                  icon: Icons.workspace_premium_outlined,
+                  color: const Color(0xFF5B9A3C),
+                  title: 'You are a Trusted Helper!',
+                  message: 'Thank you for all your rescues. You can now apply '
+                      'to become a Verified Rescuer, even without an '
+                      'organization.',
+                  buttonText: 'Apply as Verified Rescuer',
+                  onPressed: () => _openRescuerForm(null),
+                );
+              }
+              return _rescuerCard(
+                icon: Icons.verified_user_outlined,
+                color: kBlue,
+                title: 'Are you part of a rescue group?',
+                message: 'Rescue organizations, vets and LGU animal welfare '
+                    'offices can apply to become Verified Rescuers.',
+                buttonText: 'Apply as Verified Rescuer',
+                onPressed: () => _openRescuerForm(null),
+              );
+            }
         }
       },
     );
@@ -317,6 +437,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
           // Verified Rescuer badge, or the apply / pending / rejected card
           _rescuerSection(),
+
+          const SizedBox(height: 16),
+
+          // Completed / cancelled responses and trust level
+          _recordCard(),
 
           const SizedBox(height: 28),
 

@@ -195,6 +195,23 @@ class _ApplicationCard extends StatelessWidget {
                     'Submitted ${_dateText(app.submittedAt)}',
                     style: const TextStyle(color: kHintGray, fontSize: 11),
                   ),
+                  if (RescuerService.isFlagged(app.email)) ...[
+                    const SizedBox(height: 4),
+                    const Row(
+                      children: [
+                        Icon(Icons.flag, size: 14, color: Colors.red),
+                        SizedBox(width: 4),
+                        Text(
+                          'High cancel rate',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -300,9 +317,35 @@ class _RescuerDetailSheet extends StatelessWidget {
     }
   }
 
+  Future<void> _revoke(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (_) => _RejectDialog(
+        applicantName: app.applicantName,
+        title: 'Remove ${app.applicantName}\'s badge?',
+        actionText: 'Remove badge',
+      ),
+    );
+    if (reason == null) return;
+
+    try {
+      await RescuerService.revoke(app.id, reason);
+      navigator.pop();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Verified Rescuer badge removed.')),
+      );
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final stats = ResponseService.statsFor(app.email);
+    final flagged = RescuerService.isFlagged(app.email);
 
     return DraggableScrollableSheet(
       expand: false,
@@ -368,8 +411,12 @@ class _RescuerDetailSheet extends StatelessWidget {
                     )
                   else
                     Text(
-                      'Responses: ${stats.responses}\n'
-                          'Successful rescues: ${stats.rescues}\n'
+                      'Trust level: ${stats.trustLevel.label}\n'
+                          'Responses: ${stats.responses}\n'
+                          'Completed rescues: ${stats.rescues} '
+                          '(${stats.completionRate})\n'
+                          'Cancelled: ${stats.cancelled} '
+                          '(${stats.cancelRateText})\n'
                           'Unable to locate: ${stats.unableToLocate}\n'
                           'Check-in rate: ${stats.checkInRate}',
                       style: const TextStyle(
@@ -422,11 +469,34 @@ class _RescuerDetailSheet extends StatelessWidget {
                 'Rejected: ${app.rejectionReason ?? '-'}',
                 style: const TextStyle(color: Colors.red, fontSize: 13),
               )
-            else
-              const Text(
-                'Approved. The user has the Verified Rescuer badge.',
-                style: TextStyle(color: Color(0xFF1F5E10), fontSize: 13),
-              ),
+            else ...[
+                const Text(
+                  'Approved. The user has the Verified Rescuer badge.',
+                  style: TextStyle(color: Color(0xFF1F5E10), fontSize: 13),
+                ),
+                if (flagged) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'This rescuer has a high cancel rate. Review their record '
+                        'and remove the badge if needed.',
+                    style: TextStyle(color: Colors.red, fontSize: 13),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _revoke(context),
+                    icon: const Icon(Icons.remove_moderator_outlined),
+                    label: const Text('Remove badge'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      minimumSize: const Size.fromHeight(46),
+                    ),
+                  ),
+                ),
+              ],
           ],
         ),
       ),
@@ -437,7 +507,13 @@ class _RescuerDetailSheet extends StatelessWidget {
 /// A reason is required when rejecting.
 class _RejectDialog extends StatefulWidget {
   final String applicantName;
-  const _RejectDialog({required this.applicantName});
+  final String? title;
+  final String actionText;
+  const _RejectDialog({
+    required this.applicantName,
+    this.title,
+    this.actionText = 'Reject',
+  });
 
   @override
   State<_RejectDialog> createState() => _RejectDialogState();
@@ -457,7 +533,7 @@ class _RejectDialogState extends State<_RejectDialog> {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
-        'Reject ${widget.applicantName}?',
+        widget.title ?? 'Reject ${widget.applicantName}?',
         style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
       ),
       content: TextField(
@@ -478,9 +554,12 @@ class _RejectDialogState extends State<_RejectDialog> {
           onPressed: _reason.text.trim().isEmpty
               ? null
               : () => Navigator.pop(context, _reason.text.trim()),
-          child: const Text(
-            'Reject',
-            style: TextStyle(color: Colors.red, fontWeight: FontWeight.w800),
+          child: Text(
+            widget.actionText,
+            style: const TextStyle(
+              color: Colors.red,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
       ],
