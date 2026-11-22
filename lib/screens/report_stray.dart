@@ -29,7 +29,7 @@ extension _UrgencyX on Urgency {
   Color get color => switch (this) {
     Urgency.urgent => _kUrgent,
     Urgency.needsHelp => _kNeedsHelp,
-    Urgency.sighted => kBlue,
+    Urgency.sighted => kTeal,
   };
 }
 
@@ -138,7 +138,7 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
   Widget build(BuildContext context) {
     // This screen is pushed on top of MainLayout, so it needs its own Scaffold.
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kCream,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),

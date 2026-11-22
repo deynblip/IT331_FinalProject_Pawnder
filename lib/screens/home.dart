@@ -30,7 +30,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // 2 pinakamalapit na report na hindi pa rescued
+  // The 2 nearest reports that are not rescued yet.
   List<StrayReport> get _nearby {
     final list = mockReports
         .where((r) => r.status != RescueStatus.rescued)
@@ -45,7 +45,7 @@ class HomePage extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => ReportDetailsScreen(
           report: report,
-          onChanged: (_) {}, // TEMP: ikakabit sa backend later
+          onChanged: (_) {}, // TEMP: connect to the backend later
         ),
       ),
     );
@@ -88,14 +88,51 @@ class HomePage extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // Home banner
-          ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: Image.asset(
-              'assets/home_banner.png',
-              width: double.infinity,
-              height: 160,
-              fit: BoxFit.cover,
+          // Home banner: orange gradient, message and a row of paws
+          // (built in code, so it does not need a banner image).
+          Container(
+            width: double.infinity,
+            height: 160,
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+            decoration: BoxDecoration(
+              gradient: kSunsetGradient,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x33E0662E),
+                  blurRadius: 14,
+                  offset: Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Together, we can make a difference\nfor stray animals.',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    height: 1.3,
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Color(0xFF6FA7A5),
+                    Color(0xFF2B2B2B),
+                    Color(0xFF7A5548),
+                    Colors.white,
+                    Color(0xFFD3D1C7),
+                    Color(0xFF3B82B5),
+                    kTeal,
+                  ]
+                      .map((c) => Icon(Icons.pets, color: c, size: 30))
+                      .toList(),
+                ),
+              ],
             ),
           ),
 
@@ -124,12 +161,14 @@ class HomePage extends StatelessWidget {
           const SizedBox(height: 15),
 
           _actionCard(
-            icon: Image.asset(
-              'assets/images/report_icon.png',
-              width: 48,
-              height: 48,
-              errorBuilder: (_, __, ___) =>
-              const Icon(Icons.photo_camera, color: kBlue, size: 44),
+            icon: Container(
+              width: 56,
+              height: 56,
+              decoration: const BoxDecoration(
+                color: kPeach,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.photo_camera, color: kBlue, size: 30),
             ),
             title: 'Report a Stray',
             onTap: () {
@@ -172,7 +211,7 @@ class HomePage extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
+                color: const Color(0xFFFFF6EC),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Column(
@@ -274,7 +313,7 @@ class HomePage extends StatelessWidget {
         height: 130,
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F7FA),
+          color: const Color(0xFFFFF6EC),
           borderRadius: BorderRadius.circular(15),
         ),
         child: Column(
@@ -308,7 +347,7 @@ class HomePage extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
+        color: const Color(0xFFFFF6EC),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

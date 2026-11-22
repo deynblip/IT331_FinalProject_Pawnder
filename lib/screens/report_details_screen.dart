@@ -4,6 +4,7 @@ import '../models/stray_report.dart';
 import '../services/auth_service.dart';
 import '../services/rescuer_service.dart';
 import '../services/response_service.dart';
+import '../utils/app_colors.dart';
 import '../utils/report_style.dart';
 import '../widgets/report_image.dart';
 import '../widgets/status_chip.dart';
@@ -29,7 +30,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
 
   void _apply(StrayReport updated) {
     setState(() => _report = updated);
-    widget.onChanged(updated); // para mag-update din ang list
+    widget.onChanged(updated); // so the list updates too
   }
 
   void _snack(String message) {
@@ -488,7 +489,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE3E5EA)),
+        border: Border.all(color: const Color(0xFFF5DEC8)),
         boxShadow: const [BoxShadow(color: Color(0x14000000), blurRadius: 10, offset: Offset(0, 3))],
       ),
       child: content,
@@ -498,7 +499,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kCream,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -575,7 +576,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                   ),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 56),
-                    side: const BorderSide(color: Color(0xFFE3E5EA)),
+                    side: const BorderSide(color: Color(0xFFF5DEC8)),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
                 ),

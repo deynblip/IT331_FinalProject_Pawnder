@@ -156,9 +156,9 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color shellBg = isDark ? kDarkSurface : Colors.white;
+    final Color shellBg = isDark ? kDarkSurface : kCream;
     final Color iconColor = isDark ? Colors.white : kNavy;
-    final Color lineColor = isDark ? Colors.white24 : const Color(0xFFE5E5E5);
+    final Color lineColor = isDark ? Colors.white24 : const Color(0xFFF0E2D6);
 
     // Order must match the bottom navigation items below:
     // Home, Reports, Adopt, Profile
@@ -249,7 +249,7 @@ class _MainLayoutState extends State<MainLayout> {
                 Container(
                   width: double.infinity,
                   height: 160,
-                  color: kBlue,
+                  decoration: const BoxDecoration(gradient: kSunsetGradient),
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,11 +337,11 @@ class _MainLayoutState extends State<MainLayout> {
         ),
 
         // PAGE CONTENT
-        // The tab pages still use fixed light colors, so the content area
-        // stays white even in dark mode (see note below the code).
+        // The tab pages use fixed light colors, so the content area keeps
+        // the cream background even in dark mode.
         body: SafeArea(
           child: ColoredBox(
-            color: Colors.white,
+            color: kCream,
             child: IndexedStack(
               index: _selectedIndex,
               children: pages,

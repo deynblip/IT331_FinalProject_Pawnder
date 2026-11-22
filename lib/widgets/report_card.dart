@@ -4,8 +4,8 @@ import '../utils/report_style.dart';
 import 'report_image.dart';
 import 'status_chip.dart';
 
-/// Gamit sa Reports list at sa Home (Nearby Reports).
-/// showStatus = false sa Home para Urgency chip lang ang lalabas.
+/// Used in the Reports Bulletin and on Home (Nearby Reports).
+/// showStatus = false on Home, so only the urgency chip is shown.
 class ReportCard extends StatelessWidget {
   final StrayReport report;
   final VoidCallback onTap;
@@ -30,7 +30,7 @@ class ReportCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE3E5EA)),
+            border: Border.all(color: const Color(0xFFF5DEC8)),
             boxShadow: const [
               BoxShadow(color: Color(0x14000000), blurRadius: 10, offset: Offset(0, 3)),
             ],

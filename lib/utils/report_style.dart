@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/stray_report.dart';
 
-// Kulay galing sa UI. Pwede niyong ilipat/i-merge sa app_colors.dart.
+// Colors for urgency levels and rescue statuses (Sunset Paws palette).
 class ReportColors {
   static const navy = Color(0xFF3D2C29);
   static const blue = Color(0xFF2BA59A);

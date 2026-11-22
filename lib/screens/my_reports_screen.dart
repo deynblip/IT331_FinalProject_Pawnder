@@ -6,11 +6,11 @@ import '../utils/app_colors.dart';
 import '../widgets/report_card.dart';
 import 'report_details_screen.dart';
 
-/// Mga report na ginawa ng user (galing sa Profile > My Reports).
+/// Reports made by the logged-in user (Profile > My Reports).
 class MyReportsScreen extends StatelessWidget {
   const MyReportsScreen({super.key});
 
-  // TEMP: papalitan ng reports ng naka-login na user galing backend
+  // TEMP: replace with the logged-in user's reports from the backend
   List<StrayReport> get _mine => mockReports.where((r) => r.isMine).toList();
 
   @override
@@ -18,7 +18,7 @@ class MyReportsScreen extends StatelessWidget {
     final items = _mine;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kCream,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -60,7 +60,7 @@ class MyReportsScreen extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (_) => ReportDetailsScreen(
                           report: items[i],
-                          onChanged: (_) {}, // TEMP
+                          onChanged: (_) {}, // TEMP: connect to the backend later
                         ),
                       ),
                     ),

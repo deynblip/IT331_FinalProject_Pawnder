@@ -20,10 +20,10 @@ class MapsPage extends StatefulWidget {
 }
 
 class _MapsPageState extends State<MapsPage> {
-  // Batangas City (gitna ng mga mock report)
+  // Batangas City (center of the mock reports)
   static const LatLng _center = LatLng(13.7700, 121.0620);
 
-  // TEMP: papalitan ng data galing backend
+  // TEMP: replace with data from the backend
   final List<StrayReport> _reports = List.of(mockReports);
 
   // null = All
@@ -36,8 +36,8 @@ class _MapsPageState extends State<MapsPage> {
   String _selectedRadius = 'All';
   String? _selectedId;
 
-  // TEMP: gumagamit ng distanceKm sa mock data.
-  // Kapag may backend na, kukwentahin ito mula sa location ng user.
+  // TEMP: uses distanceKm from the mock data. Once there is a backend,
+  // compute it from the user's location.
   List<StrayReport> get _visible {
     final radius = _radii[_selectedRadius];
     final list = radius == null
@@ -52,7 +52,7 @@ class _MapsPageState extends State<MapsPage> {
     for (final r in visible) {
       if (r.id == _selectedId) return r;
     }
-    return visible.first; // pinakamalapit ang default
+    return visible.first; // the nearest one by default
   }
 
   void _openDetails(StrayReport report) {
@@ -61,7 +61,7 @@ class _MapsPageState extends State<MapsPage> {
       MaterialPageRoute(
         builder: (_) => ReportDetailsScreen(
           report: report,
-          onChanged: (_) {}, // TEMP: ikakabit sa backend later
+          onChanged: (_) {}, // TEMP: connect to the backend later
         ),
       ),
     );
@@ -106,7 +106,7 @@ class _MapsPageState extends State<MapsPage> {
       point: LatLng(r.lat, r.lng),
       width: size,
       height: size,
-      // Ang dulo ng pin ang tumatama sa eksaktong lugar
+      // The tip of the pin sits on the exact spot.
       alignment: Alignment.topCenter,
       child: GestureDetector(
         onTap: () => setState(() => _selectedId = r.id),
@@ -185,7 +185,7 @@ class _MapsPageState extends State<MapsPage> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
+                color: const Color(0xFFFFF6EC),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Text(
