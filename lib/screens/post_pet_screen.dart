@@ -8,6 +8,7 @@ import '../services/adoption_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/validators.dart';
 import '../widgets/adopt_pet_photo.dart';
+import '../widgets/field_label.dart';
 import '../utils/responsive.dart';
 
 const int _kMaxPhotos = 5;
@@ -386,6 +387,8 @@ class _PostPetScreenState extends State<PostPetScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const RequiredNote(),
+                    const SizedBox(height: 12),
                     _sectionHeading('Pet Information', key: _sectionKeys[0]),
                     const SizedBox(height: 12),
                     _buildPetInfoSection(),
@@ -456,7 +459,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _title('Pet Photos'),
+          _title('Pet Photos', required: true),
           const SizedBox(height: 8),
           InkWell(
             onTap: _showPhotoOptions,
@@ -499,7 +502,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
             ),
           ],
           const SizedBox(height: 20),
-          _title('Pet Name'),
+          _title('Pet Name', required: true),
           const SizedBox(height: 8),
           TextFormField(
             controller: _name,
@@ -509,7 +512,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
             validator: (v) => _required(v, "Please enter the pet's name"),
           ),
           const SizedBox(height: 14),
-          _title('Animal Type'),
+          _title('Animal Type', required: true),
           const SizedBox(height: 8),
           Wrap(
             spacing: 10,
@@ -528,7 +531,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
             }).toList(),
           ),
           const SizedBox(height: 14),
-          _title('Pet Source'),
+          _title('Pet Source', required: true),
           const SizedBox(height: 8),
           Wrap(
             spacing: 10,
@@ -568,7 +571,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _title('Age'),
+                    _title('Age', required: true),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _age,
@@ -584,7 +587,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _title('Sex'),
+                    _title('Sex', required: true),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
                       initialValue: _sex,
@@ -649,7 +652,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _title('Description'),
+          _title('Description', required: true),
           const SizedBox(height: 8),
           TextFormField(
             controller: _description,
@@ -677,7 +680,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
             _dec('Vaccination, deworming, medical history, or unknown details...'),
           ),
           const SizedBox(height: 14),
-          _title(_source.reasonLabel),
+          _title(_source.reasonLabel, required: true),
           const SizedBox(height: 8),
           TextFormField(
             controller: _reason,
@@ -725,7 +728,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
             decoration: _dec(''),
           ),
           const SizedBox(height: 14),
-          _title('City / Municipality'),
+          _title('City / Municipality', required: true),
           const SizedBox(height: 8),
           TextFormField(
             controller: _city,
@@ -734,7 +737,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
             validator: (v) => _required(v, 'Please enter the city or municipality'),
           ),
           const SizedBox(height: 14),
-          _title('Barangay'),
+          _title('Barangay', required: true),
           const SizedBox(height: 8),
           TextFormField(
             controller: _barangay,
@@ -753,7 +756,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
           const SizedBox(height: 24),
           _sectionHeading('Contact Information'),
           const SizedBox(height: 8),
-          _title('Contact Person'),
+          _title('Contact Person', required: true),
           const SizedBox(height: 8),
           TextFormField(
             controller: _contactPerson,
@@ -762,7 +765,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
             validator: (v) => _required(v, 'Please enter the contact person'),
           ),
           const SizedBox(height: 14),
-          _title('Phone Number'),
+          _title('Phone Number', required: true),
           const SizedBox(height: 8),
           TextFormField(
             controller: _phone,
@@ -771,7 +774,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
             validator: _validatePhone,
           ),
           const SizedBox(height: 14),
-          _title('Email Address'),
+          _title('Email Address', required: true),
           const SizedBox(height: 8),
           TextFormField(
             controller: _email,
@@ -786,14 +789,9 @@ class _PostPetScreenState extends State<PostPetScreen> {
 
   // ---------------------------------------------------------------- Shared
 
-  Widget _title(String text) => Text(
-    text,
-    style: const TextStyle(
-      fontWeight: FontWeight.w800,
-      fontSize: 15,
-      color: kNavy,
-    ),
-  );
+  /// Field label. Required fields get a red *.
+  Widget _title(String text, {bool required = false}) =>
+      FieldLabel(text, required: required);
 
   Widget _sectionHeading(String text, {Key? key}) => Text(
     text,

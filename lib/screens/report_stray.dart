@@ -1,15 +1,19 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../services/report_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/responsive.dart';
+import '../widgets/field_label.dart';
 
 const Color _kUrgent = Color(0xFFE04F4F);
 const Color _kNeedsHelp = Color(0xFFE9A23B);
@@ -62,26 +66,87 @@ class _PickedLocation {
 
 // ---------------------------------------------------------------- Location helpers
 
-/// Readable address for [pos]. Falls back to the coordinates if
-/// reverse geocoding fails.
+/// Readable address for [pos], e.g. "P. Burgos St, Poblacion, Batangas City".
+///
+/// The geocoding package only works on Android and iOS, so on the web (and
+/// whenever it fails) the address is looked up with OpenStreetMap's free
+/// Nominatim service. If both fail, the coordinates are shown instead.
 Future<String> _addressFor(LatLng pos) async {
-  var address =
-      '${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)}';
-  try {
-    final marks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
-    if (marks.isNotEmpty) {
-      final p = marks.first;
-      final parts = [p.street, p.subLocality, p.locality, p.administrativeArea]
-          .whereType<String>()
-          .map((s) => s.trim())
-          .where((s) => s.isNotEmpty)
-          .toList();
-      if (parts.isNotEmpty) address = parts.join(', ');
+  if (!kIsWeb) {
+    try {
+      final marks =
+      await placemarkFromCoordinates(pos.latitude, pos.longitude);
+      if (marks.isNotEmpty) {
+        final p = marks.first;
+        final address = _joinParts(
+          [p.street, p.subLocality, p.locality, p.administrativeArea],
+        );
+        if (address.isNotEmpty) return address;
+      }
+    } catch (_) {
+      // Try Nominatim below.
     }
-  } catch (_) {
-    // Keep the coordinates.
   }
-  return address;
+
+  try {
+    final address = await _nominatimAddress(pos);
+    if (address.isNotEmpty) return address;
+  } catch (_) {
+    // Fall back to the coordinates.
+  }
+
+  return '${pos.latitude.toStringAsFixed(5)}, '
+      '${pos.longitude.toStringAsFixed(5)}';
+}
+
+/// Reverse geocoding with OpenStreetMap Nominatim (free, max 1 request per
+/// second). Barangays usually come back as "quarter", "village" or "suburb".
+Future<String> _nominatimAddress(LatLng pos) async {
+  final uri = Uri.https('nominatim.openstreetmap.org', '/reverse', {
+    'format': 'jsonv2',
+    'lat': '${pos.latitude}',
+    'lon': '${pos.longitude}',
+    'zoom': '18',
+    'addressdetails': '1',
+  });
+
+  final response = await http.get(
+    uri,
+    headers: {
+      'Accept-Language': 'en',
+      // Browsers do not allow setting the User-Agent, so only send it on
+      // phones. Nominatim asks apps to identify themselves.
+      if (!kIsWeb) 'User-Agent': 'Pawnder/1.0 (IT331 student project)',
+    },
+  ).timeout(const Duration(seconds: 8));
+  if (response.statusCode != 200) return '';
+
+  final data = jsonDecode(response.body) as Map<String, dynamic>;
+  final a = (data['address'] as Map<String, dynamic>?) ?? {};
+  String? pick(List<String> keys) {
+    for (final k in keys) {
+      final v = a[k];
+      if (v is String && v.trim().isNotEmpty) return v;
+    }
+    return null;
+  }
+
+  return _joinParts([
+    pick(['road', 'pedestrian', 'footway']),
+    pick(['quarter', 'village', 'suburb', 'neighbourhood', 'hamlet']),
+    pick(['city', 'town', 'municipality']),
+    pick(['state', 'province', 'region']),
+  ]);
+}
+
+/// Joins the non-empty parts with commas, without repeats.
+String _joinParts(List<String?> parts) {
+  final seen = <String>{};
+  return parts
+      .whereType<String>()
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty && seen.add(s))
+      .join(', ');
 }
 
 /// The phone's current position. Throws a readable message on failure.
@@ -345,19 +410,21 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const RequiredNote(),
+                    const SizedBox(height: 12),
                     _photoCard(),
                     const SizedBox(height: 20),
-                    const _SectionTitle('Animal Type'),
+                    const _SectionTitle('Animal Type', required: true),
                     const SizedBox(height: 8),
                     _animalTypeChips(),
                     const SizedBox(height: 20),
-                    _SectionTitle('Urgency Level', key: _urgencyKey),
+                    _SectionTitle('Urgency Level', key: _urgencyKey, required: true),
                     const SizedBox(height: 8),
                     _urgencyCards(),
                     if (_showErrors && d.urgency == null)
                       const _ErrorText('Please select an urgency level.'),
                     const SizedBox(height: 20),
-                    _SectionTitle('Location', key: _locationKey),
+                    _SectionTitle('Location', key: _locationKey, required: true),
                     const SizedBox(height: 2),
                     const Text(
                       "Pinpoint the animal's location to help rescuers find it.",
@@ -950,20 +1017,12 @@ class _LocationPickerPageState extends State<_LocationPickerPage> {
 
 class _SectionTitle extends StatelessWidget {
   final String text;
+  final bool required;
 
-  const _SectionTitle(this.text, {super.key});
+  const _SectionTitle(this.text, {super.key, this.required = false});
 
   @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontWeight: FontWeight.w800,
-        fontSize: 15,
-        color: kNavy,
-      ),
-    );
-  }
+  Widget build(BuildContext context) => FieldLabel(text, required: required);
 }
 
 /// Red message shown under a required section that is still empty.

@@ -5,6 +5,7 @@ import '../services/application_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/validators.dart';
 import '../utils/responsive.dart';
+import '../widgets/field_label.dart';
 
 const String _kProvince = 'Batangas';
 
@@ -272,6 +273,8 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const RequiredNote(),
+                    const SizedBox(height: 12),
                     KeyedSubtree(
                       key: _sectionKeys[0],
                       child: _buildApplicantSection(),
@@ -390,7 +393,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
         children: [
           _sectionHeading('Personal Information'),
           const SizedBox(height: 12),
-          _title('Full Name (LN, FN, MI)'),
+          _title('Full Name (LN, FN, MI)', required: true),
           const SizedBox(height: 8),
           TextFormField(
             controller: _fullName,
@@ -400,7 +403,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
             validator: (v) => _required(v, 'Please enter your full name'),
           ),
           const SizedBox(height: 14),
-          _title('Phone Number'),
+          _title('Phone Number', required: true),
           const SizedBox(height: 8),
           TextFormField(
             controller: _phone,
@@ -409,7 +412,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
             validator: _validatePhone,
           ),
           const SizedBox(height: 14),
-          _title('Email Address'),
+          _title('Email Address', required: true),
           const SizedBox(height: 8),
           TextFormField(
             controller: _email,
@@ -440,7 +443,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
             decoration: _dec(''),
           ),
           const SizedBox(height: 14),
-          _title('City / Municipality'),
+          _title('City / Municipality', required: true),
           const SizedBox(height: 8),
           TextFormField(
             controller: _city,
@@ -450,7 +453,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
                 _required(v, 'Please enter your city or municipality'),
           ),
           const SizedBox(height: 14),
-          _title('Barangay'),
+          _title('Barangay', required: true),
           const SizedBox(height: 8),
           TextFormField(
             controller: _barangay,
@@ -481,7 +484,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
         children: [
           _sectionHeading('Living Environment'),
           const SizedBox(height: 12),
-          _title('Home Environment'),
+          _title('Home Environment', required: true),
           const Text(
             'Describe the space where the pet will stay.',
             style: TextStyle(fontSize: 12, color: kHintGray),
@@ -496,7 +499,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
             validator: (v) => _required(v, 'Please describe your home'),
           ),
           const SizedBox(height: 14),
-          _title('Household Members'),
+          _title('Household Members', required: true),
           const Text(
             'Who will be living with the adopted pet?',
             style: TextStyle(fontSize: 12, color: kHintGray),
@@ -513,7 +516,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
           const SizedBox(height: 14),
           _sectionHeading('Pet Ownership Experience'),
           const SizedBox(height: 12),
-          _title('Previous or Current Pets'),
+          _title('Previous or Current Pets', required: true),
           const Text(
             'List the pets you currently own or have cared for.',
             style: TextStyle(fontSize: 12, color: kHintGray),
@@ -528,7 +531,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
             validator: (v) => _required(v, 'Please answer this question'),
           ),
           const SizedBox(height: 14),
-          _title('Pet Care Experience'),
+          _title('Pet Care Experience', required: true),
           const Text(
             'Briefly describe your experience in caring for animals.',
             style: TextStyle(fontSize: 12, color: kHintGray),
@@ -549,14 +552,9 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
 
   // ---------------------------------------------------------------- Shared
 
-  Widget _title(String text) => Text(
-    text,
-    style: const TextStyle(
-      fontWeight: FontWeight.w800,
-      fontSize: 15,
-      color: kNavy,
-    ),
-  );
+  /// Field label. Required fields get a red *.
+  Widget _title(String text, {bool required = false}) =>
+      FieldLabel(text, required: required);
 
   Widget _sectionHeading(String text) => Text(
     text,
