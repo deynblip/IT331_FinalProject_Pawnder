@@ -5,6 +5,7 @@ import '../../models/rescuer_application.dart';
 import '../../services/response_service.dart';
 import '../../services/rescuer_service.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/responsive.dart';
 
 String _dateText(DateTime d) {
   const months = [
@@ -86,8 +87,8 @@ class _AdminRescuersScreenState extends State<AdminRescuersScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
+              Padding(
+                padding: EdgeInsets.fromLTRB(context.hPad, 16, context.hPad, 4),
                 child: Text(
                   'Rescuer Applications',
                   style: TextStyle(
@@ -98,7 +99,7 @@ class _AdminRescuersScreenState extends State<AdminRescuersScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 8),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
@@ -119,9 +120,9 @@ class _AdminRescuersScreenState extends State<AdminRescuersScreen> {
                   ),
                 )
                     : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                  padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 24),
                   itemCount: items.length,
-                  separatorBuilder: (_, __) =>
+                  separatorBuilder: (_, _) =>
                   const SizedBox(height: 12),
                   itemBuilder: (_, i) => _ApplicationCard(
                     app: items[i],
@@ -151,12 +152,12 @@ class _ApplicationCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: kCardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE3E5EA)),
+          border: Border.all(color: const Color(0xFFF5DEC8)),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x14000000),
+              color: Color(0x14C4531F),
               blurRadius: 10,
               offset: Offset(0, 3),
             ),
@@ -166,7 +167,7 @@ class _ApplicationCard extends StatelessWidget {
           children: [
             const CircleAvatar(
               radius: 24,
-              backgroundColor: Color(0xFFE6E9EF),
+              backgroundColor: Color(0xFFFFE8D6),
               child: Icon(Icons.verified_user_outlined, color: kBlue),
             ),
             const SizedBox(width: 12),
@@ -353,7 +354,7 @@ class _RescuerDetailSheet extends StatelessWidget {
       maxChildSize: 0.95,
       builder: (context, scroll) => SingleChildScrollView(
         controller: scroll,
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+        padding: EdgeInsets.fromLTRB(context.hPad, 24, context.hPad, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -390,7 +391,7 @@ class _RescuerDetailSheet extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFF0F4FA),
+                color: kPeach,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Column(

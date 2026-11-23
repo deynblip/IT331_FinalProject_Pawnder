@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../data/mock_reports.dart';
 import '../../services/adoption_service.dart';
 import '../../services/application_service.dart';
 import '../../services/auth_service.dart';
 import '../../utils/app_colors.dart';
 import '../../services/content_report_service.dart';
+import '../../utils/responsive.dart';
 
 class AdminDashboard extends StatelessWidget {
   final String name;
@@ -24,13 +24,13 @@ class AdminDashboard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF6F8FC0), Color(0xFFDDE4F0), Colors.white],
+          colors: [Color(0xFFF59E5B), Color(0xFFFFE8D6), Colors.white],
           stops: [0.0, 0.4, 0.62],
         ),
       ),
       child: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -73,7 +73,7 @@ class AdminDashboard extends StatelessWidget {
                     child: Icon(
                       Icons.pets,
                       size: 130,
-                      color: Colors.white.withOpacity(0.25),
+                      color: Colors.white.withValues(alpha: 0.25),
                     ),
                   ),
                   Column(
@@ -151,7 +151,7 @@ class AdminDashboard extends StatelessWidget {
                           Expanded(
                             child: _StatCard(
                               icon: Icons.flag,
-                              color: const Color(0xFFD9534F),
+                              color: const Color(0xFFE04F4F),
                               value: reported,
                               label: 'Reported Content',
                             ),
@@ -160,7 +160,7 @@ class AdminDashboard extends StatelessWidget {
                           Expanded(
                             child: _StatCard(
                               icon: Icons.groups,
-                              color: const Color(0xFFC9805A),
+                              color: const Color(0xFFE9A23B),
                               value: users,
                               label: 'Registered Users',
                             ),
@@ -179,7 +179,7 @@ class AdminDashboard extends StatelessWidget {
   }
 }
 
-// White card, navy text, paws row cropped from assets/home_banner.png.
+// White card with the row of paws cropped from assets/home_banner.png.
 class _Banner extends StatelessWidget {
   const _Banner();
 
@@ -189,11 +189,11 @@ class _Banner extends StatelessWidget {
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: kCardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -226,12 +226,12 @@ class _Banner extends StatelessWidget {
 class _PawStrip extends StatelessWidget {
   const _PawStrip();
 
-  static const double _imgW = 1123;
-  static const double _imgH = 1401;
-  static const double _x = 29;
-  static const double _y = 712;
-  static const double _w = 1066;
-  static const double _h = 176;
+  static const double _imgW = 991;
+  static const double _imgH = 525;
+  static const double _x = 97;
+  static const double _y = 284;
+  static const double _w = 796;
+  static const double _h = 141;
 
   @override
   Widget build(BuildContext context) {
@@ -299,12 +299,12 @@ class _StatCard extends StatelessWidget {
       height: 168,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: kCardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E5E5)),
+        border: Border.all(color: const Color(0xFFF0E2D6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -313,7 +313,7 @@ class _StatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 42), // was 30
+          Icon(icon, color: color, size: 42),
           const SizedBox(height: 6),
           Text(
             '$value',

@@ -7,19 +7,20 @@ import '../../services/adoption_service.dart';
 import '../../services/content_report_service.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/adopt_pet_photo.dart';
+import '../../utils/responsive.dart';
 
 // ---------------------------------------------------------------- Helpers
 
 Color _statusBg(ReportStatus s) => switch (s) {
   ReportStatus.pending => const Color(0xFFFFF3B0),
   ReportStatus.removed => const Color(0xFFFFB3B3),
-  ReportStatus.dismissed => const Color(0xFFE3E5EA),
+  ReportStatus.dismissed => const Color(0xFFF5DEC8),
 };
 
 Color _statusFg(ReportStatus s) => switch (s) {
   ReportStatus.pending => const Color(0xFF8A6D00),
   ReportStatus.removed => const Color(0xFF9B1C1C),
-  ReportStatus.dismissed => const Color(0xFF555B66),
+  ReportStatus.dismissed => const Color(0xFF8A746C),
 };
 
 const Color _kRejectPink = Color(0xFFFF9F9F);
@@ -35,9 +36,9 @@ String _dateText(DateTime d) {
 
 Widget _photo(String? path, {double iconSize = 30}) {
   final fallback = Container(
-    color: const Color(0xFFE6E9EF),
+    color: const Color(0xFFFFE8D6),
     child: Center(
-      child: Icon(Icons.pets, size: iconSize, color: const Color(0xFF8A8F98)),
+      child: Icon(Icons.pets, size: iconSize, color: const Color(0xFF8A746C)),
     ),
   );
   if (path == null) return fallback;
@@ -230,7 +231,7 @@ class _AdminReportedScreenState extends State<AdminReportedScreen> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF6F8FC0), Color(0xFFDDE4F0), Colors.white],
+          colors: [Color(0xFFF59E5B), Color(0xFFFFE8D6), Colors.white],
           stops: [0.0, 0.3, 0.5],
         ),
       ),
@@ -239,7 +240,7 @@ class _AdminReportedScreenState extends State<AdminReportedScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -334,9 +335,9 @@ class _AdminReportedScreenState extends State<AdminReportedScreen> {
                   }
 
                   return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                    padding: EdgeInsets.fromLTRB(context.hPad, 4, context.hPad, 20),
                     itemCount: reports.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 14),
+                    separatorBuilder: (_, _) => const SizedBox(height: 14),
                     itemBuilder: (_, i) {
                       final r = reports[i];
                       return _ReportCard(
@@ -377,12 +378,12 @@ class _ReportCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: kCardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E5E5)),
+        border: Border.all(color: const Color(0xFFF0E2D6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -478,8 +479,8 @@ class _ReportCard extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _kRejectPink,
                       foregroundColor: _kRejectText,
-                      disabledBackgroundColor: const Color(0xFFF1F2F5),
-                      disabledForegroundColor: const Color(0xFFB8BCC6),
+                      disabledBackgroundColor: kPeach,
+                      disabledForegroundColor: const Color(0xFFC9B8AE),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -572,7 +573,7 @@ class AdminReportDetailsScreen extends StatelessWidget {
         ).length;
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: kCream,
           appBar: AppBar(
             backgroundColor: Colors.white,
             foregroundColor: kNavy,
@@ -583,7 +584,7 @@ class AdminReportDetailsScreen extends StatelessWidget {
             ),
           ),
           body: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            padding: EdgeInsets.fromLTRB(context.hPad, 4, context.hPad, 20),
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
@@ -644,7 +645,7 @@ class AdminReportDetailsScreen extends StatelessWidget {
           bottomNavigationBar: pending
               ? SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 12),
               child: Row(
                 children: [
                   Expanded(

@@ -79,7 +79,7 @@ class _AdminLayoutState extends State<AdminLayout> {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kCream,
       body: IndexedStack(index: _selectedIndex, children: pages),
       bottomNavigationBar: ListenableBuilder(
         listenable: Listenable.merge([
