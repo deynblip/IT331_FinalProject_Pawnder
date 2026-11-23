@@ -9,6 +9,7 @@ import '../utils/report_style.dart';
 import '../widgets/adopt_pet_photo.dart';
 import '../widgets/status_chip.dart';
 import 'application_details_screen.dart';
+import '../utils/responsive.dart';
 
 /// Applications submitted by the logged-in user
 /// (Profile > My Activity > Adoption Applications).
@@ -20,7 +21,7 @@ class MyApplicationsScreen extends StatelessWidget {
 
   void _browse(BuildContext context) {
     Navigator.pop(context);
-    onBrowseAdoptions?.call(); 
+    onBrowseAdoptions?.call();
   }
 
   Widget _browseButton(BuildContext context) {
@@ -41,14 +42,14 @@ class MyApplicationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kCream,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.symmetric(horizontal: context.hPad),
           // Rebuilds by itself when an application is added or changed.
           child: ValueListenableBuilder<int>(
             valueListenable: ApplicationService.changes,
-            builder: (context, _, __) {
+            builder: (context, _, _) {
               final items = ApplicationService.forCurrentUser();
 
               return Column(
@@ -158,9 +159,9 @@ class _ApplicationCard extends StatelessWidget {
     ].join('  ·  ');
 
     final placeholder = Container(
-      color: const Color(0xFFE6E9EF),
+      color: const Color(0xFFFFE8D6),
       child: const Center(
-        child: Icon(Icons.pets, size: 30, color: Color(0xFF8A8F98)),
+        child: Icon(Icons.pets, size: 30, color: Color(0xFF8A746C)),
       ),
     );
 
@@ -172,12 +173,12 @@ class _ApplicationCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: kCardColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE3E5EA)),
+            border: Border.all(color: const Color(0xFFF5DEC8)),
             boxShadow: const [
               BoxShadow(
-                  color: Color(0x14000000), blurRadius: 10, offset: Offset(0, 3)),
+                  color: Color(0x14C4531F), blurRadius: 10, offset: Offset(0, 3)),
             ],
           ),
           child: Row(

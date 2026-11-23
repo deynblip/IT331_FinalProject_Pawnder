@@ -5,6 +5,7 @@ import '../services/application_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/application_style.dart';
 import '../widgets/status_chip.dart';
+import '../utils/responsive.dart';
 
 /// The pet owner reads an application that the admin forwarded and makes the
 /// final decision (Approve / Reject).
@@ -205,7 +206,8 @@ class _OwnerApplicationScreenState extends State<OwnerApplicationScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
+        color: kCardColor,
+        border: Border.all(color: kCardBorder),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
@@ -221,10 +223,10 @@ class _OwnerApplicationScreenState extends State<OwnerApplicationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kCream,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

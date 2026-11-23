@@ -89,14 +89,22 @@ class _ReportDialogState extends State<_ReportDialog> {
           children: [
             const Text('Why are you reporting this?'),
             const SizedBox(height: 4),
-            ...ReportReason.values.map(
-                  (r) => RadioListTile<ReportReason>(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                title: Text(r.label),
-                value: r,
-                groupValue: _reason,
-                onChanged: _sending ? null : (v) => setState(() => _reason = v),
+            RadioGroup<ReportReason>(
+              groupValue: _reason,
+              onChanged: (v) {
+                if (!_sending) setState(() => _reason = v);
+              },
+              child: Column(
+                children: ReportReason.values
+                    .map(
+                      (r) => RadioListTile<ReportReason>(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(r.label),
+                    value: r,
+                  ),
+                )
+                    .toList(),
               ),
             ),
             const SizedBox(height: 8),

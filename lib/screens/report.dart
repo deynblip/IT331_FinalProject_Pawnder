@@ -5,6 +5,7 @@ import '../models/stray_report.dart';
 import '../utils/app_colors.dart';
 import '../widgets/report_card.dart';
 import 'report_details_screen.dart';
+import '../utils/responsive.dart';
 
 /// Reports tab: the community reports bulletin (list + filters).
 /// NOTE: Gumagamit pa ng mock data. Ikakabit sa ReportService sa backend step.
@@ -61,7 +62,7 @@ class _ReportsPageState extends State<ReportsPage> {
     final items = _visible;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -4,12 +4,14 @@ import '../models/stray_report.dart';
 import '../services/auth_service.dart';
 import '../services/rescuer_service.dart';
 import '../services/response_service.dart';
+import '../utils/app_colors.dart';
 import '../utils/report_style.dart';
 import '../widgets/report_image.dart';
 import '../widgets/status_chip.dart';
 import '../widgets/rescuer_badge.dart';
 import '../models/content_report.dart';
 import '../widgets/report_content_dialog.dart';
+import '../utils/responsive.dart';
 
 class ReportDetailsScreen extends StatefulWidget {
   final StrayReport report;
@@ -29,7 +31,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
 
   void _apply(StrayReport updated) {
     setState(() => _report = updated);
-    widget.onChanged(updated); // para mag-update din ang list
+    widget.onChanged(updated); // so the list updates too
   }
 
   void _snack(String message) {
@@ -106,7 +108,8 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     final ok = await _confirm(
       "Can't make it?",
       'You will be removed from this report. If nobody else is responding, '
-          'it goes back to Needs Rescue.',
+          'it goes back to Needs Rescue. This counts as a cancelled '
+          'response in your Rescue Record.',
       'Withdraw',
     );
     if (!ok || !mounted) return;
@@ -143,7 +146,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
         ),
         builder: (sheetContext) => SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            padding: EdgeInsets.fromLTRB(context.hPad, 20, context.hPad, 12),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,6 +189,53 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
         const SnackBar(content: Text('Could not open Google Maps.')),
       );
     }
+  }
+
+  /// Shown when the reporter said the animal has a collar / looks owned.
+  Widget _lostPetNotice() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: lostPetColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: lostPetColor.withValues(alpha: 0.4)),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.pets, color: lostPetColor),
+          SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Possibly a lost pet',
+                  style: TextStyle(
+                    color: lostPetColor,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'The reporter said this animal has a collar or looks like '
+                      "someone's pet. Please don't take it home right away. Ask "
+                      'around the area or check with the barangay first.',
+                  style: TextStyle(
+                    color: ReportColors.navy,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _field(String label, String value) {
@@ -238,6 +288,10 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
   Widget _responderTile(ReportResponder r) {
     final isMe = r.email == AuthService.currentEmail;
     final isLead = r.role == ResponderRole.lead;
+    final stats = ResponseService.statsFor(r.email);
+    final record = r.isVerified
+        ? '${stats.rescues} rescues'
+        : '${stats.trustLevel.label} · ${stats.rescues} rescues';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -260,6 +314,14 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                     color: ReportColors.navy,
                     fontSize: 14,
                     fontWeight: isLead ? FontWeight.w800 : FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  record,
+                  style: const TextStyle(
+                    color: ReportColors.grey,
+                    fontSize: 12,
                   ),
                 ),
                 if (r.organization != null) ...[
@@ -426,10 +488,10 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: kCardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE3E5EA)),
-        boxShadow: const [BoxShadow(color: Color(0x14000000), blurRadius: 10, offset: Offset(0, 3))],
+        border: Border.all(color: const Color(0xFFF5DEC8)),
+        boxShadow: const [BoxShadow(color: Color(0x14C4531F), blurRadius: 10, offset: Offset(0, 3))],
       ),
       child: content,
     );
@@ -438,10 +500,10 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kCream,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          padding: EdgeInsets.fromLTRB(context.hPad, 12, context.hPad, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -515,13 +577,14 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                   ),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 56),
-                    side: const BorderSide(color: Color(0xFFE3E5EA)),
+                    side: const BorderSide(color: Color(0xFFF5DEC8)),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
                 ),
               ),
               const SizedBox(height: 18),
-              _field('Description', _report.descriptionOrDefault),
+              if (_report.possiblyLostPet) _lostPetNotice(),
+              _field('Condition and Behavior', _report.descriptionOrDefault),
               const SizedBox(height: 4),
               _statusCard(),
             ],

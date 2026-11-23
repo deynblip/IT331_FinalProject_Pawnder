@@ -19,7 +19,8 @@ The name combines **"paw"** (animals) and **"finder"** (the act of finding): hel
 - [Tech Stack](#-tech-stack)
 - [Getting Started](#-getting-started)
 - [Project Structure](#-project-structure)
-- [Planned Changes](#-planned-changes)
+- [Changes in This Version](#-changes-in-this-version)
+- [Next Step: Supabase Backend](#-next-step-supabase-backend)
 - [Future Enhancements](#-future-enhancements)
 - [Known Limitations](#-known-limitations)
 - [References](#-references)
@@ -78,13 +79,14 @@ Pawnder keeps reports, locations, rescue status, and adoption screening together
 ### Regular users
 - **Landing page and authentication**: Sign In and Create Account
 - **Home Dashboard**: welcome message, quick *Report a Stray* action, nearby reports preview, safety guidelines, side drawer, and notification bell
-- **Animal Reporting**: 3-step form (photo + type + urgency + description → location pin → review and submit)
+- **Animal Reporting**: one-page form (photo, animal type, urgency, location, condition and behavior, and a "looks like someone's pet" checkbox) with a map preview, *Use my location*, and a full-screen *Pin on map*; no review step
 - **Map and Nearby Reports**: color-coded pins, distance filters (5 km, 10 km, 20 km, All), report previews, and directions through Google Maps
 - **Reports Bulletin and Report Details**: filter by urgency, full report info, responder count, and *Get Directions*
 - **Rescue response**: *I'm on my way!* and *Mark as Rescued* (Needs Rescue → Rescue in Progress → Rescued)
 - **Adoption Bulletin and Animal Profile**: filter by Dogs, Cats, or All Pets; *Apply to Adopt* and *Report Post*
-- **Post a Pet for Adoption**: 4-step form; posts are reviewed by an admin before they appear in the Adoption Bulletin, and posters can track the status (Pending, Approved, Rejected) in My Adoption Posts
-- **Adoption Application**: applicant info, living environment, pet ownership experience, and reason for applying
+- **Post a Pet for Adoption**: one-page form with a short confirmation before publishing; posts are reviewed by an admin before they appear in the Adoption Bulletin, and posters can track the status (Pending, Approved, Rejected) in My Adoption Posts
+- **Adoption Application**: one-page form (applicant info, address, living environment, and pet ownership experience) with a required valid-ID agreement and a short confirmation before submitting
+- **Forms**: required fields are marked with a red `*`, and the screen scrolls to the first field that needs fixing
 - **Profile and My Activity**: My Reports, Adoption Applications, and My Adoption Posts (posters can accept or decline forwarded applications)
 - **Side drawer**: Help & Support, About, Settings, Terms & Conditions, Privacy Policy, Sign Out
 
@@ -104,10 +106,10 @@ Pawnder keeps reports, locations, rescue status, and adoption screening together
 | IDE | Android Studio |
 | Version control | Git and GitHub |
 | Maps | `flutter_map` + `latlong2` (OpenStreetMap tiles), Google Maps for directions |
-| Location | `geolocator`, `geocoding` |
+| Location | `geolocator`, `geocoding` (Android/iOS), OpenStreetMap Nominatim through `http` (web and fallback) |
 | Device features | `image_picker` (camera and gallery), `url_launcher` (maps and contact options) |
 | UI design | Canva |
-| Data | In-memory mock data and services (temporary, no backend yet) |
+| Data | In-memory mock data and services for now; moving to **Supabase** (see [Next Step](#-next-step-supabase-backend)) |
 
 ---
 
@@ -131,7 +133,7 @@ flutter run
 | Admin | `admin@pawnder.com` | `admin123` |
 | Regular user | Create one on the Sign Up page | — |
 
-> ⚠️ **For demo purposes only.** Accounts and data are stored in memory and reset every time the app restarts. The admin password is hardcoded and will be replaced once a real backend (for example, Firebase Auth with an admin role) is added.
+> ⚠️ **For demo purposes only.** Accounts and data are stored in memory and reset every time the app restarts. The admin account (shown as **"Partner Org Admin"**) is hardcoded and will be replaced by Supabase Auth with an admin role.
 
 ---
 
@@ -146,23 +148,23 @@ lib/
 ├── screens/                  # User screens (home, maps, reports, adopt, profile, forms, ...)
 │   ├── admin/                # Admin dashboard, posts, applications, reported content
 │   └── drawer/               # About, Settings, Help & Support, Terms, Privacy Policy
-├── utils/                    # Colors, styles, validators, theme controller
-└── widgets/                  # Reusable widgets (cards, chips, auth fields, ...)
+├── utils/                    # Colors, styles, validators, theme controller, responsive layout
+└── widgets/                  # Reusable widgets (cards, chips, auth fields, field labels, ...)
 ```
 
 ---
 
-## 🔧 Planned Changes
+## 🔧 Changes in This Version
 
-These are the changes we plan to make to the current version of the app.
+These changes are implemented in the `feature/planned-changes` branch (the app still uses in-memory mock data until the [Supabase backend](#-next-step-supabase-backend) is added).
 
 ### 1. Responder Check-in Flow
 Right now, *I'm on my way!* only adds +1 to the responder count, and anyone can mark a report as rescued. To make rescue responses more trustworthy, we will use the device's GPS (`geolocator`, already used in `report_stray.dart`) so responders must physically reach the animal.
 
-1. **I'm on my way!** The user is saved as a responder (by user ID, not just +1 to the count). Each user can have **only one active response at a time**, and cannot press the button again on the same report.
+1. **I'm on my way!** The user is saved as a responder (by user ID, not just +1 to the count). A regular user can have **only one active response at a time** (Verified Rescuers can have several), and no one can press the button again on the same report.
 2. **I've Arrived.** This button only works when the user's GPS is within **~200 m of the report's pin**. After checking in, the report shows **"Responder on site."**
 3. **Cancel / I can't make it.** A responder can withdraw. If **all** responders withdraw, the report goes back to **Needs Rescue**.
-4. **Mark as Rescued.** Only the **original reporter** or a **responder who has checked in** can mark the animal as rescued.
+4. **Mark as Rescued.** Only the **original reporter** or a **responder who has checked in** can mark the animal as rescued, and they must be within **~200 m of the pin at that moment** (this includes the reporter).
 
 Code changes involved:
 - `models/stray_report.dart`: replace `int responders` with a list of responder IDs and their check-in status
@@ -182,7 +184,7 @@ Every responder has a **track record** based on what they actually do in the app
 A rescue only counts as completed if the responder physically checked in at the location, so the numbers are hard to fake.
 
 **Where it is shown:**
-- **On the report:** the list of responders with their record, for example *"Juan D. · 8 rescues"* or *"Maria S. · Verified Rescuer · Strays Worth Saving · 25 rescues."*
+- **On the report:** the list of responders with their record, for example *"Juan D. · 8 rescues"* or *"Maria S. · Lead · 25 rescues · Verified Rescuer · Batangas Animal Rescue Network."* (the organization in the sample data)
 - **On the profile:** completed rescues, cancelled responses, and completion rate.
 
 **Trust levels for regular users** *(example thresholds, to be finalized)*:
@@ -227,7 +229,7 @@ Pawnder will have two kinds of responders: **regular users** and **Verified Resc
 
 > Choosing *Professional Rescuer* at sign-up does **not** give extra permissions right away. Permissions only unlock after the admin approves the application, so no one can claim to be a rescuer just by picking the option.
 
-> No ID or document is uploaded in the app. The admin verifies the user through the organization itself, in line with the privacy approach in [Adopter and Poster Verification](#8-adopter-and-poster-verification-proposed).
+> No ID or document is uploaded in the app. The admin verifies the user through the organization itself, in line with the privacy approach in [Adopter and Poster Verification](#8-adopter-and-poster-verification).
 
 **Regular User vs. Verified Rescuer:**
 
@@ -254,6 +256,7 @@ Administrators will be **authorized representatives of a partner animal welfare 
 - **Proposed partner organization:** [Strays Worth Saving](https://swsph.org/), a Batangas-based, SEC-registered animal rescue foundation that rescues and rehomes dogs and cats. Their strict adopter screening matches the admin's role in Pawnder.
 - **Status:** *Proposed / target partner only.* The organization has not been contacted yet and has not agreed to any partnership.
 - Admin accounts are issued by the Pawnder team (as developers and maintainers) and cannot be self-assigned.
+- In the demo, the admin account is named **"Partner Org Admin"**. It will be renamed to the organization once a partnership is confirmed.
 - Pawnder will only partner with rescue groups that **rehome** animals rather than euthanize them. Rescued animals are directed to fosters, shelters, or the Adoption Bulletin.
 
 ### 5. Adoption Post Review: Pre-approval
@@ -296,18 +299,72 @@ Pet owners can still post pets for rehoming, but **rescued stray animals are the
 - **Extra filter row:** All / Rescued Strays / Rehoming (works together with Dogs / Cats / All Pets)
 - **Rules:** no selling, no prices or fees, and no breeding or "for stud" posts. Posts that break the rules are rejected during admin review, or reported and removed if already approved.
 
-### 7. Possible Lost Pets *(proposed)*
+### 7. Possible Lost Pets
 A reported "stray" may actually be someone's lost pet.
 - Add a **"Has a collar / looks like someone's pet"** checkbox to the report form.
 - Reports with this checked show a **"Possibly a lost pet"** tag, reminding responders not to take the animal home right away and to ask around or check with the barangay first.
 
-### 8. Adopter and Poster Verification *(proposed)*
+### 8. Adopter and Poster Verification
 We will **not** require uploading a valid ID in the app, because government IDs are sensitive personal information under the **Data Privacy Act of 2012 (RA 10173)** and need secure storage, consent, and limited access.
 - **Adopters:** a required checkbox in the application: *"I agree to present a valid ID during the in-person meet-up or turnover."* The ID is checked in person, so no ID is stored in the app.
 - **Posters:** verified email or phone number, a profile photo, and the existing *Report Post* feature.
 
-### 9. UI Redesign
-The current UI (mostly navy and blue) will be **updated and replaced**. The new color palette and layout are still being finalized. Screenshots in the documentation will be updated to match the final app (for example, the Adopt a Pet screen has no back arrow because it is a tab, and its default filter is *All Pets*).
+### 9. UI Redesign: "Sunset Paws" Palette
+The navy and blue UI is replaced with a warm **Sunset Paws** palette. The layout of every screen stays the same; only the colors change.
+
+| Role | Color |
+|---|---|
+| Text, headings, main dark buttons | Cocoa brown `#3D2C29` |
+| Buttons, selected chips, links, icons | Dark orange `#C4531F` (white text is readable on it) |
+| Banners and the drawer header | Orange gradient `#E0662E` → `#F59E5B` |
+| Page background | Cream `#FFF6EC` |
+| Icon circles, soft fills | Peach `#FFE8D6` |
+| Cards and panels | Warm white `#FFFCF8` (`kCardColor`) with a `#F5DEC8` border and a soft warm shadow |
+| Secondary accent, *Sighted* and *In Progress* | Teal `#2BA59A` |
+| *Urgent* / *Needs Help* / *Rescued* | `#E04F4F` / `#E9A23B` / `#4CAF6E` |
+
+- The colors live in `utils/app_colors.dart` and `utils/report_style.dart`. The old names (`kNavy`, `kBlue`, ...) are kept so every screen picks up the new colors.
+- The same card style is used on every page, and peach is used for small highlights (chips, unread notifications, info boxes).
+- The logo (cocoa brown), Welcome background, and Home banner images were recolored. Home shows the card area of `home_banner.png`, and the Admin Dashboard crops the row of paws from the same image. If the image size changes, update the crop numbers in `home.dart` (`_HomeBanner`) and `admin_dashboard.dart` (`_PawStrip`).
+- The default profile picture is now an icon, so the unused `avatar.png`, `adopt_icon.png`, and `report_icon.png` were removed.
+- Screenshots in the documentation will be updated to match the final app (for example, the Adopt a Pet screen has no back arrow because it is a tab, and its default filter is *All Pets*).
+
+### 10. One-Page Forms
+*Report a Stray*, *Post a Pet* (and *Edit Post*), and *Adoption Application* are now **one scrolling page** instead of 3–4 steps, with the main button always visible at the bottom.
+- **Report a Stray:** no review step, so reporting is fast. The location uses a small **map preview** with *Use my location* and *Pin on map* (a full-screen map), so dragging the map never fights with scrolling the form.
+- **Post a Pet and Adoption Application:** the review step is replaced by a **short confirmation dialog** that shows the key details (name, location, and contact details) with *Edit* and *Publish/Submit*.
+- If something is missing, the form shows the error and **scrolls to the first section that needs fixing**.
+
+### 11. Required Field Markers
+Required fields have a red **`*`** (`widgets/field_label.dart`), and each long form starts with *"Fields marked with \* are required."* Optional fields still say *(optional)*. Fields in the Login, Sign Up, and Verified Rescuer forms get the `*` automatically when they have a validator.
+
+### 12. Place Names for Pinned Locations
+The `geocoding` package only works on Android and iOS, so in Chrome the address showed as coordinates. On the web (and whenever geocoding fails on a phone), the address is now looked up with **OpenStreetMap Nominatim** using the `http` package, e.g. *"P. Burgos St, Poblacion, Batangas City, Batangas"*.
+
+### 13. Responsive Layout
+- Page padding adapts to the screen width: **16 dp** on small phones (< 360 dp), **20 dp** on regular phones, and **24 dp** on large phones and tablets (≥ 400 dp), through `context.hPad` (`utils/responsive.dart`).
+- On tablets and wide screens, the app is centered at **600 dp**.
+- System font scaling is capped at **1.3×** so fixed-height layouts don't overflow.
+- The Adoption Bulletin shows 2 columns on phones and 3 on wider screens.
+
+### 14. Package Name and Code Cleanup
+- The package was renamed from `paw_kie` to **`pawnder`**, and the Android app label to **Pawnder**.
+- Comments were cleaned up (English only, no outdated notes), and `flutter analyze` reports no issues (deprecated `withOpacity`, `__` parameters, and radio `groupValue` were updated).
+
+---
+
+## 🗄 Next Step: Supabase Backend
+
+The backend will use **Supabase** for everything, replacing the in-memory services one by one. The screens already go through services (`AuthService`, `ReportService`, `AdoptionService`, `ResponseService`, ...), so mainly the services change.
+
+| Supabase feature | Used for |
+|---|---|
+| **Auth** | Sign up, login, forgot password, and roles (user, Verified Rescuer, admin) |
+| **Database (Postgres)** | Reports, responders and check-ins, adoption posts, applications, content reports, rescuer applications, notifications |
+| **Storage** | Report photos, pet photos, and profile pictures |
+| **Row Level Security** | Users can only change their own data; admins review posts and applications |
+
+**Planned order:** setup and Auth → reports (so new reports appear in the Bulletin and Map) → Check-in Flow and rescue records → adoption posts and applications → notifications and Verified Rescuers → security rules.
 
 ---
 
@@ -317,7 +374,6 @@ The current UI (mostly navy and blue) will be **updated and replaced**. The new 
 - **Photo proof** when marking an animal as rescued
 - **Lost & Found** section for lost pets
 - **Optional ID verification** with a *Verified* badge, stored securely and visible only to admins, in compliance with the Data Privacy Act
-- **Backend integration** (authentication, database, and image storage) to replace the in-memory mock data
 - **Push notifications** and nearby alerts
 - **Dark mode** support for all screens
 
@@ -326,13 +382,15 @@ The current UI (mostly navy and blue) will be **updated and replaced**. The new 
 ## ⚠️ Known Limitations
 
 - **Submitting a report does not guarantee immediate rescue or assistance.**
-- **Stray vs. lost pet:** Pawnder cannot confirm whether a reported animal is a stray or someone's lost pet.
+- **Stray vs. lost pet:** Pawnder cannot confirm whether a reported animal is a stray or someone's lost pet. The *"Possibly a lost pet"* tag only depends on what the reporter sees.
 - **GPS spoofing:** the ~200 m check-in can be bypassed with mock-location apps.
-- **No real backend yet:** accounts and data are stored in memory and reset when the app restarts.
+- **No real backend yet:** accounts and data are stored in memory and reset when the app restarts (Supabase is the next step).
+- **Reports submitted in the app don't appear in the Bulletin or Map yet:** they are saved in a separate in-memory list until the Supabase backend is added.
+- **Free address lookup:** OpenStreetMap Nominatim allows about 1 request per second, which is enough for testing but not for a public release.
 - **Demo admin account:** the admin credentials are hardcoded for development only.
 - **Partner organization:** Strays Worth Saving is a proposed partner only and has not been contacted.
 - **Rescuer verification depends on the admin:** Verified Rescuer applications are checked manually by the partner organization, so approval is not instant.
-- **Android only:** the app has been developed and tested for Android.
+- **Platforms:** developed for Android; Chrome (web) is used for testing.
 
 ---
 

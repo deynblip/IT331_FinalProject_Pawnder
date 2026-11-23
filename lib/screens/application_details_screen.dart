@@ -6,6 +6,7 @@ import '../utils/app_colors.dart';
 import '../utils/application_style.dart';
 import '../widgets/adopt_pet_photo.dart';
 import '../widgets/status_chip.dart';
+import '../utils/responsive.dart';
 
 class ApplicationDetailsScreen extends StatelessWidget {
   final AdoptionApplication application;
@@ -54,21 +55,21 @@ class ApplicationDetailsScreen extends StatelessWidget {
     final color = applicationStatusColor(a.status);
 
     final placeholder = Container(
-      color: const Color(0xFFE6E9EF),
+      color: const Color(0xFFFFE8D6),
       child: const Center(
-        child: Icon(Icons.pets, size: 36, color: Color(0xFF8A8F98)),
+        child: Icon(Icons.pets, size: 36, color: Color(0xFF8A746C)),
       ),
     );
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kCream,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: context.hPad),
               child: Row(
                 children: [
                   IconButton(
@@ -92,7 +93,7 @@ class ApplicationDetailsScreen extends StatelessWidget {
             ),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                padding: EdgeInsets.fromLTRB(context.hPad, 12, context.hPad, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

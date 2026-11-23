@@ -70,6 +70,7 @@ class AdoptionService {
     required String contactPerson,
     required String contactPhone,
     required String contactEmail,
+    PetSource source = PetSource.rescuedStray,
   }) async {
     // Simulates a network call.
     await Future.delayed(const Duration(milliseconds: 700));
@@ -96,6 +97,7 @@ class AdoptionService {
         postedAt: DateTime.now(),
         rescuedBy: RescuerService.currentOrganization, // null if not verified
         ownerEmail: AuthService.currentEmail,
+        source: source,
       ),
     );
     _notify();
@@ -119,6 +121,7 @@ class AdoptionService {
         required String contactPerson,
         required String contactPhone,
         required String contactEmail,
+        PetSource? source,
       }) async {
     // Simulates a network call.
     await Future.delayed(const Duration(milliseconds: 500));
@@ -144,6 +147,7 @@ class AdoptionService {
       contactPerson: contactPerson,
       contactPhone: contactPhone,
       contactEmail: contactEmail,
+      source: source,
       status: PostStatus.pending, // re-review after an edit
       resubmitted: _pets[i].resubmitted || wasReviewed,
     );

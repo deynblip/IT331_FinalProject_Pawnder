@@ -10,6 +10,7 @@ import '../widgets/adopt_pet_photo.dart';
 import '../widgets/status_chip.dart';
 import 'owner_application_screen.dart';
 import 'post_pet_screen.dart';
+import '../utils/responsive.dart';
 
 /// Pets posted by the logged-in user, plus the applications forwarded to
 /// them for the final decision (Profile > My Activity > My Adoption Posts).
@@ -130,10 +131,10 @@ class MyPostsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kCream,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.symmetric(horizontal: context.hPad),
           // Rebuilds by itself when a post or an application changes.
           child: ListenableBuilder(
             listenable: Listenable.merge([
@@ -274,23 +275,23 @@ class MyPostsScreen extends StatelessWidget {
 
 // ------------------------------------------------------------ Shared bits
 
-const Color _kBorder = Color(0xFFE3E5EA);
+const Color _kBorder = Color(0xFFF5DEC8);
 
 BoxDecoration _cardDecoration() => BoxDecoration(
-  color: Colors.white,
+  color: kCardColor,
   borderRadius: BorderRadius.circular(20),
   border: Border.all(color: _kBorder),
   boxShadow: const [
     BoxShadow(
-        color: Color(0x14000000), blurRadius: 10, offset: Offset(0, 3)),
+        color: Color(0x14C4531F), blurRadius: 10, offset: Offset(0, 3)),
   ],
 );
 
 Widget _petThumb(String? photo) {
   final placeholder = Container(
-    color: const Color(0xFFE6E9EF),
+    color: const Color(0xFFFFE8D6),
     child: const Center(
-      child: Icon(Icons.pets, size: 30, color: Color(0xFF8A8F98)),
+      child: Icon(Icons.pets, size: 30, color: Color(0xFF8A746C)),
     ),
   );
   return ClipRRect(
@@ -430,9 +431,9 @@ class _PetPostCard extends StatelessWidget {
                       StatusChip(
                         label: pet.status.label,
                         color: pet.status == PostStatus.approved
-                            ? const Color(0xFF3FA34D)
+                            ? const Color(0xFF4CAF6E)
                             : pet.status == PostStatus.rejected
-                            ? const Color(0xFFD9534F)
+                            ? const Color(0xFFE04F4F)
                             : const Color(0xFFE0A800),
                         fontSize: 11,
                       ),

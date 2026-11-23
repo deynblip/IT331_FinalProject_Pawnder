@@ -114,7 +114,8 @@ class NotificationService {
     return switch (n.type) {
       NotificationType.rescueResponse => reportUpdates,
       NotificationType.rescuerApproved ||
-      NotificationType.rescuerRejected =>
+      NotificationType.rescuerRejected ||
+      NotificationType.rescuerFlagged =>
       true,
       _ => adoptionUpdates,
     };

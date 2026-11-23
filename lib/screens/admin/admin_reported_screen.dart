@@ -7,19 +7,21 @@ import '../../services/adoption_service.dart';
 import '../../services/content_report_service.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/adopt_pet_photo.dart';
+import '../../utils/responsive.dart';
+import '../../widgets/admin_top_bar.dart';
 
 // ---------------------------------------------------------------- Helpers
 
 Color _statusBg(ReportStatus s) => switch (s) {
   ReportStatus.pending => const Color(0xFFFFF3B0),
   ReportStatus.removed => const Color(0xFFFFB3B3),
-  ReportStatus.dismissed => const Color(0xFFE3E5EA),
+  ReportStatus.dismissed => const Color(0xFFF5DEC8),
 };
 
 Color _statusFg(ReportStatus s) => switch (s) {
   ReportStatus.pending => const Color(0xFF8A6D00),
   ReportStatus.removed => const Color(0xFF9B1C1C),
-  ReportStatus.dismissed => const Color(0xFF555B66),
+  ReportStatus.dismissed => const Color(0xFF8A746C),
 };
 
 const Color _kRejectPink = Color(0xFFFF9F9F);
@@ -35,9 +37,9 @@ String _dateText(DateTime d) {
 
 Widget _photo(String? path, {double iconSize = 30}) {
   final fallback = Container(
-    color: const Color(0xFFE6E9EF),
+    color: const Color(0xFFFFE8D6),
     child: Center(
-      child: Icon(Icons.pets, size: iconSize, color: const Color(0xFF8A8F98)),
+      child: Icon(Icons.pets, size: iconSize, color: const Color(0xFF8A746C)),
     ),
   );
   if (path == null) return fallback;
@@ -226,49 +228,22 @@ class _AdminReportedScreenState extends State<AdminReportedScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF6F8FC0), Color(0xFFDDE4F0), Colors.white],
-          stops: [0.0, 0.3, 0.5],
-        ),
-      ),
+      decoration: const BoxDecoration(gradient: kAdminGradient),
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      ColorFiltered(
-                        colorFilter: const ColorFilter.mode(
-                          Colors.white,
-                          BlendMode.srcIn,
-                        ),
-                        child: Image.asset('assets/logo.png', height: 38),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        tooltip: 'Notifications',
-                        icon: const Icon(
-                          Icons.notifications_none,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {},
-                      ),
-                    ],
-                  ),
-                  const Divider(color: Colors.white54, height: 12),
+                  const AdminTopBar(),
                   const SizedBox(height: 14),
                   const Text(
                     'Reported Content',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: kNavy,
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
                     ),
@@ -334,16 +309,15 @@ class _AdminReportedScreenState extends State<AdminReportedScreen> {
                   }
 
                   return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                    padding: EdgeInsets.fromLTRB(context.hPad, 4, context.hPad, 20),
                     itemCount: reports.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 14),
+                    separatorBuilder: (_, _) => const SizedBox(height: 14),
                     itemBuilder: (_, i) {
                       final r = reports[i];
                       return _ReportCard(
                         report: r,
                         content: _contentOf(r),
                         onView: () => _openDetails(r),
-                        onRemove: () => _removeContent(context, r),
                       );
                     },
                   );
@@ -361,13 +335,11 @@ class _ReportCard extends StatelessWidget {
   final ContentReport report;
   final _Content content;
   final VoidCallback onView;
-  final VoidCallback onRemove;
 
   const _ReportCard({
     required this.report,
     required this.content,
     required this.onView,
-    required this.onRemove,
   });
 
   @override
@@ -377,12 +349,12 @@ class _ReportCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: kCardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E5E5)),
+        border: Border.all(color: const Color(0xFFF0E2D6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -446,60 +418,41 @@ class _ReportCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 36,
-                  child: OutlinedButton(
-                    onPressed: onView,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: kNavy,
-                      side: const BorderSide(color: kNavy),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text(
-                      'View Details',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                    ),
-                  ),
+          // Same as the Posts tab: pending reports are reviewed in Report
+          // Details (Dismiss or Remove Content) before the admin decides.
+          SizedBox(
+            width: double.infinity,
+            height: 38,
+            child: pending
+                ? ElevatedButton(
+              onPressed: onView,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kBlue,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SizedBox(
-                  height: 36,
-                  child: ElevatedButton(
-                    // Only a pending report whose content still exists can
-                    // be removed. Everything else is already closed.
-                    onPressed: (pending && content.exists) ? onRemove : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _kRejectPink,
-                      foregroundColor: _kRejectText,
-                      disabledBackgroundColor: const Color(0xFFF1F2F5),
-                      disabledForegroundColor: const Color(0xFFB8BCC6),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      pending
-                          ? 'Remove'
-                          : (report.status == ReportStatus.removed
-                          ? 'Removed'
-                          : 'Dismissed'),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
+              child: const Text(
+                'Review Report',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              ),
+            )
+                : OutlinedButton(
+              onPressed: onView,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: kNavy,
+                side: const BorderSide(color: kNavy),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
-            ],
+              child: const Text(
+                'View Details',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
           ),
         ],
       ),
@@ -572,7 +525,7 @@ class AdminReportDetailsScreen extends StatelessWidget {
         ).length;
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: kCream,
           appBar: AppBar(
             backgroundColor: Colors.white,
             foregroundColor: kNavy,
@@ -583,7 +536,7 @@ class AdminReportDetailsScreen extends StatelessWidget {
             ),
           ),
           body: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            padding: EdgeInsets.fromLTRB(context.hPad, 4, context.hPad, 20),
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
@@ -644,7 +597,7 @@ class AdminReportDetailsScreen extends StatelessWidget {
           bottomNavigationBar: pending
               ? SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 12),
               child: Row(
                 children: [
                   Expanded(

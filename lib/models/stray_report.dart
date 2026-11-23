@@ -44,6 +44,9 @@ class StrayReport {
   final int responders;
   final bool isMine; // TEMP: report ng naka-login na user
 
+  /// Reporter ticked "Has a collar / looks like someone's pet".
+  final bool possiblyLostPet;
+
   const StrayReport({
     required this.id,
     required this.title,
@@ -59,6 +62,7 @@ class StrayReport {
     this.distanceKm = 0,
     this.responders = 0,
     this.isMine = false,
+    this.possiblyLostPet = false,
   });
 
   String get distanceText => distanceKm == distanceKm.roundToDouble()
@@ -74,7 +78,7 @@ class StrayReport {
   }
 
   String get descriptionOrDefault =>
-      description.trim().isEmpty ? 'No description provided.' : description;
+      description.trim().isEmpty ? 'No details provided.' : description;
 
   StrayReport copyWith({RescueStatus? status, int? responders}) {
     return StrayReport(
@@ -92,6 +96,7 @@ class StrayReport {
       lng: lng,
       responders: responders ?? this.responders,
       isMine: isMine,
+      possiblyLostPet: possiblyLostPet,
     );
   }
 }

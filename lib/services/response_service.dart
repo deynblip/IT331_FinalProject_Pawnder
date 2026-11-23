@@ -72,6 +72,7 @@ class ResponseRecord {
   final String reportId;
   final RescueOutcome? outcome; // null = assisted only
   final bool checkedIn;
+  final bool cancelled; // "Cancel / I can't make it"
   final DateTime date;
 
   const ResponseRecord({
@@ -79,25 +80,74 @@ class ResponseRecord {
     required this.reportId,
     this.outcome,
     required this.checkedIn,
+    this.cancelled = false,
     required this.date,
   });
+
+  /// Checked in at the location and the animal was rescued
+  /// (as the one who closed it, or as an assisting responder).
+  bool get isCompletedRescue =>
+      !cancelled && checkedIn && (outcome == null || outcome!.isSuccess);
+}
+
+/// Trust level for responders, based on their track record.
+enum TrustLevel {
+  newHelper,
+  activeHelper,
+  trustedHelper;
+
+  String get label => switch (this) {
+    TrustLevel.newHelper => 'New Helper',
+    TrustLevel.activeHelper => 'Active Helper',
+    TrustLevel.trustedHelper => 'Trusted Helper',
+  };
 }
 
 class ResponderStats {
   final int responses;
-  final int rescues;
+  final int rescues; // completed rescues (checked in + rescued)
+  final int cancelled;
   final int unableToLocate;
   final int checkIns;
 
   const ResponderStats({
     required this.responses,
     required this.rescues,
+    required this.cancelled,
     required this.unableToLocate,
     required this.checkIns,
   });
 
+  // Example thresholds (README: to be finalized by the team).
+  static const int activeHelperRescues = 3;
+  static const int trustedHelperRescues = 10;
+  static const double maxTrustedCancelRate = 0.30;
+
+  /// A Verified Rescuer with at least this many responses and a cancel
+  /// rate at or above [maxTrustedCancelRate] is flagged for the admin.
+  static const int minResponsesForFlag = 3;
+
+  double get cancelRate => responses == 0 ? 0 : cancelled / responses;
+
   String get checkInRate =>
       responses == 0 ? '-' : '${(checkIns * 100 / responses).round()}%';
+
+  String get completionRate =>
+      responses == 0 ? '-' : '${(rescues * 100 / responses).round()}%';
+
+  String get cancelRateText =>
+      responses == 0 ? '-' : '${(cancelRate * 100).round()}%';
+
+  TrustLevel get trustLevel {
+    if (rescues >= trustedHelperRescues && cancelRate < maxTrustedCancelRate) {
+      return TrustLevel.trustedHelper;
+    }
+    if (rescues >= activeHelperRescues) return TrustLevel.activeHelper;
+    return TrustLevel.newHelper;
+  }
+
+  bool get hasHighCancelRate =>
+      responses >= minResponsesForFlag && cancelRate >= maxTrustedCancelRate;
 }
 
 class RescueClosure {
@@ -219,10 +269,12 @@ class ResponseService {
   /// Track record the admin checks when reviewing a rescuer application.
   static ResponderStats statsFor(String email) {
     final key = email.trim().toLowerCase();
-    final mine = _history.where((r) => r.email == key).toList();
+    final mine =
+    _history.where((r) => r.email.toLowerCase() == key).toList();
     return ResponderStats(
       responses: mine.length,
-      rescues: mine.where((r) => r.outcome?.isSuccess ?? false).length,
+      rescues: mine.where((r) => r.isCompletedRescue).length,
+      cancelled: mine.where((r) => r.cancelled).length,
       unableToLocate: mine
           .where((r) => r.outcome == RescueOutcome.unableToLocate)
           .length,
@@ -247,9 +299,10 @@ class ResponseService {
       return const ActionResult.fail('You are already responding here.');
     }
 
-    // One active response at a time, for everyone.
+    // Regular users: one active response at a time.
+    // Verified Rescuers: many at a time (it is their job).
     final org = RescuerService.organizationOf(email);
-    if (activeCount(email) > 0) {
+    if (org == null && activeCount(email) > 0) {
       return const ActionResult.fail(
         'You can only respond to one report at a time. Finish or withdraw '
             'from your current response first.',
@@ -364,13 +417,6 @@ class ResponseService {
     if (!isInactive(report)) {
       return const ActionResult.fail('This report still has recent updates.');
     }
-    if (activeCount(email) > 0 && mine(report.id) == null) {
-      return const ActionResult.fail(
-        'You can only respond to one report at a time. Finish or withdraw '
-            'from your current response first.',
-      );
-    }
-
     final now = DateTime.now();
     final others = (_active[report.id] ?? const <ReportResponder>[])
         .where((r) => r.email != email)
@@ -393,10 +439,24 @@ class ResponseService {
   }
 
   /// Leave a report without finishing it.
+  /// Counted as a cancelled response in the user's track record.
   static ActionResult withdraw(String reportId) {
     final email = AuthService.currentEmail;
     if (email == null) return const ActionResult.fail('Please log in first.');
-    return _remove(reportId, email);
+    final me = mine(reportId);
+    if (me == null) {
+      return const ActionResult.fail('You are not responding to this report.');
+    }
+    _history.add(ResponseRecord(
+      email: me.email,
+      reportId: reportId,
+      checkedIn: me.checkedIn,
+      cancelled: true,
+      date: DateTime.now(),
+    ));
+    final result = _remove(reportId, email);
+    RescuerService.checkCancelRate(email);
+    return result;
   }
 
   /// Mark as rescued / choose an outcome.

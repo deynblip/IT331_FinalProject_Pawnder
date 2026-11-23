@@ -6,30 +6,36 @@ import '../../services/adoption_service.dart';
 import '../../services/application_service.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/adopt_pet_photo.dart';
+import '../../utils/responsive.dart';
+import '../../widgets/admin_top_bar.dart';
 
 // ---------------------------------------------------------------- Helpers
 
-/// "Pending" in the admin tab = not decided yet.
+/// "Pending" in the admin tab = waiting for the admin's screening.
 bool _isPending(AdoptionApplication a) =>
-    a.status == ApplicationStatus.pendingScreening ||
-        a.status == ApplicationStatus.forwardedToOwner;
+    a.status == ApplicationStatus.pendingScreening;
 
-String _statusLabel(AdoptionApplication a) =>
-    _isPending(a) ? 'Pending' : a.status.label;
+/// Short labels so the status pill fits on the card.
+String _statusLabel(AdoptionApplication a) => switch (a.status) {
+  ApplicationStatus.pendingScreening => 'Pending',
+  ApplicationStatus.forwardedToOwner => 'Forwarded',
+  ApplicationStatus.approved => 'Approved',
+  ApplicationStatus.rejected => 'Rejected',
+};
 
-Color _statusBg(AdoptionApplication a) {
-  if (_isPending(a)) return const Color(0xFFFFF3B0);
-  return a.status == ApplicationStatus.approved
-      ? const Color(0xFF8ED16F)
-      : const Color(0xFFFFB3B3);
-}
+Color _statusBg(AdoptionApplication a) => switch (a.status) {
+  ApplicationStatus.pendingScreening => const Color(0xFFFFF3B0),
+  ApplicationStatus.forwardedToOwner => const Color(0xFFD5F0EC),
+  ApplicationStatus.approved => const Color(0xFF8ED16F),
+  ApplicationStatus.rejected => const Color(0xFFFFB3B3),
+};
 
-Color _statusFg(AdoptionApplication a) {
-  if (_isPending(a)) return const Color(0xFF8A6D00);
-  return a.status == ApplicationStatus.approved
-      ? const Color(0xFF1F5E10)
-      : const Color(0xFF9B1C1C);
-}
+Color _statusFg(AdoptionApplication a) => switch (a.status) {
+  ApplicationStatus.pendingScreening => const Color(0xFF8A6D00),
+  ApplicationStatus.forwardedToOwner => const Color(0xFF1C6E66),
+  ApplicationStatus.approved => const Color(0xFF1F5E10),
+  ApplicationStatus.rejected => const Color(0xFF9B1C1C),
+};
 
 const Color _kRejectPink = Color(0xFFFF9F9F);
 const Color _kRejectText = Color(0xFF7A1F1F);
@@ -44,9 +50,9 @@ String _dateText(DateTime d) {
 
 Widget _photo(String? path, {double iconSize = 30}) {
   final fallback = Container(
-    color: const Color(0xFFE6E9EF),
+    color: const Color(0xFFFFE8D6),
     child: Center(
-      child: Icon(Icons.pets, size: iconSize, color: const Color(0xFF8A8F98)),
+      child: Icon(Icons.pets, size: iconSize, color: const Color(0xFF8A746C)),
     ),
   );
   if (path == null) return fallback;
@@ -105,65 +111,59 @@ class _RejectDialogState extends State<_RejectDialog> {
   }
 }
 
-/// Approve / reject through the service (the service itself checks that the
-/// logged-in account is an admin).
-Future<void> _changeStatus(
+/// Screening actions through the service (the service itself checks that
+/// the logged-in account is an admin). Forwarding sends the application to
+/// the pet owner, who makes the final decision.
+Future<void> _screen(
     BuildContext context,
-    AdoptionApplication app,
-    ApplicationStatus status,
-    ) async {
+    AdoptionApplication app, {
+      required bool forward,
+    }) async {
   final messenger = ScaffoldMessenger.of(context);
   String? reason;
 
-  if (status == ApplicationStatus.rejected) {
+  if (forward) {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Forward to ${app.posterName}?',
+          style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          '${app.fullName} passed screening. ${app.posterName} will see the '
+              'applicant\'s contact details and make the final decision for '
+              '${app.petName}.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text(
+              'Forward',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+  } else {
     reason = await showDialog<String>(
       context: context,
       builder: (_) => _RejectDialog(applicantName: app.fullName),
     );
     if (reason == null) return; // cancelled
-  } else if (status == ApplicationStatus.approved) {
-    // Picking this applicant closes the other waiting ones for this pet.
-    final others = ApplicationService.forPet(app.petId)
-        .where((a) => a.id != app.id && _isPending(a))
-        .length;
-    if (others > 0) {
-      final ok = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            'Approve ${app.fullName}?',
-            style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
-          ),
-          content: Text(
-            'This picks ${app.fullName} to adopt ${app.petName}. The other '
-                '$others waiting ${others == 1 ? 'applicant' : 'applicants'} '
-                'for ${app.petName} will be rejected.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text(
-                'Approve',
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
-            ),
-          ],
-        ),
-      );
-      if (ok != true) return;
-    }
   }
 
   try {
     await ApplicationService.setStatus(
       app.id,
-      status,
+      forward ? ApplicationStatus.forwardedToOwner : ApplicationStatus.rejected,
       reason: (reason == null || reason.isEmpty) ? null : reason,
     );
     messenger
@@ -171,8 +171,9 @@ Future<void> _changeStatus(
       ..showSnackBar(
         SnackBar(
           content: Text(
-            status == ApplicationStatus.approved
-                ? '${app.fullName} was approved to adopt ${app.petName}.'
+            forward
+                ? '${app.fullName}\'s application was forwarded to '
+                '${app.posterName}.'
                 : '${app.fullName}\'s application was rejected.',
           ),
         ),
@@ -222,6 +223,7 @@ class _AdminApplicationsScreenState extends State<AdminApplicationsScreen> {
   static const List<String> _filters = [
     'All',
     'Pending',
+    'Forwarded',
     'Approved',
     'Rejected',
   ];
@@ -232,6 +234,8 @@ class _AdminApplicationsScreenState extends State<AdminApplicationsScreen> {
     switch (_selected) {
       case 'Pending':
         return _isPending(a);
+      case 'Forwarded':
+        return a.status == ApplicationStatus.forwardedToOwner;
       case 'Approved':
         return a.status == ApplicationStatus.approved;
       case 'Rejected':
@@ -253,49 +257,22 @@ class _AdminApplicationsScreenState extends State<AdminApplicationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF6F8FC0), Color(0xFFDDE4F0), Colors.white],
-          stops: [0.0, 0.3, 0.5],
-        ),
-      ),
+      decoration: const BoxDecoration(gradient: kAdminGradient),
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      ColorFiltered(
-                        colorFilter: const ColorFilter.mode(
-                          Colors.white,
-                          BlendMode.srcIn,
-                        ),
-                        child: Image.asset('assets/logo.png', height: 38),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        tooltip: 'Notifications',
-                        icon: const Icon(
-                          Icons.notifications_none,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {},
-                      ),
-                    ],
-                  ),
-                  const Divider(color: Colors.white54, height: 12),
+                  const AdminTopBar(),
                   const SizedBox(height: 14),
                   const Text(
                     'Adoption Applications',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: kNavy,
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
                     ),
@@ -361,22 +338,15 @@ class _AdminApplicationsScreenState extends State<AdminApplicationsScreen> {
                   }
 
                   return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                    padding: EdgeInsets.fromLTRB(context.hPad, 4, context.hPad, 20),
                     itemCount: apps.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 14),
+                    separatorBuilder: (_, _) => const SizedBox(height: 14),
                     itemBuilder: (_, i) {
                       final app = apps[i];
                       return _ApplicationCard(
                         app: app,
                         pet: AdoptionService.byId(app.petId),
                         onView: () => _openDetails(app),
-                        onAction: () => _changeStatus(
-                          context,
-                          app,
-                          app.status == ApplicationStatus.approved
-                              ? ApplicationStatus.rejected
-                              : ApplicationStatus.approved,
-                        ),
                       );
                     },
                   );
@@ -394,34 +364,26 @@ class _ApplicationCard extends StatelessWidget {
   final AdoptionApplication app;
   final AdoptionPet? pet; // null if the post was removed
   final VoidCallback onView;
-  final VoidCallback onAction;
 
   const _ApplicationCard({
     required this.app,
     required this.pet,
     required this.onView,
-    required this.onAction,
   });
 
   @override
   Widget build(BuildContext context) {
     final bool pending = _isPending(app);
-    final bool approved = app.status == ApplicationStatus.approved;
-
-    // Design: a PENDING application has a greyed-out Approve button, so the
-    // admin must open "View Details" and review it first. To allow approving
-    // straight from the list, change this to:  final VoidCallback? action = onAction;
-    final VoidCallback? action = pending ? null : onAction;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: kCardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E5E5)),
+        border: Border.all(color: const Color(0xFFF0E2D6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -484,54 +446,41 @@ class _ApplicationCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 36,
-                  child: OutlinedButton(
-                    onPressed: onView,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: kNavy,
-                      side: const BorderSide(color: kNavy),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text(
-                      'View Details',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                    ),
-                  ),
+          // Same as the Posts tab: pending applications are reviewed in
+          // Application Details before the admin decides.
+          SizedBox(
+            width: double.infinity,
+            height: 38,
+            child: pending
+                ? ElevatedButton(
+              onPressed: onView,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kBlue,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SizedBox(
-                  height: 36,
-                  child: ElevatedButton(
-                    onPressed: action, // null = greyed out
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: approved ? _kRejectPink : kBlue,
-                      foregroundColor: approved ? _kRejectText : Colors.white,
-                      disabledBackgroundColor: const Color(0xFFF1F2F5),
-                      disabledForegroundColor: const Color(0xFFB8BCC6),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      approved ? 'Reject' : 'Approve',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
+              child: const Text(
+                'Review Application',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              ),
+            )
+                : OutlinedButton(
+              onPressed: onView,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: kNavy,
+                side: const BorderSide(color: kNavy),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
-            ],
+              child: const Text(
+                'View Details',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
           ),
         ],
       ),
@@ -625,17 +574,18 @@ class AdminApplicationDetailsScreen extends StatelessWidget {
 
         final pet = AdoptionService.byId(app.petId);
         final bool pending = _isPending(app);
-        final bool approved = app.status == ApplicationStatus.approved;
+        final bool forwarded =
+            app.status == ApplicationStatus.forwardedToOwner;
         final bool rejected = app.status == ApplicationStatus.rejected;
 
-        // The other people who applied for the same pet, to help the admin
-        // pick the most deserving one.
+        // The other people who applied for the same pet, so the admin can
+        // compare them during screening.
         final others = ApplicationService.forPet(app.petId)
             .where((a) => a.id != app.id)
             .toList();
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: kCream,
           appBar: AppBar(
             backgroundColor: Colors.white,
             foregroundColor: kNavy,
@@ -646,7 +596,7 @@ class AdminApplicationDetailsScreen extends StatelessWidget {
             ),
           ),
           body: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            padding: EdgeInsets.fromLTRB(context.hPad, 4, context.hPad, 20),
             children: [
               // Pet being applied for
               Row(
@@ -735,39 +685,64 @@ class AdminApplicationDetailsScreen extends StatelessWidget {
               ],
             ],
           ),
-          // Pending: Reject + Approve.  Approved: Reject.  Rejected: Approve.
-          bottomNavigationBar: SafeArea(
+          // Pending: Reject + Forward to Owner. Forwarded: the owner decides,
+          // so only a note is shown. Approved / Rejected: no actions.
+          bottomNavigationBar: pending
+              ? SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 12),
               child: Row(
                 children: [
-                  if (!rejected)
-                    _actionButton(
-                      text: 'Reject',
-                      bg: _kRejectPink,
-                      fg: _kRejectText,
-                      onPressed: () => _changeStatus(
-                        context,
-                        app,
-                        ApplicationStatus.rejected,
-                      ),
-                    ),
-                  if (pending) const SizedBox(width: 12),
-                  if (!approved)
-                    _actionButton(
-                      text: 'Approve',
-                      bg: kBlue,
-                      fg: Colors.white,
-                      onPressed: () => _changeStatus(
-                        context,
-                        app,
-                        ApplicationStatus.approved,
-                      ),
-                    ),
+                  _actionButton(
+                    text: 'Reject',
+                    bg: _kRejectPink,
+                    fg: _kRejectText,
+                    onPressed: () => _screen(context, app, forward: false),
+                  ),
+                  const SizedBox(width: 12),
+                  _actionButton(
+                    text: 'Forward to Owner',
+                    bg: kBlue,
+                    fg: Colors.white,
+                    onPressed: () => _screen(context, app, forward: true),
+                  ),
                 ],
               ),
             ),
-          ),
+          )
+              : forwarded
+              ? SafeArea(
+            child: Container(
+              margin:
+              EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD5F0EC),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.hourglass_top,
+                    color: Color(0xFF1C6E66),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Waiting for ${app.posterName} to make the final '
+                          'decision.',
+                      style: const TextStyle(
+                        color: Color(0xFF1C6E66),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+              : null,
         );
       },
     );

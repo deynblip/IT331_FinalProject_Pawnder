@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,10 +9,13 @@ import 'my_reports_screen.dart';
 import '../services/adoption_service.dart';
 import '../services/application_service.dart';
 import '../services/rescuer_service.dart';
+import '../services/response_service.dart';
+import '../services/auth_service.dart';
 import '../widgets/rescuer_badge.dart';
 import 'my_applications_screen.dart';
 import 'my_posts_screen.dart';
 import 'rescuer_application_screen.dart';
+import '../utils/responsive.dart';
 
 class ProfilePage extends StatefulWidget {
   final String name;
@@ -30,8 +31,8 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final ImagePicker _picker = ImagePicker();
 
-  // Naka-bytes para gumana sa phone at sa Chrome (web)
-  // TEMP: mawawala ito kapag nag-restart ang app. Ise-save sa backend later.
+  // Stored as bytes so it works on phones and in Chrome (web).
+  // TEMP: lost when the app restarts. Save it to the backend later.
   Uint8List? _photoBytes;
 
   Future<void> _pickPhoto(ImageSource source) async {
@@ -58,7 +59,7 @@ class _ProfilePageState extends State<ProfilePage> {
       builder: (sheetContext) => SafeArea(
         child: Wrap(
           children: [
-            // Walang camera sa Chrome, kaya gallery lang doon
+            // Chrome has no camera option, so only the gallery is shown there.
             if (!kIsWeb)
               ListTile(
                 leading: const Icon(Icons.photo_camera, color: kBlue),
@@ -111,21 +112,16 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
     )
-    // Default: ang avatar.png mo (may ring na siya)
-        : Image.asset(
-      'assets/images/avatar.png',
+    // Default: a person icon on a peach circle (no image asset needed).
+        : Container(
       width: size,
       height: size,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: kNavy, width: 4),
-        ),
-        child: const Icon(Icons.person, size: 80, color: kNavy),
+      decoration: BoxDecoration(
+        color: kPeach,
+        shape: BoxShape.circle,
+        border: Border.all(color: kNavy, width: 4),
       ),
+      child: const Icon(Icons.person, size: 80, color: kNavy),
     );
 
     return GestureDetector(
@@ -133,7 +129,7 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Stack(
         children: [
           picture,
-          // Maliit na camera badge para halatang pwedeng palitan
+          // Small camera badge so users know the photo can be changed.
           Positioned(
             right: 0,
             bottom: 4,
@@ -172,12 +168,12 @@ class _ProfilePageState extends State<ProfilePage> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: kCardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE3E5EA)),
+        border: Border.all(color: const Color(0xFFF5DEC8)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x14000000),
+            color: Color(0x14C4531F),
             blurRadius: 12,
             offset: Offset(0, 4),
           ),
@@ -238,6 +234,106 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // ---------------------------------------------------------------------
+  // RESCUE RECORD (accountability + trust level)
+  // ---------------------------------------------------------------------
+
+  Widget _statBox(String value, String label) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              color: kNavy,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: kHintGray, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _recordCard() {
+    return ListenableBuilder(
+      listenable: ResponseService.changes,
+      builder: (context, _) {
+        final email = AuthService.currentEmail;
+        if (email == null) return const SizedBox.shrink();
+        final stats = ResponseService.statsFor(email);
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: kCardColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFF5DEC8)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x14C4531F),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'My Rescue Record',
+                      style: TextStyle(
+                        color: kNavy,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEAF3DE),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      stats.trustLevel.label,
+                      style: const TextStyle(
+                        color: Color(0xFF3B6D11),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  _statBox('${stats.rescues}', 'Completed\nrescues'),
+                  _statBox('${stats.cancelled}', 'Cancelled\nresponses'),
+                  _statBox(stats.completionRate, 'Completion\nrate'),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _rescuerSection() {
     return ListenableBuilder(
       listenable: RescuerService.changes,
@@ -254,7 +350,7 @@ class _ProfilePageState extends State<ProfilePage> {
           case RescuerStatus.pending:
             return _rescuerCard(
               icon: Icons.hourglass_top,
-              color: const Color(0xFFC17F5E),
+              color: const Color(0xFFE9A23B),
               title: 'Rescuer status: Pending Verification',
               message: 'An admin is confirming your application with '
                   '${app!.organization}. You can keep using Pawnder as a '
@@ -264,7 +360,7 @@ class _ProfilePageState extends State<ProfilePage> {
           case RescuerStatus.rejected:
             return _rescuerCard(
               icon: Icons.cancel_outlined,
-              color: const Color(0xFFB85A5A),
+              color: const Color(0xFFE04F4F),
               title: 'Rescuer application not approved',
               message: 'Reason: ${app!.rejectionReason ?? '-'}\n'
                   'You are still a regular user. You can apply again.',
@@ -273,15 +369,33 @@ class _ProfilePageState extends State<ProfilePage> {
             );
 
           case RescuerStatus.none:
-            return _rescuerCard(
-              icon: Icons.verified_user_outlined,
-              color: kBlue,
-              title: 'Are you part of a rescue group?',
-              message: 'Rescue organizations, vets and LGU animal welfare '
-                  'offices can apply to become Verified Rescuers.',
-              buttonText: 'Apply as Verified Rescuer',
-              onPressed: () => _openRescuerForm(null),
-            );
+            {
+              final email = AuthService.currentEmail;
+              final trusted = email != null &&
+                  ResponseService.statsFor(email).trustLevel ==
+                      TrustLevel.trustedHelper;
+              if (trusted) {
+                return _rescuerCard(
+                  icon: Icons.workspace_premium_outlined,
+                  color: const Color(0xFF4CAF6E),
+                  title: 'You are a Trusted Helper!',
+                  message: 'Thank you for all your rescues. You can now apply '
+                      'to become a Verified Rescuer, even without an '
+                      'organization.',
+                  buttonText: 'Apply as Verified Rescuer',
+                  onPressed: () => _openRescuerForm(null),
+                );
+              }
+              return _rescuerCard(
+                icon: Icons.verified_user_outlined,
+                color: kBlue,
+                title: 'Are you part of a rescue group?',
+                message: 'Rescue organizations, vets and LGU animal welfare '
+                    'offices can apply to become Verified Rescuers.',
+                buttonText: 'Apply as Verified Rescuer',
+                onPressed: () => _openRescuerForm(null),
+              );
+            }
         }
       },
     );
@@ -296,7 +410,7 @@ class _ProfilePageState extends State<ProfilePage> {
     widget.name.trim().isNotEmpty ? widget.name : 'Pawnder User';
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 32, 20, 24),
+      padding: EdgeInsets.fromLTRB(context.hPad, 32, context.hPad, 24),
       child: Column(
         children: [
           _avatar(),
@@ -317,6 +431,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
           // Verified Rescuer badge, or the apply / pending / rejected card
           _rescuerSection(),
+
+          const SizedBox(height: 16),
+
+          // Completed / cancelled responses and trust level
+          _recordCard(),
 
           const SizedBox(height: 28),
 
@@ -339,12 +458,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: kCardColor,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFE3E5EA)),
+              border: Border.all(color: const Color(0xFFF5DEC8)),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x14000000),
+                  color: Color(0x14C4531F),
                   blurRadius: 12,
                   offset: Offset(0, 4),
                 ),
@@ -361,7 +480,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     MaterialPageRoute(builder: (_) => const MyReportsScreen()),
                   ),
                 ),
-                const Divider(height: 1, color: Color(0xFFE3E5EA)),
+                const Divider(height: 1, color: Color(0xFFF5DEC8)),
                 _activityRow(
                   icon: Icons.pets,
                   title: 'Adoption Applications',
@@ -377,7 +496,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     if (mounted) setState(() {}); // refresh the count
                   }),
                 ),
-                const Divider(height: 1, color: Color(0xFFE3E5EA)),
+                const Divider(height: 1, color: Color(0xFFF5DEC8)),
                 _activityRow(
                   icon: Icons.volunteer_activism_outlined,
                   title: 'My Adoption Posts',

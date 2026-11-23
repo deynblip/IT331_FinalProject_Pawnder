@@ -4,6 +4,8 @@ import '../../models/adoption_pet.dart';
 import '../../services/adoption_service.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/adopt_pet_photo.dart';
+import '../../utils/responsive.dart';
+import '../../widgets/admin_top_bar.dart';
 
 // ---------------------------------------------------------------- Helpers
 
@@ -220,9 +222,9 @@ class _StatusPill extends StatelessWidget {
 
 Widget _photo(String? path, {double iconSize = 30}) {
   final fallback = Container(
-    color: const Color(0xFFE6E9EF),
+    color: const Color(0xFFFFE8D6),
     child: Center(
-      child: Icon(Icons.pets, size: iconSize, color: const Color(0xFF8A8F98)),
+      child: Icon(Icons.pets, size: iconSize, color: const Color(0xFF8A746C)),
     ),
   );
   if (path == null) return fallback;
@@ -287,49 +289,22 @@ class _AdminPostsScreenState extends State<AdminPostsScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF6F8FC0), Color(0xFFDDE4F0), Colors.white],
-          stops: [0.0, 0.3, 0.5],
-        ),
-      ),
+      decoration: const BoxDecoration(gradient: kAdminGradient),
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      ColorFiltered(
-                        colorFilter: const ColorFilter.mode(
-                          Colors.white,
-                          BlendMode.srcIn,
-                        ),
-                        child: Image.asset('assets/logo.png', height: 38),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        tooltip: 'Notifications',
-                        icon: const Icon(
-                          Icons.notifications_none,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {},
-                      ),
-                    ],
-                  ),
-                  const Divider(color: Colors.white54, height: 12),
+                  const AdminTopBar(),
                   const SizedBox(height: 14),
                   const Text(
                     'Animal Listing',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: kNavy,
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
                     ),
@@ -338,7 +313,7 @@ class _AdminPostsScreenState extends State<AdminPostsScreen> {
                   // Filter chips with live counts
                   ValueListenableBuilder<int>(
                     valueListenable: AdoptionService.changes,
-                    builder: (context, _, __) => SingleChildScrollView(
+                    builder: (context, _, _) => SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: _filters.map((f) {
@@ -380,7 +355,7 @@ class _AdminPostsScreenState extends State<AdminPostsScreen> {
               // Rebuilds whenever a post is added, edited or reviewed.
               child: ValueListenableBuilder<int>(
                 valueListenable: AdoptionService.changes,
-                builder: (context, _, __) {
+                builder: (context, _, _) {
                   final pets =
                   AdoptionService.all.where(_matches).toList();
 
@@ -398,9 +373,9 @@ class _AdminPostsScreenState extends State<AdminPostsScreen> {
                   }
 
                   return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                    padding: EdgeInsets.fromLTRB(context.hPad, 4, context.hPad, 20),
                     itemCount: pets.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 14),
+                    separatorBuilder: (_, _) => const SizedBox(height: 14),
                     itemBuilder: (_, i) {
                       final pet = pets[i];
                       return _PostCard(
@@ -447,12 +422,12 @@ class _PostCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: kCardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E5E5)),
+        border: Border.all(color: const Color(0xFFF0E2D6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -736,7 +711,7 @@ class _AdminPostDetailsScreenState extends State<AdminPostDetailsScreen> {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<int>(
       valueListenable: AdoptionService.changes,
-      builder: (context, _, __) {
+      builder: (context, _, _) {
         final pet = AdoptionService.byId(widget.petId);
 
         if (pet == null) {
@@ -751,7 +726,7 @@ class _AdminPostDetailsScreenState extends State<AdminPostDetailsScreen> {
         final bool isRejected = pet.status == PostStatus.rejected;
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: kCream,
           appBar: AppBar(
             backgroundColor: Colors.white,
             foregroundColor: kNavy,
@@ -762,7 +737,7 @@ class _AdminPostDetailsScreenState extends State<AdminPostDetailsScreen> {
             ),
           ),
           body: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            padding: EdgeInsets.fromLTRB(context.hPad, 4, context.hPad, 20),
             children: [
               _petPhotos(pet),
               const SizedBox(height: 16),
@@ -787,7 +762,7 @@ class _AdminPostDetailsScreenState extends State<AdminPostDetailsScreen> {
                 _banner(
                   icon: Icons.edit_note,
                   color: kNavy,
-                  bg: const Color(0xFFE8EEF8),
+                  bg: const Color(0xFFFFE8D6),
                   text: 'The owner edited this post. Please review it again.',
                 ),
               if (isRejected)
@@ -806,7 +781,8 @@ class _AdminPostDetailsScreenState extends State<AdminPostDetailsScreen> {
               _row('Location', pet.location),
               _row('Description', pet.descriptionOrDefault),
               _row('Health Information', pet.healthInfoOrDefault),
-              _row('Reason for Adoption', _orDash(pet.reasonForAdoption)),
+              _row('Pet Source', pet.source.label),
+              _row(pet.source.reasonLabel, _orDash(pet.reasonForAdoption)),
 
               const Divider(height: 28),
               _section('Pet Owner'),
@@ -821,7 +797,7 @@ class _AdminPostDetailsScreenState extends State<AdminPostDetailsScreen> {
           // Pending: Reject + Approve.  Approved: Reject.  Rejected: Approve.
           bottomNavigationBar: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 12),
               child: Row(
                 children: [
                   if (!isRejected)

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/adoption_pet.dart';
 import '../utils/app_colors.dart';
 import 'adopt_pet_photo.dart';
+import 'pet_source_tag.dart';
 import 'rescuer_badge.dart';
 
 /// One pet card in the Adoption Bulletin grid.
@@ -18,9 +19,9 @@ class AdoptionPetCard extends StatelessWidget {
 
   Widget _photo() {
     final fallback = Container(
-      color: const Color(0xFFE6E9EF),
+      color: const Color(0xFFFFE8D6),
       child: const Center(
-        child: Icon(Icons.pets, size: 40, color: Color(0xFF8A8F98)),
+        child: Icon(Icons.pets, size: 40, color: Color(0xFF8A746C)),
       ),
     );
 
@@ -38,12 +39,12 @@ class AdoptionPetCard extends StatelessWidget {
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: kCardColor,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE3E5EA)),
+          border: Border.all(color: const Color(0xFFF5DEC8)),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x14000000),
+              color: Color(0x14C4531F),
               blurRadius: 10,
               offset: Offset(0, 3),
             ),
@@ -59,20 +60,26 @@ class AdoptionPetCard extends StatelessWidget {
                   fit: StackFit.expand,
                   children: [
                     _photo(),
+                    // Rescued Stray / Rehoming, and
                     // "Rescued by [Organization]" (Verified Rescuer posts)
-                    if (pet.rescuedBy != null)
-                      Positioned(
-                        left: 8,
-                        right: 8,
-                        top: 8,
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: RescuedByTag(
-                            organization: pet.rescuedBy!,
-                            onPhoto: true,
-                          ),
-                        ),
+                    Positioned(
+                      left: 8,
+                      right: 8,
+                      top: 8,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          PetSourceTag(source: pet.source, onPhoto: true),
+                          if (pet.rescuedBy != null) ...[
+                            const SizedBox(height: 4),
+                            RescuedByTag(
+                              organization: pet.rescuedBy!,
+                              onPhoto: true,
+                            ),
+                          ],
+                        ],
                       ),
+                    ),
                   ],
                 ),
               ),

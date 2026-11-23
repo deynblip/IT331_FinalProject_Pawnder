@@ -11,7 +11,10 @@ class AuthService {
   static const String adminPassword = 'admin123';
 
   static final Map<String, _Account> _accounts = {
-    adminEmail: _Account('Admin', adminPassword, isAdmin: true),
+    // Admins are representatives of the partner animal welfare organization
+    // (proposed partner: Strays Worth Saving - not yet confirmed). Rename
+    // this once a partnership is confirmed.
+    adminEmail: _Account('Partner Org Admin', adminPassword, isAdmin: true),
   };
 
   static String _key(String email) => email.trim().toLowerCase();

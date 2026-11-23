@@ -10,6 +10,7 @@ import '../models/app_notification.dart';
 import '../models/rescuer_application.dart';
 import 'auth_service.dart';
 import 'notification_service.dart';
+import 'response_service.dart';
 
 class RescuerService {
   // One sample pending application so the admin screen is not empty.
@@ -83,6 +84,39 @@ class RescuerService {
   static int get pendingCount =>
       _apps.where((a) => a.status == RescuerStatus.pending).length;
 
+  /// Verified Rescuers whose cancel rate is high (shown to the admin).
+  static bool isFlagged(String email) =>
+      isVerified(email) && ResponseService.statsFor(email).hasHighCancelRate;
+
+  static int get flaggedCount => _apps
+      .where((a) => a.status == RescuerStatus.verified && isFlagged(a.email))
+      .length;
+
+  // Emails the admin was already told about (so it is only sent once).
+  static final Set<String> _flagNotified = {};
+
+  /// Called after a responder cancels. Notifies the admin once when a
+  /// Verified Rescuer's cancel rate becomes high.
+  static void checkCancelRate(String email) {
+    final key = _k(email);
+    if (!isFlagged(key)) {
+      _flagNotified.remove(key);
+      return;
+    }
+    if (!_flagNotified.add(key)) return;
+    final stats = ResponseService.statsFor(key);
+    NotificationService.add(
+      type: NotificationType.rescuerFlagged,
+      title: 'Verified Rescuer flagged',
+      message: '${AuthService.nameOf(key) ?? key} '
+          '(${organizationOf(key) ?? '-'}) has cancelled '
+          '${stats.cancelled} of ${stats.responses} responses '
+          '(${stats.cancelRateText}). Review their badge in Rescuers.',
+      userEmail: AuthService.adminEmail,
+    );
+    _notify();
+  }
+
   // ---------------------------------------------------------- Apply
 
   /// Used by Sign Up and by Profile > Apply as Verified Rescuer.
@@ -150,6 +184,34 @@ class RescuerService {
       title: 'You are now a Verified Rescuer',
       message: 'Your application for ${_apps[i].organization} was approved. '
           'Your Verified Rescuer badge and permissions are now active.',
+      userEmail: _apps[i].email,
+    );
+    _notify();
+  }
+
+  /// Removes the Verified Rescuer badge (for example, high cancel rate).
+  /// The user goes back to being a regular user and can apply again.
+  static Future<void> revoke(String id, String reason) async {
+    _requireAdmin();
+    await Future.delayed(const Duration(milliseconds: 250));
+
+    final i = _apps.indexWhere((a) => a.id == id);
+    if (i == -1) throw StateError('Application not found.');
+    if (_apps[i].status != RescuerStatus.verified) {
+      throw StateError('This user is not a Verified Rescuer.');
+    }
+
+    _apps[i] = _apps[i].copyWith(
+      status: RescuerStatus.rejected,
+      rejectionReason: 'Badge removed: ${reason.trim()}',
+      reviewedAt: DateTime.now(),
+    );
+    _flagNotified.remove(_apps[i].email);
+    NotificationService.add(
+      type: NotificationType.rescuerRejected,
+      title: 'Verified Rescuer badge removed',
+      message: 'An admin removed your Verified Rescuer badge. Reason: '
+          '${reason.trim()} You can apply again from your Profile.',
       userEmail: _apps[i].email,
     );
     _notify();

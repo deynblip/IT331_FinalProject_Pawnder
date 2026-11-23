@@ -6,6 +6,7 @@ import '../models/adoption_pet.dart';
 import '../utils/app_colors.dart';
 import '../widgets/adopt_pet_card.dart';
 import 'adoption_details_screen.dart';
+import '../utils/responsive.dart';
 
 class AdoptPage extends StatefulWidget {
   final String posterName;
@@ -20,17 +21,48 @@ class _AdoptPageState extends State<AdoptPage> {
   static const List<String> _filters = ['Dogs', 'Cats', 'All Pets'];
   String _selected = 'All Pets';
 
+  // Second filter row: where the pet comes from (null = All).
+  PetSource? _source;
+
   // Only ADMIN-APPROVED posts are shown here. Read fresh on every build.
+  // Rescued Strays are always listed first (they are the priority).
   List<AdoptionPet> get _visible {
-    final pets = AdoptionService.approved;
+    var pets = AdoptionService.approved;
     switch (_selected) {
       case 'Dogs':
-        return pets.where((p) => p.animalType == 'Dog').toList();
+        pets = pets.where((p) => p.animalType == 'Dog').toList();
       case 'Cats':
-        return pets.where((p) => p.animalType == 'Cat').toList();
-      default:
-        return pets;
+        pets = pets.where((p) => p.animalType == 'Cat').toList();
     }
+    if (_source != null) {
+      pets = pets.where((p) => p.source == _source).toList();
+    }
+    // Stable sort: rescued strays first, the original order is kept otherwise.
+    final rescued =
+    pets.where((p) => p.source == PetSource.rescuedStray).toList();
+    final rehoming = pets.where((p) => p.source != PetSource.rescuedStray);
+    return [...rescued, ...rehoming];
+  }
+
+  Widget _sourceChip(String label, PetSource? value) {
+    final selected = _source == value;
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        showCheckmark: false,
+        visualDensity: VisualDensity.compact,
+        selectedColor: kNavy,
+        backgroundColor: kPeach,
+        side: BorderSide.none,
+        labelStyle: TextStyle(
+          color: selected ? Colors.white : kNavy,
+          fontSize: 12,
+        ),
+        onSelected: (_) => setState(() => _source = value),
+      ),
+    );
   }
 
   void _openDetails(AdoptionPet pet) {
@@ -40,7 +72,6 @@ class _AdoptPageState extends State<AdoptPage> {
     );
   }
 
-  // TEMP: the Post a Pet form is built in the next task.
   // Opens the Post a Pet form. It returns true when a pet was published.
   Future<void> _postPet() async {
     final published = await Navigator.push<bool>(
@@ -61,7 +92,7 @@ class _AdoptPageState extends State<AdoptPage> {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<int>(
       valueListenable: AdoptionService.changes,
-      builder: (context, _, __) => _buildBoard(),
+      builder: (context, _, _) => _buildBoard(),
     );
   }
 
@@ -69,7 +100,7 @@ class _AdoptPageState extends State<AdoptPage> {
     final items = _visible;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kCream,
       floatingActionButton: FloatingActionButton(
         onPressed: _postPet,
         backgroundColor: kNavy,
@@ -77,7 +108,7 @@ class _AdoptPageState extends State<AdoptPage> {
         child: const Icon(Icons.add, size: 30),
       ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+        padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -106,7 +137,18 @@ class _AdoptPageState extends State<AdoptPage> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 6),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _sourceChip('All', null),
+                  _sourceChip('Rescued Strays', PetSource.rescuedStray),
+                  _sourceChip('Rehoming', PetSource.rehoming),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
             Expanded(
               child: items.isEmpty
                   ? const Center(
@@ -119,9 +161,10 @@ class _AdoptPageState extends State<AdoptPage> {
                 // extra bottom space so the + button doesn't cover the last row
                 padding: const EdgeInsets.only(bottom: 88),
                 itemCount: items.length,
+                // 2 columns on phones, 3 on wider screens.
                 gridDelegate:
-                const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
+                const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 240,
                   crossAxisSpacing: 14,
                   mainAxisSpacing: 14,
                   childAspectRatio: 0.70,

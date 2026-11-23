@@ -12,8 +12,8 @@ class ReportImage extends StatelessWidget {
     final fallback = Container(
       width: width,
       height: height,
-      color: const Color(0xFFE6E9EF),
-      child: const Icon(Icons.pets, color: Color(0xFF8A8F98)),
+      color: const Color(0xFFFFE8D6),
+      child: const Icon(Icons.pets, color: Color(0xFF8A746C)),
     );
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
@@ -24,7 +24,7 @@ class ReportImage extends StatelessWidget {
         width: width,
         height: height,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => fallback,
+        errorBuilder: (_, _, _) => fallback,
       ),
     );
   }

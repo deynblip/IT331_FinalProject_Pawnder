@@ -4,6 +4,8 @@ import '../data/mock_reports.dart';
 import '../models/stray_report.dart';
 import '../widgets/report_card.dart';
 import 'report_details_screen.dart';
+import '../utils/responsive.dart';
+import '../widgets/paw_banner.dart';
 
 class HomePage extends StatelessWidget {
   final String name;
@@ -30,7 +32,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // 2 pinakamalapit na report na hindi pa rescued
+  // The 2 nearest reports that are not rescued yet.
   List<StrayReport> get _nearby {
     final list = mockReports
         .where((r) => r.status != RescueStatus.rescued)
@@ -45,7 +47,7 @@ class HomePage extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => ReportDetailsScreen(
           report: report,
-          onChanged: (_) {}, // TEMP: ikakabit sa backend later
+          onChanged: (_) {}, // TEMP: connect to the backend later
         ),
       ),
     );
@@ -56,7 +58,7 @@ class HomePage extends StatelessWidget {
     final nearby = _nearby;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(context.hPad, 20, context.hPad, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -88,16 +90,8 @@ class HomePage extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // Home banner
-          ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: Image.asset(
-              'assets/home_banner.png',
-              width: double.infinity,
-              height: 160,
-              fit: BoxFit.cover,
-            ),
-          ),
+          // Home banner (the card inside assets/home_banner.png).
+          const PawBanner(),
 
           const SizedBox(height: 25),
 
@@ -124,12 +118,14 @@ class HomePage extends StatelessWidget {
           const SizedBox(height: 15),
 
           _actionCard(
-            icon: Image.asset(
-              'assets/images/report_icon.png',
-              width: 48,
-              height: 48,
-              errorBuilder: (_, __, ___) =>
-              const Icon(Icons.photo_camera, color: kBlue, size: 44),
+            icon: Container(
+              width: 56,
+              height: 56,
+              decoration: const BoxDecoration(
+                color: kPeach,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.photo_camera, color: kBlue, size: 30),
             ),
             title: 'Report a Stray',
             onTap: () {
@@ -172,7 +168,8 @@ class HomePage extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
+                color: kCardColor,
+                border: Border.all(color: kCardBorder),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Column(
@@ -271,10 +268,18 @@ class HomePage extends StatelessWidget {
       borderRadius: BorderRadius.circular(15),
       child: Container(
         width: double.infinity,
-        height: 130,
+        constraints: const BoxConstraints(minHeight: 130),
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F7FA),
+          color: kCardColor,
+          border: Border.all(color: kCardBorder),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x14C4531F),
+              blurRadius: 10,
+              offset: Offset(0, 3),
+            ),
+          ],
           borderRadius: BorderRadius.circular(15),
         ),
         child: Column(
@@ -308,7 +313,15 @@ class HomePage extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
+        color: kCardColor,
+        border: Border.all(color: kCardBorder),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14C4531F),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

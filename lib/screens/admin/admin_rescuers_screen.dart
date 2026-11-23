@@ -5,6 +5,8 @@ import '../../models/rescuer_application.dart';
 import '../../services/response_service.dart';
 import '../../services/rescuer_service.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/responsive.dart';
+import '../../widgets/admin_top_bar.dart';
 
 String _dateText(DateTime d) {
   const months = [
@@ -44,21 +46,30 @@ class AdminRescuersScreen extends StatefulWidget {
 class _AdminRescuersScreenState extends State<AdminRescuersScreen> {
   RescuerStatus _tab = RescuerStatus.pending;
 
+  // Same pill style as the filters on the other admin tabs.
   Widget _tabChip(RescuerStatus status, String label) {
     final selected = _tab == status;
     final count = RescuerService.byStatus(status).length;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
-        label: Text('$label ($count)'),
-        selected: selected,
-        selectedColor: kBlue,
-        labelStyle: TextStyle(
-          color: selected ? Colors.white : kNavy,
-          fontWeight: FontWeight.w700,
-          fontSize: 12,
+      child: GestureDetector(
+        onTap: () => setState(() => _tab = status),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            color: selected ? kBlue : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: kNavy),
+          ),
+          child: Text(
+            '$label ($count)',
+            style: TextStyle(
+              color: selected ? Colors.white : kNavy,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
-        onSelected: (_) => setState(() => _tab = status),
       ),
     );
   }
@@ -77,61 +88,71 @@ class _AdminRescuersScreenState extends State<AdminRescuersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: ListenableBuilder(
-        listenable: RescuerService.changes,
-        builder: (context, _) {
-          final items = RescuerService.byStatus(_tab);
+    return Container(
+      decoration: const BoxDecoration(gradient: kAdminGradient),
+      child: SafeArea(
+        child: ListenableBuilder(
+          listenable: RescuerService.changes,
+          builder: (context, _) {
+            final items = RescuerService.byStatus(_tab);
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
-                child: Text(
-                  'Rescuer Applications',
-                  style: TextStyle(
-                    color: kNavy,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 0),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _tabChip(RescuerStatus.pending, 'Pending'),
-                      _tabChip(RescuerStatus.verified, 'Approved'),
-                      _tabChip(RescuerStatus.rejected, 'Rejected'),
+                      AdminTopBar(),
+                      SizedBox(height: 14),
+                      Text(
+                        'Rescuer Applications',
+                        style: TextStyle(
+                          color: kNavy,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ),
-              Expanded(
-                child: items.isEmpty
-                    ? const Center(
-                  child: Text(
-                    'No applications here.',
-                    style: TextStyle(color: kHintGray),
-                  ),
-                )
-                    : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) =>
-                  const SizedBox(height: 12),
-                  itemBuilder: (_, i) => _ApplicationCard(
-                    app: items[i],
-                    onTap: () => _openDetail(items[i]),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(context.hPad, 12, context.hPad, 8),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _tabChip(RescuerStatus.pending, 'Pending'),
+                        _tabChip(RescuerStatus.verified, 'Approved'),
+                        _tabChip(RescuerStatus.rejected, 'Rejected'),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+                Expanded(
+                  child: items.isEmpty
+                      ? const Center(
+                    child: Text(
+                      'No applications here.',
+                      style: TextStyle(color: kHintGray),
+                    ),
+                  )
+                      : ListView.separated(
+                    padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 24),
+                    itemCount: items.length,
+                    separatorBuilder: (_, _) =>
+                    const SizedBox(height: 12),
+                    itemBuilder: (_, i) => _ApplicationCard(
+                      app: items[i],
+                      onTap: () => _openDetail(items[i]),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -151,12 +172,12 @@ class _ApplicationCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: kCardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE3E5EA)),
+          border: Border.all(color: const Color(0xFFF5DEC8)),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x14000000),
+              color: Color(0x14C4531F),
               blurRadius: 10,
               offset: Offset(0, 3),
             ),
@@ -166,7 +187,7 @@ class _ApplicationCard extends StatelessWidget {
           children: [
             const CircleAvatar(
               radius: 24,
-              backgroundColor: Color(0xFFE6E9EF),
+              backgroundColor: Color(0xFFFFE8D6),
               child: Icon(Icons.verified_user_outlined, color: kBlue),
             ),
             const SizedBox(width: 12),
@@ -195,6 +216,23 @@ class _ApplicationCard extends StatelessWidget {
                     'Submitted ${_dateText(app.submittedAt)}',
                     style: const TextStyle(color: kHintGray, fontSize: 11),
                   ),
+                  if (RescuerService.isFlagged(app.email)) ...[
+                    const SizedBox(height: 4),
+                    const Row(
+                      children: [
+                        Icon(Icons.flag, size: 14, color: Colors.red),
+                        SizedBox(width: 4),
+                        Text(
+                          'High cancel rate',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -300,9 +338,35 @@ class _RescuerDetailSheet extends StatelessWidget {
     }
   }
 
+  Future<void> _revoke(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (_) => _RejectDialog(
+        applicantName: app.applicantName,
+        title: 'Remove ${app.applicantName}\'s badge?',
+        actionText: 'Remove badge',
+      ),
+    );
+    if (reason == null) return;
+
+    try {
+      await RescuerService.revoke(app.id, reason);
+      navigator.pop();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Verified Rescuer badge removed.')),
+      );
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final stats = ResponseService.statsFor(app.email);
+    final flagged = RescuerService.isFlagged(app.email);
 
     return DraggableScrollableSheet(
       expand: false,
@@ -310,7 +374,7 @@ class _RescuerDetailSheet extends StatelessWidget {
       maxChildSize: 0.95,
       builder: (context, scroll) => SingleChildScrollView(
         controller: scroll,
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+        padding: EdgeInsets.fromLTRB(context.hPad, 24, context.hPad, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -347,7 +411,7 @@ class _RescuerDetailSheet extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFF0F4FA),
+                color: kPeach,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Column(
@@ -368,8 +432,12 @@ class _RescuerDetailSheet extends StatelessWidget {
                     )
                   else
                     Text(
-                      'Responses: ${stats.responses}\n'
-                          'Successful rescues: ${stats.rescues}\n'
+                      'Trust level: ${stats.trustLevel.label}\n'
+                          'Responses: ${stats.responses}\n'
+                          'Completed rescues: ${stats.rescues} '
+                          '(${stats.completionRate})\n'
+                          'Cancelled: ${stats.cancelled} '
+                          '(${stats.cancelRateText})\n'
                           'Unable to locate: ${stats.unableToLocate}\n'
                           'Check-in rate: ${stats.checkInRate}',
                       style: const TextStyle(
@@ -422,11 +490,34 @@ class _RescuerDetailSheet extends StatelessWidget {
                 'Rejected: ${app.rejectionReason ?? '-'}',
                 style: const TextStyle(color: Colors.red, fontSize: 13),
               )
-            else
-              const Text(
-                'Approved. The user has the Verified Rescuer badge.',
-                style: TextStyle(color: Color(0xFF1F5E10), fontSize: 13),
-              ),
+            else ...[
+                const Text(
+                  'Approved. The user has the Verified Rescuer badge.',
+                  style: TextStyle(color: Color(0xFF1F5E10), fontSize: 13),
+                ),
+                if (flagged) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'This rescuer has a high cancel rate. Review their record '
+                        'and remove the badge if needed.',
+                    style: TextStyle(color: Colors.red, fontSize: 13),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _revoke(context),
+                    icon: const Icon(Icons.remove_moderator_outlined),
+                    label: const Text('Remove badge'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      minimumSize: const Size.fromHeight(46),
+                    ),
+                  ),
+                ),
+              ],
           ],
         ),
       ),
@@ -437,7 +528,13 @@ class _RescuerDetailSheet extends StatelessWidget {
 /// A reason is required when rejecting.
 class _RejectDialog extends StatefulWidget {
   final String applicantName;
-  const _RejectDialog({required this.applicantName});
+  final String? title;
+  final String actionText;
+  const _RejectDialog({
+    required this.applicantName,
+    this.title,
+    this.actionText = 'Reject',
+  });
 
   @override
   State<_RejectDialog> createState() => _RejectDialogState();
@@ -457,7 +554,7 @@ class _RejectDialogState extends State<_RejectDialog> {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
-        'Reject ${widget.applicantName}?',
+        widget.title ?? 'Reject ${widget.applicantName}?',
         style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
       ),
       content: TextField(
@@ -478,9 +575,12 @@ class _RejectDialogState extends State<_RejectDialog> {
           onPressed: _reason.text.trim().isEmpty
               ? null
               : () => Navigator.pop(context, _reason.text.trim()),
-          child: const Text(
-            'Reject',
-            style: TextStyle(color: Colors.red, fontWeight: FontWeight.w800),
+          child: Text(
+            widget.actionText,
+            style: const TextStyle(
+              color: Colors.red,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
       ],

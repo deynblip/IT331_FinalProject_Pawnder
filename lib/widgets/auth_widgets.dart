@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
+import 'field_label.dart';
 
 // ===============================
 // SHARED WIDGETS
@@ -35,15 +36,17 @@ class _AuthFieldState extends State<AuthField> {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4),
-          child: Text(
+          // Fields with a validator are required, so they get a red *.
+          child: FieldLabel(
             widget.label,
+            required: widget.validator != null,
             style: const TextStyle(color: kHintGray, fontSize: 12),
           ),
         ),
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: kCardColor,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -144,4 +147,3 @@ class AuthLink extends StatelessWidget {
     );
   }
 }
-
