@@ -214,7 +214,14 @@ class _MainLayoutState extends State<MainLayout> {
               );
             },
           ),
-          title: Image.asset('assets/logo.png', height: 40),
+          // The logo is a single brown color, so tint it white in dark
+          // mode to keep it visible on the dark app bar.
+          title: Image.asset(
+            'assets/logo.png',
+            height: 40,
+            color: isDark ? Colors.white : null,
+            colorBlendMode: isDark ? BlendMode.srcIn : null,
+          ),
           centerTitle: true,
           actions: [
             // Bell with a badge showing the number of unread notifications
