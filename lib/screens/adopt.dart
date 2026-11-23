@@ -92,7 +92,7 @@ class _AdoptPageState extends State<AdoptPage> {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<int>(
       valueListenable: AdoptionService.changes,
-      builder: (context, _, __) => _buildBoard(),
+      builder: (context, _, _) => _buildBoard(),
     );
   }
 

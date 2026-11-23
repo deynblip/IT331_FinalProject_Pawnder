@@ -159,7 +159,7 @@ class NotificationsScreen extends StatelessWidget {
           return ListView.separated(
             padding: EdgeInsets.fromLTRB(context.hPad, 16, context.hPad, 24),
             itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (_, i) => _NotificationCard(
               notification: items[i],
               onTap: () => _open(context, items[i]),

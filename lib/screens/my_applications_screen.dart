@@ -49,7 +49,7 @@ class MyApplicationsScreen extends StatelessWidget {
           // Rebuilds by itself when an application is added or changed.
           child: ValueListenableBuilder<int>(
             valueListenable: ApplicationService.changes,
-            builder: (context, _, __) {
+            builder: (context, _, _) {
               final items = ApplicationService.forCurrentUser();
 
               return Column(
