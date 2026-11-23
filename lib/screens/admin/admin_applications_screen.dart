@@ -272,7 +272,7 @@ class _AdminApplicationsScreenState extends State<AdminApplicationsScreen> {
                   const Text(
                     'Adoption Applications',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: kNavy,
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
                     ),

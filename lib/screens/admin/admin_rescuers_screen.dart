@@ -109,7 +109,7 @@ class _AdminRescuersScreenState extends State<AdminRescuersScreen> {
                       Text(
                         'Rescuer Applications',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: kNavy,
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
                         ),

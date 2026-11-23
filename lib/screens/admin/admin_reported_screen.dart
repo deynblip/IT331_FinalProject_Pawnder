@@ -243,7 +243,7 @@ class _AdminReportedScreenState extends State<AdminReportedScreen> {
                   const Text(
                     'Reported Content',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: kNavy,
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
                     ),

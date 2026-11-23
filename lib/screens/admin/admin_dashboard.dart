@@ -36,19 +36,11 @@ class AdminDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Fills the whole tab so the gradient always ends in cream. The orange
-    // reaches lower here so the white welcome text stays readable.
+    // Fills the whole tab so the gradient always ends in cream.
     return Container(
       width: double.infinity,
       height: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [kOrangeSoft, kPeach, kCream],
-          stops: [0.0, 0.4, 0.62],
-        ),
-      ),
+      decoration: const BoxDecoration(gradient: kAdminGradient),
       child: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 24),
@@ -69,7 +61,7 @@ class AdminDashboard extends StatelessWidget {
                     child: Icon(
                       Icons.pets,
                       size: 130,
-                      color: Colors.white.withValues(alpha: 0.25),
+                      color: kOrange.withValues(alpha: 0.08),
                     ),
                   ),
                   Column(
@@ -78,7 +70,7 @@ class AdminDashboard extends StatelessWidget {
                       Text(
                         'Welcome, ${name.isNotEmpty ? name : 'Admin'}!',
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: kNavy,
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
                         ),
@@ -88,7 +80,7 @@ class AdminDashboard extends StatelessWidget {
                         'Manage listings, applications, and keep\n'
                             'the community safe for stray animals',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: kHintGray,
                           fontSize: 14,
                           height: 1.4,
                         ),

@@ -6,13 +6,14 @@ import '../services/auth_service.dart';
 import '../services/notification_service.dart';
 import '../utils/app_colors.dart';
 
-/// Background used by every admin tab: orange at the top that fades into
-/// the cream page color, so the cards below always sit on cream.
+/// Background used by every admin tab: a soft peach at the top that fades
+/// into the cream page color. Kept light so the orange banner and the cards
+/// stand out, and the brown text stays easy to read.
 const LinearGradient kAdminGradient = LinearGradient(
   begin: Alignment.topCenter,
   end: Alignment.bottomCenter,
-  colors: [kOrangeSoft, kPeach, kCream],
-  stops: [0.0, 0.3, 0.55],
+  colors: [kPeach, kCream],
+  stops: [0.0, 0.35],
 );
 
 /// Shared top bar of the admin tabs: brown logo, notification bell with an

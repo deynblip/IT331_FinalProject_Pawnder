@@ -304,7 +304,7 @@ class _AdminPostsScreenState extends State<AdminPostsScreen> {
                   const Text(
                     'Animal Listing',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: kNavy,
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
                     ),
