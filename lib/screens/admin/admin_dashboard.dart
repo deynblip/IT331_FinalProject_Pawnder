@@ -6,6 +6,7 @@ import '../../services/auth_service.dart';
 import '../../utils/app_colors.dart';
 import '../../services/content_report_service.dart';
 import '../../utils/responsive.dart';
+import '../../widgets/admin_top_bar.dart';
 
 class AdminDashboard extends StatelessWidget {
   final String name;
@@ -17,14 +18,33 @@ class AdminDashboard extends StatelessWidget {
     required this.onLogout,
   });
 
+  // Two stat cards side by side. IntrinsicHeight keeps both cards the same
+  // height, even with bigger system text.
+  Widget _statRow(Widget left, Widget right) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: left),
+          const SizedBox(width: 14),
+          Expanded(child: right),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Fills the whole tab so the gradient always ends in cream. The orange
+    // reaches lower here so the white welcome text stays readable.
     return Container(
+      width: double.infinity,
+      height: double.infinity,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFFF59E5B), Color(0xFFFFE8D6), Colors.white],
+          colors: [kOrangeSoft, kPeach, kCream],
           stops: [0.0, 0.4, 0.62],
         ),
       ),
@@ -35,32 +55,7 @@ class AdminDashboard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // LOGO + ACTIONS
-              Row(
-                children: [
-                  ColorFiltered(
-                    colorFilter: const ColorFilter.mode(
-                      Colors.white,
-                      BlendMode.srcIn,
-                    ),
-                    child: Image.asset('assets/logo.png', height: 38),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    tooltip: 'Notifications',
-                    icon: const Icon(
-                      Icons.notifications_none,
-                      color: Colors.white,
-                    ),
-                    onPressed: () {},
-                  ),
-                  IconButton(
-                    tooltip: 'Log Out',
-                    icon: const Icon(Icons.logout, color: Colors.white),
-                    onPressed: onLogout,
-                  ),
-                ],
-              ),
-              const Divider(color: Colors.white54, height: 12),
+              AdminTopBar(onLogout: onLogout),
               const SizedBox(height: 16),
 
               // WELCOME TEXT (with paw watermark)
@@ -109,7 +104,7 @@ class AdminDashboard extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // STAT CARDS (2 x 2). Rebuilds when applications change.
+              // STAT CARDS (2 x 2). Rebuilds when the counts change.
               ListenableBuilder(
                 listenable: Listenable.merge([
                   ApplicationService.changes,
@@ -124,48 +119,34 @@ class AdminDashboard extends StatelessWidget {
 
                   return Column(
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _StatCard(
-                              icon: Icons.pets,
-                              color: kBlue,
-                              value: posts,
-                              label: 'Adoption Posts',
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: _StatCard(
-                              icon: Icons.description,
-                              color: kNavy,
-                              value: applications,
-                              label: 'Adoption\nApplications',
-                            ),
-                          ),
-                        ],
+                      _statRow(
+                        _StatCard(
+                          icon: Icons.pets,
+                          color: kBlue,
+                          value: posts,
+                          label: 'Adoption Posts',
+                        ),
+                        _StatCard(
+                          icon: Icons.description,
+                          color: kNavy,
+                          value: applications,
+                          label: 'Adoption\nApplications',
+                        ),
                       ),
                       const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _StatCard(
-                              icon: Icons.flag,
-                              color: const Color(0xFFE04F4F),
-                              value: reported,
-                              label: 'Reported Content',
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: _StatCard(
-                              icon: Icons.groups,
-                              color: const Color(0xFFE9A23B),
-                              value: users,
-                              label: 'Registered Users',
-                            ),
-                          ),
-                        ],
+                      _statRow(
+                        _StatCard(
+                          icon: Icons.flag,
+                          color: const Color(0xFFE04F4F),
+                          value: reported,
+                          label: 'Reported Content',
+                        ),
+                        _StatCard(
+                          icon: Icons.groups,
+                          color: const Color(0xFFE9A23B),
+                          value: users,
+                          label: 'Registered Users',
+                        ),
                       ),
                     ],
                   );
@@ -179,7 +160,7 @@ class AdminDashboard extends StatelessWidget {
   }
 }
 
-// White card with the row of paws cropped from assets/home_banner.png.
+// Card with the row of paws cropped from assets/home_banner.png.
 class _Banner extends StatelessWidget {
   const _Banner();
 
@@ -256,7 +237,7 @@ class _PawStrip extends StatelessWidget {
                   fit: BoxFit.fill,
                 ),
               ),
-              // Fades the top of the strip into the white card.
+              // Fades the top of the strip into the card color.
               Positioned(
                 left: 0,
                 right: 0,
@@ -267,7 +248,7 @@ class _PawStrip extends StatelessWidget {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Colors.white, Color(0x00FFFFFF)],
+                      colors: [kCardColor, Color(0x00FFFCF8)],
                     ),
                   ),
                 ),
@@ -296,7 +277,6 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 168,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: kCardColor,

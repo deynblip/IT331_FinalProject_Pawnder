@@ -109,7 +109,7 @@ class ApplicationService {
   }
 
   // Sample applicants shown in the ADMIN Application tab. Tiwi has TWO
-  // applicants so you can test picking one (the other gets auto-rejected).
+  // applicants so you can test screening more than one for the same pet.
   static const bool kShowSampleAdminApplications = true;
 
   static final List<AdoptionApplication> _adminSamples = [
@@ -140,7 +140,7 @@ class ApplicationService {
       posterName: 'Shanea Mae',
       fullName: 'Joshua Garcia',
       email: 'joshua@example.com',
-      status: ApplicationStatus.pendingScreening,
+      status: ApplicationStatus.forwardedToOwner,
       createdAt: DateTime(2026, 11, 15),
     ),
     _demo(
@@ -302,16 +302,20 @@ class ApplicationService {
     _notify();
   }
 
-  /// ADMIN ONLY: approve or reject an application.
-  /// Approving one applicant automatically rejects the other waiting
-  /// applicants for the same pet, so only ONE person is picked per pet.
+  /// ADMIN ONLY: screening step. The admin either forwards a pending
+  /// application to the pet owner (who makes the final decision) or rejects
+  /// it with an optional reason.
   static Future<void> setStatus(
       String id,
       ApplicationStatus status, {
         String? reason,
       }) async {
     if (!AuthService.isCurrentAdmin) {
-      throw StateError('Only an admin can approve or reject applications.');
+      throw StateError('Only an admin can screen applications.');
+    }
+    if (status != ApplicationStatus.forwardedToOwner &&
+        status != ApplicationStatus.rejected) {
+      throw StateError('Only the pet owner can approve an application.');
     }
 
     // Simulates a network call.
@@ -321,15 +325,19 @@ class ApplicationService {
     if (i == -1) throw StateError('Application not found.');
     final target = _applications[i];
 
-    if (status == ApplicationStatus.approved) {
-      final alreadyPicked = _applications.any((a) =>
-      a.petId == target.petId &&
-          a.id != id &&
-          a.status == ApplicationStatus.approved);
-      if (alreadyPicked) {
-        throw StateError('Another applicant was already approved for '
-            '${target.petName}. Reject that application first.');
+    if (status == ApplicationStatus.forwardedToOwner) {
+      if (target.status != ApplicationStatus.pendingScreening) {
+        throw StateError('Only pending applications can be forwarded.');
       }
+      final alreadyPicked = _applications.any((a) =>
+      a.petId == target.petId && a.status == ApplicationStatus.approved);
+      if (alreadyPicked) {
+        throw StateError('${target.petName} already has an approved '
+            'adopter, so this application cannot be forwarded.');
+      }
+    } else if (target.status == ApplicationStatus.approved ||
+        target.status == ApplicationStatus.rejected) {
+      throw StateError('This application was already decided.');
     }
 
     _applications[i] = target.copyWith(
@@ -337,24 +345,27 @@ class ApplicationService {
       rejectionReason: status == ApplicationStatus.rejected ? reason : null,
     );
     _notifyApplicant(_applications[i]);
+    _notify();
+  }
 
-    // The admin picked this applicant -> close the others for this pet.
-    if (status == ApplicationStatus.approved) {
-      for (var k = 0; k < _applications.length; k++) {
-        final a = _applications[k];
-        final waiting = a.status == ApplicationStatus.pendingScreening ||
-            a.status == ApplicationStatus.forwardedToOwner;
-        if (a.petId == target.petId && a.id != id && waiting) {
-          _applications[k] = a.copyWith(
-            status: ApplicationStatus.rejected,
-            rejectionReason: 'Another applicant was selected for this pet.',
-          );
-          _notifyApplicant(_applications[k]);
-        }
+  /// When the owner approves one applicant, the other waiting applicants
+  /// for the same pet are closed, so only ONE person is picked per pet.
+  static void _closeOthers(
+      List<AdoptionApplication> list,
+      AdoptionApplication picked,
+      ) {
+    for (var k = 0; k < list.length; k++) {
+      final a = list[k];
+      final waiting = a.status == ApplicationStatus.pendingScreening ||
+          a.status == ApplicationStatus.forwardedToOwner;
+      if (a.petId == picked.petId && a.id != picked.id && waiting) {
+        list[k] = a.copyWith(
+          status: ApplicationStatus.rejected,
+          rejectionReason: 'Another applicant was selected for this pet.',
+        );
+        _notifyApplicant(list[k]);
       }
     }
-
-    _notify();
   }
 
   /// PET OWNER ONLY: final decision on an application that the admin
@@ -387,6 +398,7 @@ class ApplicationService {
     if (i != -1) {
       _applications[i] = check(_applications[i]);
       _notifyApplicant(_applications[i]);
+      if (approve) _closeOthers(_applications, _applications[i]);
       _notify();
       return;
     }
@@ -394,6 +406,7 @@ class ApplicationService {
     final j = _ownerDemo.indexWhere((a) => a.id == id);
     if (j != -1) {
       _ownerDemo[j] = check(_ownerDemo[j]);
+      if (approve) _closeOthers(_ownerDemo, _ownerDemo[j]);
       _notify();
       return;
     }

@@ -6,6 +6,7 @@ import '../../services/response_service.dart';
 import '../../services/rescuer_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/responsive.dart';
+import '../../widgets/admin_top_bar.dart';
 
 String _dateText(DateTime d) {
   const months = [
@@ -45,21 +46,30 @@ class AdminRescuersScreen extends StatefulWidget {
 class _AdminRescuersScreenState extends State<AdminRescuersScreen> {
   RescuerStatus _tab = RescuerStatus.pending;
 
+  // Same pill style as the filters on the other admin tabs.
   Widget _tabChip(RescuerStatus status, String label) {
     final selected = _tab == status;
     final count = RescuerService.byStatus(status).length;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
-        label: Text('$label ($count)'),
-        selected: selected,
-        selectedColor: kBlue,
-        labelStyle: TextStyle(
-          color: selected ? Colors.white : kNavy,
-          fontWeight: FontWeight.w700,
-          fontSize: 12,
+      child: GestureDetector(
+        onTap: () => setState(() => _tab = status),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            color: selected ? kBlue : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: kNavy),
+          ),
+          child: Text(
+            '$label ($count)',
+            style: TextStyle(
+              color: selected ? Colors.white : kNavy,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
-        onSelected: (_) => setState(() => _tab = status),
       ),
     );
   }
@@ -78,61 +88,71 @@ class _AdminRescuersScreenState extends State<AdminRescuersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: ListenableBuilder(
-        listenable: RescuerService.changes,
-        builder: (context, _) {
-          final items = RescuerService.byStatus(_tab);
+    return Container(
+      decoration: const BoxDecoration(gradient: kAdminGradient),
+      child: SafeArea(
+        child: ListenableBuilder(
+          listenable: RescuerService.changes,
+          builder: (context, _) {
+            final items = RescuerService.byStatus(_tab);
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(context.hPad, 16, context.hPad, 4),
-                child: Text(
-                  'Rescuer Applications',
-                  style: TextStyle(
-                    color: kNavy,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 8),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 0),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _tabChip(RescuerStatus.pending, 'Pending'),
-                      _tabChip(RescuerStatus.verified, 'Approved'),
-                      _tabChip(RescuerStatus.rejected, 'Rejected'),
+                      AdminTopBar(),
+                      SizedBox(height: 14),
+                      Text(
+                        'Rescuer Applications',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ),
-              Expanded(
-                child: items.isEmpty
-                    ? const Center(
-                  child: Text(
-                    'No applications here.',
-                    style: TextStyle(color: kHintGray),
-                  ),
-                )
-                    : ListView.separated(
-                  padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 24),
-                  itemCount: items.length,
-                  separatorBuilder: (_, _) =>
-                  const SizedBox(height: 12),
-                  itemBuilder: (_, i) => _ApplicationCard(
-                    app: items[i],
-                    onTap: () => _openDetail(items[i]),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(context.hPad, 12, context.hPad, 8),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _tabChip(RescuerStatus.pending, 'Pending'),
+                        _tabChip(RescuerStatus.verified, 'Approved'),
+                        _tabChip(RescuerStatus.rejected, 'Rejected'),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+                Expanded(
+                  child: items.isEmpty
+                      ? const Center(
+                    child: Text(
+                      'No applications here.',
+                      style: TextStyle(color: kHintGray),
+                    ),
+                  )
+                      : ListView.separated(
+                    padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 24),
+                    itemCount: items.length,
+                    separatorBuilder: (_, _) =>
+                    const SizedBox(height: 12),
+                    itemBuilder: (_, i) => _ApplicationCard(
+                      app: items[i],
+                      onTap: () => _openDetail(items[i]),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

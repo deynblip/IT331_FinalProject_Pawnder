@@ -8,6 +8,7 @@ import '../../services/content_report_service.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/adopt_pet_photo.dart';
 import '../../utils/responsive.dart';
+import '../../widgets/admin_top_bar.dart';
 
 // ---------------------------------------------------------------- Helpers
 
@@ -227,14 +228,7 @@ class _AdminReportedScreenState extends State<AdminReportedScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFF59E5B), Color(0xFFFFE8D6), Colors.white],
-          stops: [0.0, 0.3, 0.5],
-        ),
-      ),
+      decoration: const BoxDecoration(gradient: kAdminGradient),
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,27 +238,7 @@ class _AdminReportedScreenState extends State<AdminReportedScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      ColorFiltered(
-                        colorFilter: const ColorFilter.mode(
-                          Colors.white,
-                          BlendMode.srcIn,
-                        ),
-                        child: Image.asset('assets/logo.png', height: 38),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        tooltip: 'Notifications',
-                        icon: const Icon(
-                          Icons.notifications_none,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {},
-                      ),
-                    ],
-                  ),
-                  const Divider(color: Colors.white54, height: 12),
+                  const AdminTopBar(),
                   const SizedBox(height: 14),
                   const Text(
                     'Reported Content',
@@ -344,7 +318,6 @@ class _AdminReportedScreenState extends State<AdminReportedScreen> {
                         report: r,
                         content: _contentOf(r),
                         onView: () => _openDetails(r),
-                        onRemove: () => _removeContent(context, r),
                       );
                     },
                   );
@@ -362,13 +335,11 @@ class _ReportCard extends StatelessWidget {
   final ContentReport report;
   final _Content content;
   final VoidCallback onView;
-  final VoidCallback onRemove;
 
   const _ReportCard({
     required this.report,
     required this.content,
     required this.onView,
-    required this.onRemove,
   });
 
   @override
@@ -447,60 +418,41 @@ class _ReportCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 36,
-                  child: OutlinedButton(
-                    onPressed: onView,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: kNavy,
-                      side: const BorderSide(color: kNavy),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text(
-                      'View Details',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                    ),
-                  ),
+          // Same as the Posts tab: pending reports are reviewed in Report
+          // Details (Dismiss or Remove Content) before the admin decides.
+          SizedBox(
+            width: double.infinity,
+            height: 38,
+            child: pending
+                ? ElevatedButton(
+              onPressed: onView,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kBlue,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SizedBox(
-                  height: 36,
-                  child: ElevatedButton(
-                    // Only a pending report whose content still exists can
-                    // be removed. Everything else is already closed.
-                    onPressed: (pending && content.exists) ? onRemove : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _kRejectPink,
-                      foregroundColor: _kRejectText,
-                      disabledBackgroundColor: kPeach,
-                      disabledForegroundColor: const Color(0xFFC9B8AE),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      pending
-                          ? 'Remove'
-                          : (report.status == ReportStatus.removed
-                          ? 'Removed'
-                          : 'Dismissed'),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
+              child: const Text(
+                'Review Report',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              ),
+            )
+                : OutlinedButton(
+              onPressed: onView,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: kNavy,
+                side: const BorderSide(color: kNavy),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
-            ],
+              child: const Text(
+                'View Details',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
           ),
         ],
       ),
