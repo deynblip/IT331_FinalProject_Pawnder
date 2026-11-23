@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../screens/drawer/settings.dart';
 import '../screens/notifications_screen.dart';
+import '../services/auth_service.dart';
 import '../services/notification_service.dart';
 import '../utils/app_colors.dart';
 
@@ -13,12 +15,27 @@ const LinearGradient kAdminGradient = LinearGradient(
   stops: [0.0, 0.3, 0.55],
 );
 
+enum _AccountAction { changePassword, logOut }
+
 /// Shared top bar of the admin tabs: white logo, notification bell with an
-/// unread badge, an optional log out button, and a thin divider.
+/// unread badge, an optional account menu, and a thin divider.
+///
+/// The admin has no drawer. The account menu only holds what the admin
+/// needs from the user drawer: Change Password and Log Out.
 class AdminTopBar extends StatelessWidget {
+  /// When set, the account menu is shown (used on Admin Home).
   final VoidCallback? onLogout;
 
   const AdminTopBar({super.key, this.onLogout});
+
+  void _openChangePassword(BuildContext context) {
+    final String? email = AuthService.currentEmail;
+    if (email == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ChangePasswordPage(email: email)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,10 +74,45 @@ class AdminTopBar extends StatelessWidget {
               },
             ),
             if (onLogout != null)
-              IconButton(
-                tooltip: 'Log Out',
-                icon: const Icon(Icons.logout, color: Colors.white),
-                onPressed: onLogout,
+              PopupMenuButton<_AccountAction>(
+                tooltip: 'Account',
+                icon: const Icon(Icons.more_vert, color: Colors.white),
+                color: kCardColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                onSelected: (action) {
+                  switch (action) {
+                    case _AccountAction.changePassword:
+                      _openChangePassword(context);
+                    case _AccountAction.logOut:
+                      onLogout!();
+                  }
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(
+                    value: _AccountAction.changePassword,
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.lock_outline, color: kNavy),
+                      title: Text(
+                        'Change Password',
+                        style: TextStyle(color: kNavy),
+                      ),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: _AccountAction.logOut,
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.logout, color: Colors.red),
+                      title: Text(
+                        'Log Out',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ),
+                ],
               ),
           ],
         ),
