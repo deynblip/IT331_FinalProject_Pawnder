@@ -15,15 +15,13 @@ const LinearGradient kAdminGradient = LinearGradient(
   stops: [0.0, 0.3, 0.55],
 );
 
-enum _AccountAction { changePassword, logOut }
-
-/// Shared top bar of the admin tabs: white logo, notification bell with an
-/// unread badge, an optional account menu, and a thin divider.
+/// Shared top bar of the admin tabs: brown logo, notification bell with an
+/// unread badge, optional account buttons, and a thin divider.
 ///
-/// The admin has no drawer. The account menu only holds what the admin
-/// needs from the user drawer: Change Password and Log Out.
+/// The admin has no drawer. Only what the admin needs from the user drawer
+/// is kept: Change Password and a Log Out button that is always visible.
 class AdminTopBar extends StatelessWidget {
-  /// When set, the account menu is shown (used on Admin Home).
+  /// When set, Change Password and Log Out are shown (used on Admin Home).
   final VoidCallback? onLogout;
 
   const AdminTopBar({super.key, this.onLogout});
@@ -43,12 +41,7 @@ class AdminTopBar extends StatelessWidget {
       children: [
         Row(
           children: [
-            Image.asset(
-              'assets/logo.png',
-              height: 38,
-              color: Colors.white,
-              colorBlendMode: BlendMode.srcIn,
-            ),
+            Image.asset('assets/logo.png', height: 38),
             const Spacer(),
             ListenableBuilder(
               listenable: NotificationService.changes,
@@ -61,7 +54,7 @@ class AdminTopBar extends StatelessWidget {
                     label: Text('$unread'),
                     child: const Icon(
                       Icons.notifications_none,
-                      color: Colors.white,
+                      color: kNavy,
                     ),
                   ),
                   onPressed: () => Navigator.push(
@@ -73,50 +66,21 @@ class AdminTopBar extends StatelessWidget {
                 );
               },
             ),
-            if (onLogout != null)
-              PopupMenuButton<_AccountAction>(
-                tooltip: 'Account',
-                icon: const Icon(Icons.more_vert, color: Colors.white),
-                color: kCardColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                onSelected: (action) {
-                  switch (action) {
-                    case _AccountAction.changePassword:
-                      _openChangePassword(context);
-                    case _AccountAction.logOut:
-                      onLogout!();
-                  }
-                },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(
-                    value: _AccountAction.changePassword,
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.lock_outline, color: kNavy),
-                      title: Text(
-                        'Change Password',
-                        style: TextStyle(color: kNavy),
-                      ),
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: _AccountAction.logOut,
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.logout, color: Colors.red),
-                      title: Text(
-                        'Log Out',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ),
-                ],
+            if (onLogout != null) ...[
+              IconButton(
+                tooltip: 'Change Password',
+                icon: const Icon(Icons.manage_accounts_outlined, color: kNavy),
+                onPressed: () => _openChangePassword(context),
               ),
+              IconButton(
+                tooltip: 'Log Out',
+                icon: const Icon(Icons.logout, color: kNavy),
+                onPressed: onLogout,
+              ),
+            ],
           ],
         ),
-        const Divider(color: Colors.white54, height: 12),
+        Divider(color: kNavy.withValues(alpha: 0.15), height: 12),
       ],
     );
   }

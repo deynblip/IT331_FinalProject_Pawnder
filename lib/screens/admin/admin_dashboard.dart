@@ -7,6 +7,7 @@ import '../../utils/app_colors.dart';
 import '../../services/content_report_service.dart';
 import '../../utils/responsive.dart';
 import '../../widgets/admin_top_bar.dart';
+import '../../widgets/paw_banner.dart';
 
 class AdminDashboard extends StatelessWidget {
   final String name;
@@ -99,8 +100,8 @@ class AdminDashboard extends StatelessWidget {
 
               const SizedBox(height: 18),
 
-              // BANNER CARD
-              const _Banner(),
+              // BANNER CARD (same as the user Home)
+              const PawBanner(),
 
               const SizedBox(height: 20),
 
@@ -156,107 +157,6 @@ class AdminDashboard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-// Card with the row of paws cropped from assets/home_banner.png.
-class _Banner extends StatelessWidget {
-  const _Banner();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: kCardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(18, 18, 18, 12),
-            child: Text(
-              'Together, we can make a difference\nfor stray animals.',
-              style: TextStyle(
-                color: kNavy,
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                height: 1.4,
-              ),
-            ),
-          ),
-          _PawStrip(),
-        ],
-      ),
-    );
-  }
-}
-
-// Shows only the row of paws from home_banner.png (no new asset needed).
-// If the crop looks off, adjust _x/_y/_w/_h (pixels in the original image).
-class _PawStrip extends StatelessWidget {
-  const _PawStrip();
-
-  static const double _imgW = 991;
-  static const double _imgH = 525;
-  static const double _x = 97;
-  static const double _y = 284;
-  static const double _w = 796;
-  static const double _h = 141;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, c) {
-        final double scale = c.maxWidth / _w;
-        final double stripH = _h * scale;
-
-        return SizedBox(
-          width: c.maxWidth,
-          height: stripH,
-          child: Stack(
-            clipBehavior: Clip.hardEdge,
-            children: [
-              Positioned(
-                left: -_x * scale,
-                top: -_y * scale,
-                width: _imgW * scale,
-                height: _imgH * scale,
-                child: Image.asset(
-                  'assets/home_banner.png',
-                  fit: BoxFit.fill,
-                ),
-              ),
-              // Fades the top of the strip into the card color.
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 0,
-                height: stripH * 0.5,
-                child: const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [kCardColor, Color(0x00FFFCF8)],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

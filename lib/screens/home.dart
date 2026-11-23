@@ -5,6 +5,7 @@ import '../models/stray_report.dart';
 import '../widgets/report_card.dart';
 import 'report_details_screen.dart';
 import '../utils/responsive.dart';
+import '../widgets/paw_banner.dart';
 
 class HomePage extends StatelessWidget {
   final String name;
@@ -90,7 +91,7 @@ class HomePage extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Home banner (the card inside assets/home_banner.png).
-          const _HomeBanner(),
+          const PawBanner(),
 
           const SizedBox(height: 25),
 
@@ -362,65 +363,6 @@ class HomePage extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Shows only the card area of assets/home_banner.png. The transparent
-/// margin and drop shadow around the card in the image are cropped out.
-/// If you replace the image with a different size, update the numbers below
-/// (pixels in the image).
-class _HomeBanner extends StatelessWidget {
-  const _HomeBanner();
-
-  static const double _imgW = 991; // full image size
-  static const double _imgH = 525;
-  static const double _x = 97; // card position inside the image
-  static const double _y = 97;
-  static const double _w = 796;
-  static const double _h = 328;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, c) {
-        final double scale = c.maxWidth / _w;
-
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x33E0662E),
-                blurRadius: 14,
-                offset: Offset(0, 6),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: SizedBox(
-              width: c.maxWidth,
-              height: _h * scale,
-              child: Stack(
-                clipBehavior: Clip.hardEdge,
-                children: [
-                  Positioned(
-                    left: -_x * scale,
-                    top: -_y * scale,
-                    width: _imgW * scale,
-                    height: _imgH * scale,
-                    child: Image.asset(
-                      'assets/home_banner.png',
-                      fit: BoxFit.fill,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }
