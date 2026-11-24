@@ -46,6 +46,9 @@ String? validateOfficialPage(String? value) {
   if (v.contains(' ') || !v.contains('.')) {
     return 'Please enter a valid page or website link';
   }
+  if (v.length > 200) {
+    return 'Link is too long. Please use the page link (max 200 characters)';
+  }
   return null;
 }
 

@@ -36,35 +36,39 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _logIn() {
+  bool _busy = false;
+
+  Future<void> _logIn() async {
+    if (_busy) return;
+
     // 1. Check the format of the email and password
     if (!_formKey.currentState!.validate()) return;
 
     final email = emailController.text.trim();
     final password = passwordController.text;
 
-    // 2. Check that the account exists
-    if (!AuthService.emailExists(email)) {
-      showMessage(context, 'No account found with this email.');
+    // 2. Log in with Supabase (checks the email and password)
+    setState(() => _busy = true);
+    try {
+      await AuthService.logIn(email, password);
+    } on AuthFailure catch (e) {
+      if (mounted) showMessage(context, e.message);
       return;
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
+    if (!mounted) return;
 
-    // 3. Check that the password is correct
-    if (!AuthService.passwordMatches(email, password)) {
-      showMessage(context, 'Incorrect password. Please try again.');
-      return;
-    }
-
-    // 4. Login successful. Admins go to the dashboard, everyone else to the app.
-    final String name = AuthService.nameOf(email) ?? '';
-    AuthService.signIn(email); // <-- ADD: remembers who is logged in
+    // 3. Login successful. Admins go to the dashboard, everyone else to the app.
+    final String name = AuthService.currentName;
+    final String userEmail = AuthService.currentEmail ?? email.toLowerCase();
 
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (context) => AuthService.isAdmin(email)
+        builder: (context) => AuthService.isCurrentAdmin
             ? AdminLayout(name: name)
-            : MainLayout(name: name, email: email),
+            : MainLayout(name: name, email: userEmail),
       ),
           (route) => false,
     );
@@ -100,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 22),
 
               AuthButton(
-                text: 'Log In',
+                text: _busy ? 'Logging in...' : 'Log In',
                 onPressed: _logIn,
               ),
             ],

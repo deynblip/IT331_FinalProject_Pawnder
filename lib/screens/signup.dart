@@ -262,7 +262,11 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   // SIGN UP FUNCTION
-  void _signUp() {
+  bool _busy = false;
+
+  Future<void> _signUp() async {
+    if (_busy) return;
+
     if (!_agreedToTerms) {
       showMessage(
         context,
@@ -275,23 +279,37 @@ class _SignUpPageState extends State<SignUpPage> {
 
     final email = emailController.text.trim();
 
-    if (AuthService.emailExists(email)) {
-      showMessage(
-        context,
-        'An account with this email already exists.',
-      );
-      return;
-    }
-
-    AuthService.register(
-      nameController.text,
-      email,
-      passwordController.text,
-    );
-
     // Professional Rescuer: the account is a regular one until the admin
     // approves the application (status = Pending Verification).
     final bool applying = _accountType == AccountType.professional;
+
+    // Create the account in Supabase. For Professional Rescuers, the
+    // database also saves their Verified Rescuer application.
+    setState(() => _busy = true);
+    try {
+      await AuthService.signUp(
+        name: nameController.text,
+        email: email,
+        password: passwordController.text,
+        rescuerApplication: applying
+            ? {
+          'organization': _rescuer.organization.text.trim(),
+          'role_in_org': _rescuer.roleInOrg.text.trim(),
+          'contact_person': _rescuer.contactPerson.text.trim(),
+          'contact_number': _rescuer.contactNumber.text.trim(),
+          'official_page': _rescuer.officialPage.text.trim(),
+        }
+            : null,
+      );
+    } on AuthFailure catch (e) {
+      if (mounted) showMessage(context, e.message);
+      return;
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+
+    // TEMPORARY: also add it to the in-memory rescuer list so the current
+    // Rescuer screens keep working until they move to Supabase.
     if (applying) {
       RescuerService.submit(
         email: email,
@@ -304,6 +322,7 @@ class _SignUpPageState extends State<SignUpPage> {
       );
     }
 
+    if (!mounted) return;
     showMessage(
       context,
       applying
@@ -420,7 +439,7 @@ class _SignUpPageState extends State<SignUpPage> {
               const SizedBox(height: 14),
 
               AuthButton(
-                text: 'Sign Up',
+                text: _busy ? 'Creating account...' : 'Sign Up',
                 onPressed: _signUp,
               ),
             ],

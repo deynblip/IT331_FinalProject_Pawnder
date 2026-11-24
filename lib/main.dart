@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'services/supabase_config.dart';
 
 import 'screens/welcome.dart';
 import 'utils/app_colors.dart';
 import 'utils/responsive.dart';
 import 'utils/theme_controller.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Connect to the Pawnder database (Supabase) before the app starts.
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    publishableKey: SupabaseConfig.publishableKey,
+  );
+
   runApp(const PawnderApp());
 }
 

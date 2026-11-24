@@ -9,10 +9,8 @@ import '../widgets/auth_widgets.dart';
 // ===============================
 // FORGOT PASSWORD PAGE
 // ===============================
-// Step 1: enter the email of your account.
-// Step 2: choose a new password.
-// (With a real backend like Firebase, step 2 would instead be an emailed
-// reset link, e.g. FirebaseAuth.instance.sendPasswordResetEmail(...).)
+// Step 1: enter the email of your account. Supabase emails a reset code.
+// Step 2: enter the code from the email and choose a new password.
 
 class ForgotPasswordPage extends StatefulWidget {
   final String initialEmail;
@@ -27,6 +25,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _emailFormKey = GlobalKey<FormState>();
   final _passwordFormKey = GlobalKey<FormState>();
   late final TextEditingController emailController;
+  final TextEditingController codeController = TextEditingController();
   final TextEditingController newPasswordController = TextEditingController();
   final TextEditingController confirmPasswordController =
   TextEditingController();
@@ -42,29 +41,56 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   @override
   void dispose() {
     emailController.dispose();
+    codeController.dispose();
     newPasswordController.dispose();
     confirmPasswordController.dispose();
     super.dispose();
   }
 
-  void _continue() {
+  bool _busy = false;
+
+  // Step 1: send the reset code to the email.
+  Future<void> _continue() async {
+    if (_busy) return;
     if (!_emailFormKey.currentState!.validate()) return;
 
-    if (!AuthService.emailExists(emailController.text)) {
-      showMessage(context, 'No account found with this email.');
+    setState(() => _busy = true);
+    try {
+      await AuthService.sendPasswordResetCode(emailController.text);
+    } on AuthFailure catch (e) {
+      if (mounted) showMessage(context, e.message);
       return;
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
+    if (!mounted) return;
 
+    showMessage(
+      context,
+      'If an account exists for this email, we sent a reset code to it.',
+    );
     setState(() => _emailVerified = true);
   }
 
-  void _resetPassword() {
+  // Step 2: check the code and save the new password.
+  Future<void> _resetPassword() async {
+    if (_busy) return;
     if (!_passwordFormKey.currentState!.validate()) return;
 
-    AuthService.updatePassword(
-      emailController.text,
-      newPasswordController.text,
-    );
+    setState(() => _busy = true);
+    try {
+      await AuthService.resetPasswordWithCode(
+        email: emailController.text,
+        code: codeController.text,
+        newPassword: newPasswordController.text,
+      );
+    } on AuthFailure catch (e) {
+      if (mounted) showMessage(context, e.message);
+      return;
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    if (!mounted) return;
 
     showMessage(context, 'Password updated! Please log in.');
     Navigator.pop(context);
@@ -95,13 +121,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   validator: validateEmail,
                 ),
                 const SizedBox(height: 22),
-                AuthButton(text: 'Continue', onPressed: _continue),
+                AuthButton(
+                  text: _busy ? 'Sending...' : 'Send Code',
+                  onPressed: _continue,
+                ),
               ],
             ),
           ),
         ] else ...[
           Text(
-            'Choose a new password for\n${emailController.text.trim()}',
+            'Enter the code we sent to\n${emailController.text.trim()}\nand choose a new password.',
             textAlign: TextAlign.center,
             style: const TextStyle(color: kHintGray, fontSize: 13, height: 1.3),
           ),
@@ -110,6 +139,20 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             key: _passwordFormKey,
             child: Column(
               children: [
+                AuthField(
+                  label: 'Code from Email',
+                  controller: codeController,
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    final v = value?.trim() ?? '';
+                    if (v.isEmpty) return 'Please enter the code from your email';
+                    if (!RegExp(r'^\d{6,10}$').hasMatch(v)) {
+                      return 'Please enter the numbers from your email';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 14),
                 AuthField(
                   label: 'New Password',
                   controller: newPasswordController,
@@ -131,7 +174,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   },
                 ),
                 const SizedBox(height: 22),
-                AuthButton(text: 'Reset Password', onPressed: _resetPassword),
+                AuthButton(
+                  text: _busy ? 'Saving...' : 'Reset Password',
+                  onPressed: _resetPassword,
+                ),
               ],
             ),
           ),

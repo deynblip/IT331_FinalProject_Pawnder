@@ -8,6 +8,7 @@ import 'report_stray.dart';
 import 'adopt.dart';
 import 'profile.dart';
 import 'login.dart';
+import '../services/auth_service.dart';
 import 'notifications_screen.dart';
 import '../services/notification_service.dart';
 import 'drawer/about.dart';
@@ -143,8 +144,8 @@ class _MainLayoutState extends State<MainLayout> {
         );
       },
     );
-
     if (confirmed == true && mounted) {
+      AuthService.signOut();
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const LoginPage()),

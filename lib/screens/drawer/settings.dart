@@ -254,18 +254,26 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     super.dispose();
   }
 
-  void _save() {
+  bool _busy = false;
+
+  Future<void> _save() async {
+    if (_busy) return;
     if (!_formKey.currentState!.validate()) return;
 
-    final current = _currentController.text;
-    final newPassword = _newController.text;
-
-    if (!AuthService.passwordMatches(widget.email, current)) {
-      showMessage(context, 'Your current password is incorrect.');
+    setState(() => _busy = true);
+    try {
+      await AuthService.changePassword(
+        _currentController.text,
+        _newController.text,
+      );
+    } on AuthFailure catch (e) {
+      if (mounted) showMessage(context, e.message);
       return;
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
+    if (!mounted) return;
 
-    AuthService.updatePassword(widget.email, newPassword);
     showMessage(context, 'Password changed successfully!');
     Navigator.pop(context);
   }
