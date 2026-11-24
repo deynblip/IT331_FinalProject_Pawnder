@@ -1,9 +1,12 @@
+// File: lib/screens/maps.dart
+// (Batch 3: stray reports + rescue responses, Supabase)
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../data/mock_reports.dart';
 import '../models/stray_report.dart';
+import '../services/report_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/report_style.dart';
 import '../widgets/report_card.dart';
@@ -20,11 +23,12 @@ class MapsPage extends StatefulWidget {
 }
 
 class _MapsPageState extends State<MapsPage> {
-  // Batangas City (center of the mock reports)
-  static const LatLng _center = LatLng(13.7700, 121.0620);
+  // Batangas City: used until the phone's location is known.
+  static const LatLng _defaultCenter = LatLng(13.7700, 121.0620);
 
-  // TEMP: replace with data from the backend
-  final List<StrayReport> _reports = List.of(mockReports);
+  final MapController _map = MapController();
+  bool _mapReady = false;
+  bool _centeredOnMe = false;
 
   // null = All
   static const Map<String, int?> _radii = {
@@ -36,14 +40,45 @@ class _MapsPageState extends State<MapsPage> {
   String _selectedRadius = 'All';
   String? _selectedId;
 
-  // TEMP: uses distanceKm from the mock data. Once there is a backend,
-  // compute it from the user's location.
+  @override
+  void initState() {
+    super.initState();
+    ReportService.ensureLoaded();
+    ReportService.changes.addListener(_centerOnMe);
+  }
+
+  @override
+  void dispose() {
+    ReportService.changes.removeListener(_centerOnMe);
+    super.dispose();
+  }
+
+  LatLng? get _me => ReportService.myLat == null
+      ? null
+      : LatLng(ReportService.myLat!, ReportService.myLng!);
+
+  /// Moves the map to the phone's location once it is known.
+  void _centerOnMe() {
+    final me = _me;
+    if (!_mapReady || _centeredOnMe || me == null) return;
+    _centeredOnMe = true;
+    _map.move(me, 13);
+  }
+
+  /// Distance comes from the phone's GPS. If the location is unknown,
+  /// the km filters can't be used, so all reports are shown.
   List<StrayReport> get _visible {
+    final reports = ReportService.all;
     final radius = _radii[_selectedRadius];
-    final list = radius == null
-        ? List.of(_reports)
-        : _reports.where((r) => r.distanceKm <= radius).toList();
-    list.sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
+    final list = (radius == null || _me == null)
+        ? List.of(reports)
+        : reports
+        .where((r) => r.distanceKm != null && r.distanceKm! <= radius)
+        .toList();
+    if (_me != null) {
+      list.sort((a, b) => (a.distanceKm ?? double.infinity)
+          .compareTo(b.distanceKm ?? double.infinity));
+    }
     return list;
   }
 
@@ -61,7 +96,7 @@ class _MapsPageState extends State<MapsPage> {
       MaterialPageRoute(
         builder: (_) => ReportDetailsScreen(
           report: report,
-          onChanged: (_) {}, // TEMP: connect to the backend later
+          onChanged: (_) {}, // the map updates itself (ReportService)
         ),
       ),
     );
@@ -122,10 +157,37 @@ class _MapsPageState extends State<MapsPage> {
     );
   }
 
+  /// Blue dot where the phone is.
+  Marker _meMarker(LatLng me) {
+    return Marker(
+      point: me,
+      width: 22,
+      height: 22,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF2F80ED),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 3),
+          boxShadow: const [
+            BoxShadow(color: Color(0x40000000), blurRadius: 4),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: ReportService.changes,
+      builder: (context, _) => _content(context),
+    );
+  }
+
+  Widget _content(BuildContext context) {
     final visible = _visible;
     final current = _current(visible);
+    final me = _me;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -150,11 +212,16 @@ class _MapsPageState extends State<MapsPage> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
               child: FlutterMap(
-                options: const MapOptions(
-                  initialCenter: _center,
+                mapController: _map,
+                options: MapOptions(
+                  initialCenter: me ?? _defaultCenter,
                   initialZoom: 13,
                   minZoom: 3,
                   maxZoom: 19,
+                  onMapReady: () {
+                    _mapReady = true;
+                    _centerOnMe();
+                  },
                 ),
                 children: [
                   TileLayer(
@@ -162,9 +229,10 @@ class _MapsPageState extends State<MapsPage> {
                     userAgentPackageName: 'com.example.paw_kie',
                   ),
                   MarkerLayer(
-                    markers: visible
-                        .map((r) => _marker(r, r.id == current?.id))
-                        .toList(),
+                    markers: [
+                      if (me != null) _meMarker(me),
+                      ...visible.map((r) => _marker(r, r.id == current?.id)),
+                    ],
                   ),
                   const SimpleAttributionWidget(
                     source: Text('OpenStreetMap contributors'),
@@ -189,10 +257,12 @@ class _MapsPageState extends State<MapsPage> {
                 border: Border.all(color: kCardBorder),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Text(
-                'No reports in this range.',
+              child: Text(
+                !ReportService.isLoaded
+                    ? (ReportService.loadError ?? 'Loading reports...')
+                    : 'No reports in this range.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: kHintGray),
+                style: const TextStyle(color: kHintGray),
               ),
             ),
           if (current == null) const SizedBox(height: 14),

@@ -331,7 +331,7 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
         animalType: d.animalType,
         urgency: d.urgency!,
         description: d.description.trim(),
-        photoPath: d.photo?.path,
+        photo: d.photo,
         latitude: d.location!.latitude,
         longitude: d.location!.longitude,
         address: d.address,
@@ -361,6 +361,8 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
 
       // Done: close this screen and go back to Home.
       Navigator.pop(context);
+    } on ReportFailure catch (e) {
+      _snack(e.message);
     } catch (_) {
       _snack('Could not submit the report. Please try again.');
     } finally {

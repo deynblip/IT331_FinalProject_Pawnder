@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../data/mock_reports.dart';
 import '../models/stray_report.dart';
+import '../services/report_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/report_card.dart';
 import 'report_details_screen.dart';
 import '../utils/responsive.dart';
 
 /// Reports tab: the community reports bulletin (list + filters).
-/// NOTE: Gumagamit pa ng mock data. Ikakabit sa ReportService sa backend step.
+/// Reports come from the database (ReportService). Pull down to refresh.
 class ReportsPage extends StatefulWidget {
   /// Switches back to the Map view (provided by ReportsSection).
   final VoidCallback? onViewMap;
@@ -20,9 +20,6 @@ class ReportsPage extends StatefulWidget {
 }
 
 class _ReportsPageState extends State<ReportsPage> {
-  // TEMP: papalitan ng data galing backend
-  final List<StrayReport> _reports = List.of(mockReports);
-
   // null = All
   final Map<String, Urgency?> _filters = {
     'All': null,
@@ -32,35 +29,83 @@ class _ReportsPageState extends State<ReportsPage> {
   };
   String _selected = 'All';
 
-  List<StrayReport> get _visible {
+  @override
+  void initState() {
+    super.initState();
+    ReportService.ensureLoaded();
+  }
+
+  List<StrayReport> _visible(List<StrayReport> reports) {
     final urgency = _filters[_selected];
-    if (urgency == null) return _reports;
-    return _reports.where((r) => r.urgency == urgency).toList();
+    if (urgency == null) return reports;
+    return reports.where((r) => r.urgency == urgency).toList();
   }
 
-  void _updateReport(StrayReport updated) {
-    setState(() {
-      final i = _reports.indexWhere((r) => r.id == updated.id);
-      if (i != -1) _reports[i] = updated;
-    });
-  }
-
-  Future<void> _openDetails(StrayReport report) async {
-    await Navigator.push(
+  void _openDetails(StrayReport report) {
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ReportDetailsScreen(
           report: report,
-          onChanged: _updateReport,
+          onChanged: (_) {}, // the list updates itself (ReportService)
         ),
       ),
     );
   }
 
+  /// Message in the middle of the list area (still scrollable, so
+  /// pull-to-refresh works).
+  Widget _message(String text, {bool showRetry = false}) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 80),
+        Center(
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: kHintGray),
+          ),
+        ),
+        if (showRetry)
+          Center(
+            child: TextButton(
+              onPressed: ReportService.load,
+              child: const Text('Try again'),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _list() {
+    return ListenableBuilder(
+      listenable: ReportService.changes,
+      builder: (context, _) {
+        if (!ReportService.isLoaded) {
+          if (ReportService.loadError != null) {
+            return _message(ReportService.loadError!, showRetry: true);
+          }
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final items = _visible(ReportService.all);
+        if (items.isEmpty) return _message('No reports yet');
+
+        return ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount: items.length,
+          itemBuilder: (_, i) => ReportCard(
+            report: items[i],
+            onTap: () => _openDetails(items[i]),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final items = _visible;
-
     return Padding(
       padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 16),
       child: Column(
@@ -116,19 +161,10 @@ class _ReportsPageState extends State<ReportsPage> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: items.isEmpty
-                ? const Center(
-              child: Text(
-                'No reports yet',
-                style: TextStyle(color: kHintGray),
-              ),
-            )
-                : ListView.builder(
-              itemCount: items.length,
-              itemBuilder: (_, i) => ReportCard(
-                report: items[i],
-                onTap: () => _openDetails(items[i]),
-              ),
+            child: RefreshIndicator(
+              color: kBlue,
+              onRefresh: ReportService.load,
+              child: _list(),
             ),
           ),
         ],
