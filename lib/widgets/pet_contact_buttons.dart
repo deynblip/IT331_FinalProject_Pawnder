@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:android_intent_plus/android_intent.dart';
 
 import '../models/adoption_application.dart';
 import '../models/adoption_pet.dart';
@@ -10,11 +12,6 @@ import '../services/adoption_service.dart';
 import '../services/application_service.dart';
 import '../utils/app_colors.dart';
 
-/// The mail and phone icons next to the pet owner.
-/// They work only after the user's application passed admin screening
-/// (Forwarded or Approved). The owner always sees their own details.
-/// The owner's details come from the database, so this reloads them while
-/// the screen is open and unlocks the icons by itself.
 class PetContactButtons extends StatefulWidget {
   final AdoptionPet pet;
 
@@ -68,6 +65,32 @@ class _PetContactButtonsState extends State<PetContactButtons> {
       ..showSnackBar(SnackBar(content: Text('$what copied: $copyText')));
   }
 
+  Future<void> _openGmail(String email) async {
+    // Copy first, so the address is still available if the mail app does not
+    // allow screenshots.
+    await Clipboard.setData(ClipboardData(text: email));
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text('Email copied: $email')));
+    }
+
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        await AndroidIntent(
+          action: 'android.intent.action.SENDTO',
+          data: Uri(scheme: 'mailto', path: email).toString(),
+          package: 'com.google.android.gm',
+        ).launch();
+        return;
+      } catch (e) {
+        debugPrint('Gmail intent failed: $e');
+      }
+    }
+    if (!mounted) return;
+    await _open(Uri(scheme: 'mailto', path: email), email, 'Email');
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -99,7 +122,7 @@ class _PetContactButtonsState extends State<PetContactButtons> {
             IconButton(
               tooltip: unlocked && email.isNotEmpty ? 'Email $email' : null,
               onPressed: unlocked && email.isNotEmpty
-                  ? () => _open(Uri(scheme: 'mailto', path: email), email, 'Email')
+                  ? () => _openGmail(email)
                   : null,
               icon: Icon(
                 Icons.mail_outline,

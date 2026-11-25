@@ -1,4 +1,3 @@
-// Ilagay sa: lib/services/auth_service.dart  (PALITAN ANG BUONG LAMAN)
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -6,6 +5,7 @@ import 'report_service.dart';
 import 'response_service.dart';
 import 'adoption_service.dart';
 import 'application_service.dart';
+import 'content_report_service.dart';
 
 // ===============================
 // AUTH SERVICE (Supabase)
@@ -139,6 +139,7 @@ class AuthService {
     ResponseService.reset();
     AdoptionService.reset();
     ApplicationService.reset();
+    ContentReportService.reset();
   }
 
   static Future<void> signOut() async {
