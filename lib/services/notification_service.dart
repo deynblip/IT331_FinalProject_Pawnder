@@ -21,10 +21,6 @@ class NotificationService {
   /// Rows from the database (only the logged-in user's own).
   static List<AppNotification> _fromDb = [];
 
-  /// TEMPORARY, this phone only. Used by the old in-memory RescuerService
-  /// until Batch 6.3 / 6.5 removes it.
-  static final List<AppNotification> _local = [];
-
   /// Ids the user already opened here, so a refresh does not flip them back
   /// to unread before the database has saved the change.
   static final Set<String> _readHere = {};
@@ -118,7 +114,6 @@ class NotificationService {
   static void reset() {
     _generation++;
     _fromDb = [];
-    _local.clear();
     _readHere.clear();
     _loaded = false;
     _loading = null;
@@ -181,7 +176,7 @@ class NotificationService {
     };
   }
 
-  static List<AppNotification> get _everything => [..._fromDb, ..._local];
+  static List<AppNotification> get _everything => [..._fromDb];
 
   /// Newest first. Only the notifications the user's Settings allow.
   static List<AppNotification> get all {
@@ -208,11 +203,6 @@ class NotificationService {
       unawaited(_saveRead(id));
       return;
     }
-
-    final int l = _local.indexWhere((n) => n.id == id);
-    if (l == -1 || _local[l].read) return;
-    _local[l] = _local[l].copyWith(read: true);
-    _notify();
   }
 
   static void markAllRead() {
@@ -225,9 +215,6 @@ class NotificationService {
         _fromDb[i] = _fromDb[i].copyWith(read: true);
         anyFromDb = true;
       }
-    }
-    for (var i = 0; i < _local.length; i++) {
-      if (_visible(_local[i])) _local[i] = _local[i].copyWith(read: true);
     }
     _notify();
     if (anyFromDb) unawaited(_saveAllRead());
@@ -247,26 +234,5 @@ class NotificationService {
     } catch (e) {
       debugPrint('Could not save "read all": $e');
     }
-  }
-
-  static void add({
-    required NotificationType type,
-    required String title,
-    required String message,
-    String? targetId,
-    String? userEmail,
-  }) {
-    _local.add(
-      AppNotification(
-        id: 'local-${DateTime.now().microsecondsSinceEpoch}',
-        type: type,
-        title: title,
-        message: message,
-        createdAt: DateTime.now(),
-        targetId: targetId,
-        userEmail: userEmail,
-      ),
-    );
-    _notify();
   }
 }

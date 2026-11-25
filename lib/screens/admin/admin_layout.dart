@@ -36,6 +36,7 @@ class _AdminLayoutState extends State<AdminLayout> {
     NotificationService.load();
     RescuerService.load();
     ContentReportService.load();
+    AuthService.refreshUserCount();
   }
 
   @override

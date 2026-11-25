@@ -3,11 +3,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'report_service.dart';
 import 'response_service.dart';
-import 'rescuer_service.dart';
 import 'adoption_service.dart';
 import 'application_service.dart';
 import 'content_report_service.dart';
 import 'notification_service.dart';
+import 'rescuer_service.dart';
 
 // ===============================
 // AUTH SERVICE (Supabase)
@@ -37,11 +37,6 @@ enum SessionStatus { none, ready, offline, restricted }
 class AuthService {
   static SupabaseClient get _db => Supabase.instance.client;
 
-  // TEMPORARY: the in-memory Verified Rescuer service still sends admin
-  // notifications to this email. Removed when Verified Rescuers move to
-  // Supabase (later batch).
-  static const String adminEmail = 'admin@pawnder.com';
-
   // Details of the logged-in user, loaded from `profiles` after log in.
   static String? _name;
   static bool _isAdmin = false;
@@ -51,11 +46,6 @@ class AuthService {
   // True only while someone is logged in and their profile is loaded.
   static bool _sessionActive = false;
   static bool get sessionActive => _sessionActive;
-
-  // Names of accounts used on this device. TEMPORARY: lets the in-memory
-  // services (reports, responses, rescuers) still show names until they
-  // move to Supabase in the next batches.
-  static final Map<String, String> _knownNames = {};
 
   // ---------------------------------------------------------------- Current user
 
@@ -74,8 +64,8 @@ class AuthService {
   /// Number of registered regular users (admin dashboard).
   static int get userCount => _userCount;
 
-  static String? nameOf(String email) =>
-      _knownNames[email.trim().toLowerCase()];
+  /// Goes up when the registered-users count is reloaded (admin Dashboard).
+  static final ValueNotifier<int> userCountChanges = ValueNotifier<int>(0);
 
   // ---------------------------------------------------------------- Log in / out
 
@@ -189,8 +179,6 @@ class AuthService {
       throw const AuthFailure('An account with this email already exists.');
     }
 
-    _knownNames[email.trim().toLowerCase()] = name.trim();
-
     // Confirm email ON: there is no session yet. The user enters the code.
     if (res.session == null) return true;
 
@@ -286,9 +274,6 @@ class AuthService {
     _name = row['full_name'] as String?;
     _isAdmin = row['role'] == 'admin';
     _isRestricted = row['is_restricted'] == true;
-    if (currentEmail != null && _name != null) {
-      _knownNames[currentEmail!] = _name!;
-    }
     if (_isAdmin) await refreshUserCount();
   }
 
@@ -310,6 +295,7 @@ class AuthService {
     try {
       final dynamic counts = await _db.rpc('admin_dashboard_counts');
       _userCount = (counts['registered_users'] as num?)?.toInt() ?? 0;
+      userCountChanges.value++;
     } catch (e) {
       debugPrint('User count error: $e');
     }

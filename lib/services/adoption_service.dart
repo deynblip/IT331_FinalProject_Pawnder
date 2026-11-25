@@ -1,4 +1,3 @@
-
 // ===================================
 // ADOPTION POSTS (Supabase)  -  Batch 5A
 // ===================================
@@ -352,18 +351,6 @@ class AdoptionService {
           fallback: 'Could not remove the post. Please try again.'));
     }
     await load();
-  }
-
-  /// ADMIN ONLY: remove any post (used for reported content).
-  /// TEMPORARY: only hides it on this phone. Batch 6 will connect it to
-  /// `admin_remove_reported_content` in the database.
-  static Future<void> removeAsAdmin(String id) async {
-    if (!AuthService.isCurrentAdmin) {
-      throw StateError('Only an admin can remove posts.');
-    }
-    final int before = _pets.length;
-    _pets = _pets.where((p) => p.id != id).toList();
-    if (_pets.length != before) _notify();
   }
 
   /// ADMIN ONLY: approve or reject a pet post.
