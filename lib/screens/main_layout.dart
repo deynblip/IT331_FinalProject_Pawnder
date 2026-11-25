@@ -50,7 +50,10 @@ class _MainLayoutState extends State<MainLayout> {
     super.initState();
     _poll = Timer.periodic(
       const Duration(seconds: 20),
-          (_) => ApplicationService.load(),
+          (_) {
+        ApplicationService.load();
+        NotificationService.load();
+      },
     );
   }
 

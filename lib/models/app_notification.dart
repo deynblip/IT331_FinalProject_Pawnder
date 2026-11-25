@@ -9,6 +9,7 @@ enum NotificationType {
   rescuerApproved, // the admin approved the Verified Rescuer application
   rescuerRejected, // the admin rejected the Verified Rescuer application
   rescuerFlagged, // (admin) a Verified Rescuer has a high cancel rate
+  applicationSubmitted, // (admin) a new adoption application needs screening
 }
 
 class AppNotification {

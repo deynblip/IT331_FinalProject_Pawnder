@@ -6,6 +6,7 @@ import '../../services/adoption_service.dart';
 import '../../services/application_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/rescuer_service.dart';
+import '../../services/notification_service.dart';
 import '../../utils/app_colors.dart';
 import '../login.dart';
 import 'admin_dashboard.dart';
@@ -31,6 +32,7 @@ class _AdminLayoutState extends State<AdminLayout> {
   void _reload() {
     AdoptionService.load();
     ApplicationService.load();
+    NotificationService.load();
   }
 
   @override

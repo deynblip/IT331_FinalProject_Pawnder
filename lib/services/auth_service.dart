@@ -6,6 +6,7 @@ import 'response_service.dart';
 import 'adoption_service.dart';
 import 'application_service.dart';
 import 'content_report_service.dart';
+import 'notification_service.dart';
 
 // ===============================
 // AUTH SERVICE (Supabase)
@@ -140,6 +141,7 @@ class AuthService {
     AdoptionService.reset();
     ApplicationService.reset();
     ContentReportService.reset();
+    NotificationService.reset();
   }
 
   static Future<void> signOut() async {
