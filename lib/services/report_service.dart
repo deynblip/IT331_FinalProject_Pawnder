@@ -331,11 +331,125 @@ class ReportService {
           fallback: 'Could not submit the report. Please try again.'));
     }
 
-    // 3. Show it everywhere (Home, Map, Bulletin, My Reports).
-    // (If a reload is already running, wait for it, then load again so the
-    // new report is included.)
     if (_loading != null) await _loading;
     await load();
+  }
+// ---------------------------------------------------------------- Edit / Remove my report
+
+  /// Can the logged-in user edit or remove this report right now?
+  /// (The database checks this too.)
+  static bool canChange(StrayReport r) =>
+      r.isMine &&
+          r.status == RescueStatus.needsRescue &&
+          r.responders == 0;
+
+  /// A short note for the user when they can't change their report because
+  /// someone is responding. Null when there is nothing to say.
+  static String? lockedNote(StrayReport r) {
+    if (!r.isMine || r.status == RescueStatus.rescued) return null;
+    if (canChange(r)) return null;
+    return "Someone is responding, so you can't edit or remove this "
+        'report right now.';
+  }
+
+  /// Saves the changes to the user's own report. The location can't change.
+  /// [newPhoto] replaces the photo; [removePhoto] deletes it.
+  /// Throws [ReportFailure] with a message for the user.
+  static Future<void> updateMine({
+    required StrayReport report,
+    required String animalType,
+    required Urgency urgency,
+    required String description,
+    required bool possiblyLostPet,
+    File? newPhoto,
+    bool removePhoto = false,
+  }) async {
+    final String? userId = AuthService.currentUserId;
+    if (userId == null) throw const ReportFailure('Please log in first.');
+
+    final String? oldPath = _pathFromUrl(report.imageAsset);
+    String? newPath;
+    List<String> paths = oldPath == null ? <String>[] : [oldPath];
+
+    if (newPhoto != null) {
+      try {
+        final Uint8List bytes = await newPhoto.readAsBytes();
+        if (bytes.length > 5 * 1024 * 1024) {
+          throw const ReportFailure(
+              'The photo is too large. Please choose a photo under 5 MB.');
+        }
+        final String ext = _extensionOf(newPhoto.path);
+        newPath = '$userId/${DateTime.now().millisecondsSinceEpoch}.$ext';
+        await _db.storage.from(_bucket).uploadBinary(
+          newPath,
+          bytes,
+          fileOptions: FileOptions(contentType: _mimeOf(ext)),
+        );
+        paths = [newPath];
+      } on ReportFailure {
+        rethrow;
+      } catch (e) {
+        throw ReportFailure(friendlyDbError(e,
+            fallback: 'Could not upload the photo. Please try again.'));
+      }
+    } else if (removePhoto) {
+      paths = <String>[];
+    }
+
+    try {
+      await _db.rpc('update_my_report', params: {
+        'p_id': report.id,
+        'p_animal_type': animalType,
+        'p_urgency': urgency.dbValue,
+        'p_description': description.trim(),
+        'p_photo_paths': paths,
+        'p_possibly_lost_pet': possiblyLostPet,
+      });
+    } catch (e) {
+      // Don't leave an unused new photo in Storage.
+      if (newPath != null) {
+        try {
+          await _db.storage.from(_bucket).remove([newPath]);
+        } catch (_) {}
+      }
+      unawaited(refreshOne(report.id).catchError((_) => null));
+      throw ReportFailure(friendlyDbError(e,
+          fallback: 'Could not save your changes. Please try again.'));
+    }
+
+    // The old photo is not needed anymore.
+    if (oldPath != null && (newPath != null || removePhoto)) {
+      try {
+        await _db.storage.from(_bucket).remove([oldPath]);
+      } catch (_) {}
+    }
+
+    await refreshOne(report.id);
+  }
+
+  /// Removes (hides) the user's own report. The database keeps the record.
+  /// Throws [ReportFailure] with a message for the user.
+  static Future<void> removeMine(String reportId) async {
+    try {
+      await _db.rpc('remove_my_report', params: {'p_id': reportId});
+    } catch (e) {
+      unawaited(refreshOne(reportId).catchError((_) => null));
+      throw ReportFailure(friendlyDbError(e,
+          fallback: 'Could not remove the report. Please try again.'));
+    }
+    _reports.removeWhere((r) => r.id == reportId);
+    _notify();
+  }
+
+  /// The storage path inside the bucket, taken from a photo web link.
+  static String? _pathFromUrl(String? url) {
+    if (url == null || !url.startsWith('http')) return null;
+    final String marker = '/$_bucket/';
+    final int i = url.indexOf(marker);
+    if (i == -1) return null;
+    final String rest = url.substring(i + marker.length);
+    final int q = rest.indexOf('?');
+    return q == -1 ? rest : rest.substring(0, q);
   }
 
   static String _extensionOf(String path) {

@@ -8,6 +8,7 @@ import '../utils/responsive.dart';
 
 /// Reports made by the logged-in user (Profile > My Reports).
 /// Comes from the database (ReportService). Pull down to refresh.
+/// Edit / Remove are inside the report details screen (docked at the bottom).
 class MyReportsScreen extends StatefulWidget {
   const MyReportsScreen({super.key});
 
@@ -64,7 +65,8 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
               MaterialPageRoute(
                 builder: (_) => ReportDetailsScreen(
                   report: items[i],
-                  onChanged: (_) {}, // the list updates itself (ReportService)
+                  onChanged: (_) {}, // the list updates itself
+                  showOwnerActions: true,
                 ),
               ),
             ),

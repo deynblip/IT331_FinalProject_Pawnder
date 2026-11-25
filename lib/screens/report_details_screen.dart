@@ -11,12 +11,23 @@ import '../widgets/rescuer_badge.dart';
 import '../models/content_report.dart';
 import '../widgets/report_content_dialog.dart';
 import '../utils/responsive.dart';
+import 'edit_report_screen.dart';
+import 'edit_report_screen.dart';
 
 class ReportDetailsScreen extends StatefulWidget {
   final StrayReport report;
   final ValueChanged<StrayReport> onChanged;
 
-  const ReportDetailsScreen({super.key, required this.report, required this.onChanged});
+  /// True lang kapag galing sa Profile > My Reports. Doon lang lalabas ang
+  /// Edit / Remove.
+  final bool showOwnerActions;
+
+  const ReportDetailsScreen({
+    super.key,
+    required this.report,
+    required this.onChanged,
+    this.showOwnerActions = false,
+  });
 
   @override
   State<ReportDetailsScreen> createState() => _ReportDetailsScreenState();
@@ -583,10 +594,131 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     );
   }
 
+  Future<void> _editReport() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => EditReportScreen(report: _report)),
+    );
+    if (mounted) await _refresh(); // ipakita ang bagong laman
+  }
+
+  Future<void> _removeReport() async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Remove this report?',
+            style: TextStyle(fontWeight: FontWeight.w800)),
+        content: const Text(
+            'It will no longer show on Home, Map or the Reports list. '
+                "This can't be undone."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Remove',
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _busy = true);
+    try {
+      await ReportService.removeMine(_report.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('Report removed.')));
+      Navigator.pop(context); // balik sa listahan
+    } on ReportFailure catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _snack(e.message);
+    }
+  }
+
+  /// Full-screen na photo; puwedeng i-pinch para mag-zoom.
+  void _openPhoto() {
+    final String? src = _report.imageAsset;
+    if (src == null || src.isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              minScale: 1,
+              maxScale: 5,
+              child: src.startsWith('http')
+                  ? Image.network(src, fit: BoxFit.contain)
+                  : Image.asset(src, fit: BoxFit.contain),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget? _ownerBar() {
+    if (!widget.showOwnerActions || !ReportService.canChange(_report)) {
+      return null;
+    }
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(context.hPad, 10, context.hPad, 12),
+        decoration: const BoxDecoration(
+          color: kCream,
+          border: Border(top: BorderSide(color: Color(0xFFF5DEC8))),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _busy ? null : _editReport,
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Edit'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: kBlue,
+                  side: const BorderSide(color: kBlue),
+                  minimumSize: const Size(0, 48),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _busy ? null : _removeReport,
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: const Text('Remove'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: const BorderSide(color: Colors.red),
+                  minimumSize: const Size(0, 48),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kCream,
+      bottomNavigationBar: _ownerBar(),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _refresh,
@@ -624,7 +756,11 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ReportImage(asset: _report.imageAsset, width: 150, height: 150),
+                    GestureDetector(
+                      onTap: _openPhoto,
+                      child: ReportImage(
+                          asset: _report.imageAsset, width: 150, height: 150),
+                    ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
