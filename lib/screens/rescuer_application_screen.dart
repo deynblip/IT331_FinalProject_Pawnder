@@ -38,7 +38,10 @@ class _RescuerApplicationScreenState extends State<RescuerApplicationScreen> {
     super.dispose();
   }
 
-  void _submit() {
+  bool _busy = false;
+
+  Future<void> _submit() async {
+    if (_busy) return;
     if (!_formKey.currentState!.validate()) return;
 
     final email = AuthService.currentEmail;
@@ -47,15 +50,16 @@ class _RescuerApplicationScreenState extends State<RescuerApplicationScreen> {
       return;
     }
 
-    final error = RescuerService.submit(
-      email: email,
-      applicantName: AuthService.nameOf(email) ?? '',
+    setState(() => _busy = true);
+    final String? error = await RescuerService.submitToDatabase(
       organization: _c.organization.text,
       roleInOrg: _c.roleInOrg.text,
       contactPerson: _c.contactPerson.text,
       contactNumber: _c.contactNumber.text,
       officialPage: _c.officialPage.text,
     );
+    if (!mounted) return;
+    setState(() => _busy = false);
 
     if (error != null) {
       showMessage(context, error);
@@ -92,7 +96,10 @@ class _RescuerApplicationScreenState extends State<RescuerApplicationScreen> {
                 const SizedBox(height: 18),
                 RescuerFormFields(controllers: _c),
                 const SizedBox(height: 22),
-                AuthButton(text: 'Submit Application', onPressed: _submit),
+                AuthButton(
+                  text: _busy ? 'Sending...' : 'Submit Application',
+                  onPressed: _submit,
+                ),
               ],
             ),
           ),

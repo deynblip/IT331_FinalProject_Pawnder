@@ -37,6 +37,7 @@ class _ProfilePageState extends State<ProfilePage> {
     // My Reports count and Rescue Record come from the database.
     ReportService.ensureLoaded();
     ResponseService.loadMe();
+    RescuerService.loadMine(); // Pending / Verified / Not approved status
     ReportService.changes.addListener(_redraw);
     ResponseService.changes.addListener(_redraw);
   }

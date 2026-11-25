@@ -5,10 +5,12 @@
 // Replace with your real backend later.
 
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/app_notification.dart';
 import '../models/rescuer_application.dart';
 import 'auth_service.dart';
+import 'db_errors.dart';
 import 'notification_service.dart';
 import 'response_service.dart';
 
@@ -115,6 +117,82 @@ class RescuerService {
       userEmail: AuthService.adminEmail,
     );
     _notify();
+  }
+
+  // ---------------------------------------------------------- Database
+
+  /// Loads the logged-in user's newest application from the database
+  /// (including the one made at Sign Up), so Profile shows the real status
+  /// (Pending / Verified / Not approved) even after the app was restarted.
+  static Future<void> loadMine() async {
+    final String? me = AuthService.currentUserId;
+    final String? email = AuthService.currentEmail;
+    if (me == null || email == null) return;
+
+    try {
+      final List<Map<String, dynamic>> rows = await Supabase.instance.client
+          .from('rescuer_applications')
+          .select()
+          .eq('user_id', me)
+          .order('submitted_at', ascending: false)
+          .limit(1);
+      if (rows.isEmpty) return;
+      if (me != AuthService.currentUserId) return; // another account logged in
+
+      final Map<String, dynamic> r = rows.first;
+      final RescuerApplication app = RescuerApplication(
+        id: r['id'] as String,
+        email: email,
+        applicantName: (r['applicant_name'] as String?) ?? '',
+        organization: (r['organization'] as String?) ?? '',
+        roleInOrg: (r['role_in_org'] as String?) ?? '',
+        contactPerson: (r['contact_person'] as String?) ?? '',
+        contactNumber: (r['contact_number'] as String?) ?? '',
+        officialPage: (r['official_page'] as String?) ?? '',
+        submittedAt: DateTime.parse(r['submitted_at'] as String).toLocal(),
+        status: switch (r['status']) {
+          'verified' => RescuerStatus.verified,
+          'rejected' => RescuerStatus.rejected,
+          _ => RescuerStatus.pending,
+        },
+        rejectionReason: r['rejection_reason'] as String?,
+        reviewedAt: r['reviewed_at'] == null
+            ? null
+            : DateTime.parse(r['reviewed_at'] as String).toLocal(),
+      );
+
+      // The database is the truth: replace this user's older in-memory copy.
+      _apps.removeWhere((a) => a.email == email && !a.id.startsWith('seed'));
+      _apps.insert(0, app);
+      _notify();
+    } catch (e) {
+      debugPrint('Load my rescuer application error: $e');
+    }
+  }
+
+  /// Profile > Apply as Verified Rescuer: saves the application in the
+  /// database. Returns an error message, or null when it was sent.
+  static Future<String?> submitToDatabase({
+    required String organization,
+    required String roleInOrg,
+    required String contactPerson,
+    required String contactNumber,
+    required String officialPage,
+  }) async {
+    try {
+      await Supabase.instance.client.rpc('submit_rescuer_application', params: {
+        'p_organization': organization.trim(),
+        'p_role_in_org': roleInOrg.trim(),
+        'p_contact_person': contactPerson.trim(),
+        'p_contact_number': contactNumber.trim(),
+        'p_official_page': officialPage.trim(),
+      });
+    } catch (e) {
+      return friendlyDbError(e,
+          fallback: 'Could not send your application. Please try again.');
+    }
+    await loadMine();
+    return null;
   }
 
   // ---------------------------------------------------------- Apply
