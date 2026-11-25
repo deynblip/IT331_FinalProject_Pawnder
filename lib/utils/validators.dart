@@ -21,6 +21,19 @@ String? validatePassword(String? value) {
   return null;
 }
 
+String? validateNewPassword(String? value) {
+  final v = value ?? '';
+  if (v.isEmpty) return 'Please enter your password';
+  if (v.length < 8) return 'Password must be at least 8 characters';
+  if (!RegExp(r'[A-Za-z]').hasMatch(v)) {
+    return 'Password must have at least one letter';
+  }
+  if (!RegExp(r'\d').hasMatch(v)) {
+    return 'Password must have at least one number';
+  }
+  return null;
+}
+
 String? validateName(String? value) {
   if ((value?.trim() ?? '').isEmpty) return 'Please enter your name';
   return null;
@@ -45,6 +58,9 @@ String? validateOfficialPage(String? value) {
   if (v.isEmpty) return 'Please enter the official page or website';
   if (v.contains(' ') || !v.contains('.')) {
     return 'Please enter a valid page or website link';
+  }
+  if (v.length > 200) {
+    return 'Link is too long. Please use the page link (max 200 characters)';
   }
   return null;
 }

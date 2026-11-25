@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../data/mock_reports.dart';
+import '../services/report_service.dart';
 import '../models/rescuer_application.dart';
 import '../utils/app_colors.dart';
 import 'my_reports_screen.dart';
@@ -30,6 +30,29 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    // My Reports count and Rescue Record come from the database.
+    ReportService.ensureLoaded();
+    ResponseService.loadMe();
+    RescuerService.loadMine(); // Pending / Verified / Not approved status
+    ReportService.changes.addListener(_redraw);
+    ResponseService.changes.addListener(_redraw);
+  }
+
+  @override
+  void dispose() {
+    ReportService.changes.removeListener(_redraw);
+    ResponseService.changes.removeListener(_redraw);
+    super.dispose();
+  }
+
+  // Redraws the page when reports or the Rescue Record change.
+  void _redraw() {
+    if (mounted) setState(() {});
+  }
 
   // Stored as bytes so it works on phones and in Chrome (web).
   // TEMP: lost when the app restarts. Save it to the backend later.
@@ -267,7 +290,7 @@ class _ProfilePageState extends State<ProfilePage> {
       builder: (context, _) {
         final email = AuthService.currentEmail;
         if (email == null) return const SizedBox.shrink();
-        final stats = ResponseService.statsFor(email);
+        final stats = ResponseService.myStats;
 
         return Container(
           width: double.infinity,
@@ -358,12 +381,21 @@ class _ProfilePageState extends State<ProfilePage> {
             );
 
           case RescuerStatus.rejected:
+            final bool badgeRemoved =
+            (app!.rejectionReason ?? '').startsWith('Badge removed:');
+            final String reason = (app.rejectionReason ?? '-')
+                .replaceFirst('Badge removed:', '')
+                .trim();
             return _rescuerCard(
-              icon: Icons.cancel_outlined,
+              icon: badgeRemoved
+                  ? Icons.remove_moderator_outlined
+                  : Icons.cancel_outlined,
               color: const Color(0xFFE04F4F),
-              title: 'Rescuer application not approved',
-              message: 'Reason: ${app!.rejectionReason ?? '-'}\n'
-                  'You are still a regular user. You can apply again.',
+              title: badgeRemoved
+                  ? 'Verified Rescuer badge removed'
+                  : 'Rescuer application not approved',
+              message: 'Reason: $reason\n'
+                  'You are now a regular user. You can apply again.',
               buttonText: 'Apply Again',
               onPressed: () => _openRescuerForm(app),
             );
@@ -372,7 +404,7 @@ class _ProfilePageState extends State<ProfilePage> {
             {
               final email = AuthService.currentEmail;
               final trusted = email != null &&
-                  ResponseService.statsFor(email).trustLevel ==
+                  ResponseService.myStats.trustLevel ==
                       TrustLevel.trustedHelper;
               if (trusted) {
                 return _rescuerCard(
@@ -403,7 +435,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final reportsCount = mockReports.where((r) => r.isMine).length;
+    final reportsCount = ReportService.mine.length;
     final applicationsCount = ApplicationService.forCurrentUser().length;
     final postsCount = AdoptionService.mine.length;
     final displayName =

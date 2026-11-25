@@ -8,6 +8,7 @@ import '../widgets/auth_widgets.dart';
 import 'signup.dart';
 import 'forgot_password.dart';
 import 'main_layout.dart';
+import 'verify_email.dart';
 
 // ===============================
 // LOG IN PAGE
@@ -36,35 +37,59 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _logIn() {
+  bool _busy = false;
+
+  // The email is not verified yet: send a new code, then show Enter code.
+  Future<void> _goToVerify(String email) async {
+    try {
+      await AuthService.resendSignupCode(email);
+    } on AuthFailure catch (_) {
+      // Too soon for a new email? The user can still use the earlier code.
+    }
+    if (!mounted) return;
+    showMessage(context, 'Please verify your email first. Enter the code we sent you.');
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => VerifyEmailPage(email: email)),
+    );
+  }
+
+  Future<void> _logIn() async {
+    if (_busy) return;
+
     // 1. Check the format of the email and password
     if (!_formKey.currentState!.validate()) return;
 
     final email = emailController.text.trim();
     final password = passwordController.text;
 
-    // 2. Check that the account exists
-    if (!AuthService.emailExists(email)) {
-      showMessage(context, 'No account found with this email.');
+    // 2. Log in with Supabase (checks the email and password)
+    setState(() => _busy = true);
+    try {
+      await AuthService.logIn(email, password);
+    } on AuthFailure catch (e) {
+      if (!mounted) return;
+      if (e.emailNotConfirmed) {
+        await _goToVerify(email);
+        return;
+      }
+      showMessage(context, e.message);
       return;
+  } finally {
+      if (mounted) setState(() => _busy = false);
     }
+    if (!mounted) return;
 
-    // 3. Check that the password is correct
-    if (!AuthService.passwordMatches(email, password)) {
-      showMessage(context, 'Incorrect password. Please try again.');
-      return;
-    }
-
-    // 4. Login successful. Admins go to the dashboard, everyone else to the app.
-    final String name = AuthService.nameOf(email) ?? '';
-    AuthService.signIn(email); // <-- ADD: remembers who is logged in
+    // 3. Login successful. Admins go to the dashboard, everyone else to the app.
+    final String name = AuthService.currentName;
+    final String userEmail = AuthService.currentEmail ?? email.toLowerCase();
 
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (context) => AuthService.isAdmin(email)
+        builder: (context) => AuthService.isCurrentAdmin
             ? AdminLayout(name: name)
-            : MainLayout(name: name, email: email),
+            : MainLayout(name: name, email: userEmail),
       ),
           (route) => false,
     );
@@ -100,7 +125,7 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 22),
 
               AuthButton(
-                text: 'Log In',
+                text: _busy ? 'Logging in...' : 'Log In',
                 onPressed: _logIn,
               ),
             ],

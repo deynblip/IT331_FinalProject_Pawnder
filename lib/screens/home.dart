@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
-import '../data/mock_reports.dart';
+import '../services/report_service.dart';
 import '../models/stray_report.dart';
 import '../widgets/report_card.dart';
 import 'report_details_screen.dart';
 import '../utils/responsive.dart';
+import '../widgets/location_banner.dart';
 import '../widgets/paw_banner.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   final String name;
 
   /// Opens the Report a Stray screen (provided by MainLayout).
@@ -23,6 +24,18 @@ class HomePage extends StatelessWidget {
     this.onViewAllTap,
   });
 
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+    // Loads the reports from the database (and the phone's location).
+    ReportService.ensureLoaded();
+  }
+
   void _showComingSoon(BuildContext context, String page) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -33,11 +46,17 @@ class HomePage extends StatelessWidget {
   }
 
   // The 2 nearest reports that are not rescued yet.
+  // If the phone's location is unknown, the 2 newest are shown instead.
   List<StrayReport> get _nearby {
-    final list = mockReports
+    final list = ReportService.all
         .where((r) => r.status != RescueStatus.rescued)
         .toList()
-      ..sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
+      ..sort((a, b) {
+        final byDistance = (a.distanceKm ?? double.infinity)
+            .compareTo(b.distanceKm ?? double.infinity);
+        if (byDistance != 0) return byDistance;
+        return b.date.compareTo(a.date);
+      });
     return list.take(2).toList();
   }
 
@@ -47,7 +66,7 @@ class HomePage extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => ReportDetailsScreen(
           report: report,
-          onChanged: (_) {}, // TEMP: connect to the backend later
+          onChanged: (_) {}, // the list updates itself (ReportService)
         ),
       ),
     );
@@ -55,8 +74,6 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nearby = _nearby;
-
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(context.hPad, 20, context.hPad, 20),
       child: Column(
@@ -76,7 +93,7 @@ class HomePage extends StatelessWidget {
 
               Expanded(
                 child: Text(
-                  name,
+                  widget.name,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: kBlue,
@@ -129,8 +146,8 @@ class HomePage extends StatelessWidget {
             ),
             title: 'Report a Stray',
             onTap: () {
-              if (onReportTap != null) {
-                onReportTap!();
+              if (widget.onReportTap != null) {
+                widget.onReportTap!();
               } else {
                 _showComingSoon(context, 'Report a Stray');
               }
@@ -152,7 +169,7 @@ class HomePage extends StatelessWidget {
                 ),
               ),
               TextButton(
-                onPressed: onViewAllTap,
+                onPressed: widget.onViewAllTap,
                 child: const Text(
                   'View All',
                   style: TextStyle(color: kHintGray),
@@ -163,41 +180,45 @@ class HomePage extends StatelessWidget {
 
           const SizedBox(height: 4),
 
-          if (nearby.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: kCardColor,
-                border: Border.all(color: kCardBorder),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Column(
-                children: [
-                  Icon(
-                    Icons.location_on_outlined,
-                    color: kBlue,
-                    size: 35,
+          const LocationBanner(),
+          ListenableBuilder(
+            listenable: ReportService.changes,
+            builder: (context, _) {
+              if (!ReportService.isLoaded) {
+                if (ReportService.loadError != null) {
+                  return _infoBox(
+                    Icons.cloud_off_outlined,
+                    ReportService.loadError!,
+                    onRetry: ReportService.load,
+                  );
+                }
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              final nearby = _nearby;
+              if (nearby.isEmpty) {
+                return _infoBox(
+                  Icons.location_on_outlined,
+                  'No nearby reports yet',
+                );
+              }
+
+              return Column(
+                children: nearby
+                    .map(
+                      (r) => ReportCard(
+                    report: r,
+                    showStatus: false,
+                    onTap: () => _openDetails(context, r),
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    'No nearby reports yet',
-                    style: TextStyle(
-                      color: kHintGray,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            ...nearby.map(
-                  (r) => ReportCard(
-                report: r,
-                showStatus: false,
-                onTap: () => _openDetails(context, r),
-              ),
-            ),
+                )
+                    .toList(),
+              );
+            },
+          ),
 
           const SizedBox(height: 30),
 
@@ -252,6 +273,32 @@ class HomePage extends StatelessWidget {
           ),
 
           const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  // Empty / error message box
+  Widget _infoBox(IconData icon, String text, {VoidCallback? onRetry}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: kCardColor,
+        border: Border.all(color: kCardBorder),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: kBlue, size: 35),
+          const SizedBox(height: 8),
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: kHintGray, fontSize: 14),
+          ),
+          if (onRetry != null)
+            TextButton(onPressed: onRetry, child: const Text('Try again')),
         ],
       ),
     );

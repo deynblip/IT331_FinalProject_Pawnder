@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../data/mock_reports.dart';
+import '../services/report_service.dart';
 import '../models/app_notification.dart';
 import '../services/application_service.dart';
 import '../services/notification_service.dart';
@@ -22,13 +22,16 @@ class NotificationsScreen extends StatelessWidget {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _open(BuildContext context, AppNotification n) {
+  Future<void> _open(BuildContext context, AppNotification n) async {
     NotificationService.markRead(n.id);
     final id = n.targetId;
 
     switch (n.type) {
       case NotificationType.rescueResponse:
-        final report = mockReports.where((r) => r.id == id).firstOrNull;
+        final report = id == null
+            ? null
+            : (ReportService.byId(id) ?? await ReportService.refreshOne(id));
+        if (!context.mounted) return;
         if (report == null) return _snack(context, 'This report is gone.');
         Navigator.push(
           context,
@@ -69,6 +72,7 @@ class NotificationsScreen extends StatelessWidget {
             builder: (_) => OwnerApplicationScreen(application: app),
           ),
         );
+      case NotificationType.applicationSubmitted:
       case NotificationType.postApproved:
       case NotificationType.postRemoved:
       case NotificationType.rescuerApproved:
@@ -189,6 +193,7 @@ class _NotificationCard extends StatelessWidget {
     NotificationType.rescuerApproved => Icons.verified_outlined,
     NotificationType.rescuerRejected => Icons.cancel_outlined,
     NotificationType.rescuerFlagged => Icons.flag_outlined,
+    NotificationType.applicationSubmitted => Icons.assignment_outlined,
   };
 
   Color get _color => switch (notification.type) {

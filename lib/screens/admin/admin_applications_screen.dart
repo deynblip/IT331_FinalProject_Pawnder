@@ -8,6 +8,7 @@ import '../../utils/app_colors.dart';
 import '../../widgets/adopt_pet_photo.dart';
 import '../../utils/responsive.dart';
 import '../../widgets/admin_top_bar.dart';
+import '../../widgets/refreshing_builder.dart';
 
 // ---------------------------------------------------------------- Helpers
 
@@ -21,6 +22,7 @@ String _statusLabel(AdoptionApplication a) => switch (a.status) {
   ApplicationStatus.forwardedToOwner => 'Forwarded',
   ApplicationStatus.approved => 'Approved',
   ApplicationStatus.rejected => 'Rejected',
+  ApplicationStatus.withdrawn => 'Withdrawn',
 };
 
 Color _statusBg(AdoptionApplication a) => switch (a.status) {
@@ -28,6 +30,7 @@ Color _statusBg(AdoptionApplication a) => switch (a.status) {
   ApplicationStatus.forwardedToOwner => const Color(0xFFD5F0EC),
   ApplicationStatus.approved => const Color(0xFF8ED16F),
   ApplicationStatus.rejected => const Color(0xFFFFB3B3),
+  ApplicationStatus.withdrawn => const Color(0xFFE0E0E0),
 };
 
 Color _statusFg(AdoptionApplication a) => switch (a.status) {
@@ -35,6 +38,7 @@ Color _statusFg(AdoptionApplication a) => switch (a.status) {
   ApplicationStatus.forwardedToOwner => const Color(0xFF1C6E66),
   ApplicationStatus.approved => const Color(0xFF1F5E10),
   ApplicationStatus.rejected => const Color(0xFF9B1C1C),
+  ApplicationStatus.withdrawn => const Color(0xFF555555),
 };
 
 const Color _kRejectPink = Color(0xFFFF9F9F);
@@ -317,15 +321,20 @@ class _AdminApplicationsScreenState extends State<AdminApplicationsScreen> {
             ),
             Expanded(
               // Rebuilds when an application OR a pet post changes.
-              child: ListenableBuilder(
+              child: RefreshingBuilder(
                 listenable: Listenable.merge([
-                  ApplicationService.changes,
-                  AdoptionService.changes,
+                ApplicationService.changes,
+                AdoptionService.changes,
                 ]),
-                builder: (context, _) {
-                  final apps = ApplicationService.all.where(_matches).toList()
-                    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
+                  onRefresh: () async {
+                    await Future.wait([
+                      ApplicationService.refresh(),
+                      AdoptionService.load(),
+                    ]);
+                  },
+                  builder: (context, _) {
+                    final apps = ApplicationService.all.where(_matches).toList()
+                      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
                   if (apps.isEmpty) {
                     return Center(
                       child: Text(

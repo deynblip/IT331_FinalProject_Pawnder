@@ -1,37 +1,141 @@
-// ===================================
-// TEMPORARY IN-MEMORY RESCUER STORE
-// ===================================
-// Holds Verified Rescuer applications. Resets when the app restarts.
-// Replace with your real backend later.
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../models/app_notification.dart';
 import '../models/rescuer_application.dart';
 import 'auth_service.dart';
-import 'notification_service.dart';
+import 'db_errors.dart';
 import 'response_service.dart';
 
+// ======================================
+// VERIFIED RESCUERS (Supabase)
+// ======================================
+// Rescuer applications live in the table `rescuer_applications` (also the
+// one made at Sign Up). A regular user can only see their own; an ADMIN sees
+// all of them. Approve, reject and remove badge are database functions, and
+// the DATABASE sends the notifications (including the high cancel rate flag).
+// Listen to [changes] to refresh a screen.
+
+/// An error with a message that can be shown to the user as-is.
+class RescuerFailure implements Exception {
+  final String message;
+  const RescuerFailure(this.message);
+
+  @override
+  String toString() => message;
+}
+
 class RescuerService {
-  // One sample pending application so the admin screen is not empty.
-  static final List<RescuerApplication> _apps = [
-    RescuerApplication(
-      id: 'seed1',
-      email: 'maria.santos@example.com',
-      applicantName: 'Maria Santos',
-      organization: 'Batangas Animal Rescue Network',
-      roleInOrg: 'Volunteer Coordinator',
-      contactPerson: 'Ramon Dela Cruz',
-      contactNumber: '0917 123 4567',
-      officialPage: 'https://facebook.com/BatangasAnimalRescue',
-      submittedAt: DateTime.now().subtract(const Duration(days: 1)),
-    ),
-  ];
+  static SupabaseClient get _db => Supabase.instance.client;
+
+  static List<RescuerApplication> _apps = [];
+
+  // Track records by user id (loaded for admins only).
+  static Map<String, ResponderStats> _stats = {};
+
+  static Future<void>? _loading;
+  static int _generation = 0;
 
   static final ValueNotifier<int> changes = ValueNotifier<int>(0);
   static void _notify() => changes.value++;
 
   static String _k(String email) => email.trim().toLowerCase();
+
+  // ---------------------------------------------------------- Loading
+
+  static Future<void> load() {
+    final Future<void>? running = _loading;
+    if (running != null) return running;
+    final Future<void> f = _fetch().whenComplete(() => _loading = null);
+    _loading = f;
+    return f;
+  }
+
+  /// Loads again even if a load is already running (used right after the
+  /// user or admin changes something).
+  static Future<void> refresh() async {
+    final Future<void>? running = _loading;
+    if (running != null) await running;
+    await load();
+  }
+
+  /// Profile calls this: loads the logged-in user's own application(s).
+  static Future<void> loadMine() => load();
+
+  static Future<void> _fetch() async {
+    final int gen = _generation;
+    if (AuthService.currentUserId == null) return;
+
+    try {
+      final rows = await _db
+          .from('rescuer_applications')
+          .select()
+          .order('submitted_at', ascending: false);
+
+      final List<RescuerApplication> apps = [
+        for (final dynamic r in rows)
+          _fromRow(Map<String, dynamic>.from(r as Map)),
+      ];
+
+      // Track records are only needed by the admin Rescuers screen.
+      final Map<String, ResponderStats> stats = {};
+      if (AuthService.isCurrentAdmin) {
+        final List<String> ids = {
+          for (final a in apps)
+            if (a.userId.isNotEmpty) a.userId,
+        }.toList();
+        if (ids.isNotEmpty) {
+          final dynamic statRows =
+          await _db.rpc('responder_stats', params: {'p_user_ids': ids});
+          for (final dynamic row in statRows as List<dynamic>) {
+            final Map<String, dynamic> map = row as Map<String, dynamic>;
+            stats[map['user_id'] as String] = ResponderStats.fromRow(map);
+          }
+        }
+      }
+
+      if (gen != _generation) return; // logged out while loading
+      _apps = apps;
+      _stats = stats;
+      _notify();
+    } catch (e) {
+      debugPrint('Load rescuer applications error: $e');
+    }
+  }
+
+  /// Forget everything (log out / switch account).
+  static void reset() {
+    _generation++;
+    _apps = [];
+    _stats = {};
+    _loading = null;
+    _notify();
+  }
+
+  static RescuerApplication _fromRow(Map<String, dynamic> r) {
+    return RescuerApplication(
+      id: r['id'] as String,
+      userId: (r['user_id'] as String?) ?? '',
+      email: _k((r['applicant_email'] as String?) ?? ''),
+      applicantName: (r['applicant_name'] as String?) ?? '',
+      organization: (r['organization'] as String?) ?? '',
+      roleInOrg: (r['role_in_org'] as String?) ?? '',
+      contactPerson: (r['contact_person'] as String?) ?? '',
+      contactNumber: (r['contact_number'] as String?) ?? '',
+      officialPage: (r['official_page'] as String?) ?? '',
+      submittedAt: DateTime.parse(r['submitted_at'] as String).toLocal(),
+      status: switch (r['status']) {
+        'verified' => RescuerStatus.verified,
+        'rejected' => RescuerStatus.rejected,
+        _ => RescuerStatus.pending,
+      },
+      rejectionReason: r['rejection_reason'] as String?,
+      reviewedAt: r['reviewed_at'] == null
+          ? null
+          : DateTime.parse(r['reviewed_at'] as String).toLocal(),
+    );
+  }
 
   // ---------------------------------------------------------- Lookups
 
@@ -84,161 +188,86 @@ class RescuerService {
   static int get pendingCount =>
       _apps.where((a) => a.status == RescuerStatus.pending).length;
 
+  /// Track record of an applicant (from the database; empty until loaded).
+  static ResponderStats statsFor(String email) {
+    final RescuerApplication? app = latestFor(email);
+    if (app == null) return ResponderStats.empty;
+    return _stats[app.userId] ?? ResponderStats.empty;
+  }
+
   /// Verified Rescuers whose cancel rate is high (shown to the admin).
   static bool isFlagged(String email) =>
-      isVerified(email) && ResponseService.statsFor(email).hasHighCancelRate;
+      isVerified(email) && statsFor(email).hasHighCancelRate;
 
   static int get flaggedCount => _apps
       .where((a) => a.status == RescuerStatus.verified && isFlagged(a.email))
       .length;
 
-  // Emails the admin was already told about (so it is only sent once).
-  static final Set<String> _flagNotified = {};
-
-  /// Called after a responder cancels. Notifies the admin once when a
-  /// Verified Rescuer's cancel rate becomes high.
-  static void checkCancelRate(String email) {
-    final key = _k(email);
-    if (!isFlagged(key)) {
-      _flagNotified.remove(key);
-      return;
-    }
-    if (!_flagNotified.add(key)) return;
-    final stats = ResponseService.statsFor(key);
-    NotificationService.add(
-      type: NotificationType.rescuerFlagged,
-      title: 'Verified Rescuer flagged',
-      message: '${AuthService.nameOf(key) ?? key} '
-          '(${organizationOf(key) ?? '-'}) has cancelled '
-          '${stats.cancelled} of ${stats.responses} responses '
-          '(${stats.cancelRateText}). Review their badge in Rescuers.',
-      userEmail: AuthService.adminEmail,
-    );
-    _notify();
-  }
-
   // ---------------------------------------------------------- Apply
 
-  /// Used by Sign Up and by Profile > Apply as Verified Rescuer.
-  /// Returns an error message, or null when the application was sent.
-  /// The status is PENDING. No permissions are given until the admin approves.
-  static String? submit({
-    required String email,
-    required String applicantName,
+  /// Profile > Apply as Verified Rescuer: saves the application in the
+  /// database. Returns an error message, or null when it was sent.
+  static Future<String?> submitToDatabase({
     required String organization,
     required String roleInOrg,
     required String contactPerson,
     required String contactNumber,
     required String officialPage,
-  }) {
-    final status = statusOf(email);
-    if (status == RescuerStatus.pending) {
-      return 'You already have an application waiting for review.';
+  }) async {
+    try {
+      await _db.rpc('submit_rescuer_application', params: {
+        'p_organization': organization.trim(),
+        'p_role_in_org': roleInOrg.trim(),
+        'p_contact_person': contactPerson.trim(),
+        'p_contact_number': contactNumber.trim(),
+        'p_official_page': officialPage.trim(),
+      });
+    } catch (e) {
+      return friendlyDbError(e,
+          fallback: 'Could not send your application. Please try again.');
     }
-    if (status == RescuerStatus.verified) {
-      return 'You are already a Verified Rescuer.';
-    }
-
-    _apps.insert(
-      0,
-      RescuerApplication(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
-        email: _k(email),
-        applicantName: applicantName.trim(),
-        organization: organization.trim(),
-        roleInOrg: roleInOrg.trim(),
-        contactPerson: contactPerson.trim(),
-        contactNumber: contactNumber.trim(),
-        officialPage: officialPage.trim(),
-        submittedAt: DateTime.now(),
-      ),
-    );
-    _notify();
+    await refresh();
     return null;
   }
 
   // ---------------------------------------------------------- Admin review
 
-  static void _requireAdmin() {
+  static Future<void> _review(
+      String function,
+      Map<String, dynamic> params,
+      String fallback,
+      ) async {
     if (!AuthService.isCurrentAdmin) {
-      throw StateError('Only an admin can review rescuer applications.');
+      throw const RescuerFailure(
+          'Only an admin can review rescuer applications.');
     }
+    try {
+      await _db.rpc(function, params: params);
+    } catch (e) {
+      // The list may be out of date (someone else already reviewed it).
+      unawaited(refresh());
+      throw RescuerFailure(friendlyDbError(e, fallback: fallback));
+    }
+    await refresh();
   }
 
-  static Future<void> approve(String id) async {
-    _requireAdmin();
-    await Future.delayed(const Duration(milliseconds: 250));
+  static Future<void> approve(String id) => _review(
+    'admin_review_rescuer',
+    {'p_id': id, 'p_approve': true},
+    'Could not approve this application. Please try again.',
+  );
 
-    final i = _apps.indexWhere((a) => a.id == id);
-    if (i == -1) throw StateError('Application not found.');
-    if (_apps[i].status != RescuerStatus.pending) {
-      throw StateError('This application was already reviewed.');
-    }
-
-    _apps[i] = _apps[i].copyWith(
-      status: RescuerStatus.verified,
-      reviewedAt: DateTime.now(),
-    );
-    NotificationService.add(
-      type: NotificationType.rescuerApproved,
-      title: 'You are now a Verified Rescuer',
-      message: 'Your application for ${_apps[i].organization} was approved. '
-          'Your Verified Rescuer badge and permissions are now active.',
-      userEmail: _apps[i].email,
-    );
-    _notify();
-  }
+  static Future<void> reject(String id, String reason) => _review(
+    'admin_review_rescuer',
+    {'p_id': id, 'p_approve': false, 'p_reason': reason.trim()},
+    'Could not reject this application. Please try again.',
+  );
 
   /// Removes the Verified Rescuer badge (for example, high cancel rate).
   /// The user goes back to being a regular user and can apply again.
-  static Future<void> revoke(String id, String reason) async {
-    _requireAdmin();
-    await Future.delayed(const Duration(milliseconds: 250));
-
-    final i = _apps.indexWhere((a) => a.id == id);
-    if (i == -1) throw StateError('Application not found.');
-    if (_apps[i].status != RescuerStatus.verified) {
-      throw StateError('This user is not a Verified Rescuer.');
-    }
-
-    _apps[i] = _apps[i].copyWith(
-      status: RescuerStatus.rejected,
-      rejectionReason: 'Badge removed: ${reason.trim()}',
-      reviewedAt: DateTime.now(),
-    );
-    _flagNotified.remove(_apps[i].email);
-    NotificationService.add(
-      type: NotificationType.rescuerRejected,
-      title: 'Verified Rescuer badge removed',
-      message: 'An admin removed your Verified Rescuer badge. Reason: '
-          '${reason.trim()} You can apply again from your Profile.',
-      userEmail: _apps[i].email,
-    );
-    _notify();
-  }
-
-  static Future<void> reject(String id, String reason) async {
-    _requireAdmin();
-    await Future.delayed(const Duration(milliseconds: 250));
-
-    final i = _apps.indexWhere((a) => a.id == id);
-    if (i == -1) throw StateError('Application not found.');
-    if (_apps[i].status != RescuerStatus.pending) {
-      throw StateError('This application was already reviewed.');
-    }
-
-    _apps[i] = _apps[i].copyWith(
-      status: RescuerStatus.rejected,
-      rejectionReason: reason.trim(),
-      reviewedAt: DateTime.now(),
-    );
-    NotificationService.add(
-      type: NotificationType.rescuerRejected,
-      title: 'Rescuer application not approved',
-      message: 'Your application was not approved. Reason: '
-          '${reason.trim()} You can apply again from your Profile.',
-      userEmail: _apps[i].email,
-    );
-    _notify();
-  }
+  static Future<void> revoke(String id, String reason) => _review(
+    'admin_revoke_rescuer',
+    {'p_id': id, 'p_reason': reason.trim()},
+    'Could not remove the badge. Please try again.',
+  );
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../data/mock_reports.dart';
+import '../../services/report_service.dart';
 import '../../models/content_report.dart';
 import '../../models/stray_report.dart';
 import '../../services/adoption_service.dart';
@@ -9,6 +9,7 @@ import '../../utils/app_colors.dart';
 import '../../widgets/adopt_pet_photo.dart';
 import '../../utils/responsive.dart';
 import '../../widgets/admin_top_bar.dart';
+import '../../widgets/refreshing_builder.dart';
 
 // ---------------------------------------------------------------- Helpers
 
@@ -79,7 +80,8 @@ _Content _contentOf(ContentReport r) {
         ],
       );
     case ReportTarget.strayReport:
-      final stray = mockReports.where((s) => s.id == r.targetId).firstOrNull;
+      ReportService.ensureLoaded();
+      final stray = ReportService.byId(r.targetId);
       if (stray == null) return const _Content(exists: false);
       return _Content(
         exists: true,
@@ -288,11 +290,19 @@ class _AdminReportedScreenState extends State<AdminReportedScreen> {
             ),
             Expanded(
               // Rebuilds when a report or a post changes.
-              child: ListenableBuilder(
+              child: RefreshingBuilder(
                 listenable: Listenable.merge([
                   ContentReportService.changes,
                   AdoptionService.changes,
+                  ReportService.changes,
                 ]),
+                onRefresh: () async {
+                  await Future.wait([
+                    ContentReportService.refresh(),
+                    AdoptionService.load(),
+                    ReportService.load(),
+                  ]);
+                },
                 builder: (context, _) {
                   final reports =
                   ContentReportService.all.where(_matches).toList();
@@ -506,6 +516,7 @@ class AdminReportDetailsScreen extends StatelessWidget {
       listenable: Listenable.merge([
         ContentReportService.changes,
         AdoptionService.changes,
+        ReportService.changes,
       ]),
       builder: (context, _) {
         final report = ContentReportService.byId(reportId);

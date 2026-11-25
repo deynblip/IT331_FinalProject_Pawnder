@@ -1,12 +1,56 @@
+// Ilagay sa: lib/main.dart  (PALITAN ANG BUONG LAMAN)
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'services/auth_service.dart';
+import 'services/supabase_config.dart';
+
+import 'screens/startup.dart';
 import 'screens/welcome.dart';
 import 'utils/app_colors.dart';
 import 'utils/responsive.dart';
 import 'utils/theme_controller.dart';
 
-void main() {
+/// Lets us change screens from outside a widget (used when the session ends).
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Connect to the Pawnder database (Supabase) before the app starts.
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    publishableKey: SupabaseConfig.publishableKey,
+  );
+
+  _listenForEndedSession();
+
   runApp(const PawnderApp());
+}
+
+/// If the server ends the session while the app is open (expired, or the
+/// user was logged out from another device), go back to Welcome.
+/// A normal Log Out does not trigger this: AuthService marks the session as
+/// ended first.
+void _listenForEndedSession() {
+  Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    if (data.event == AuthChangeEvent.signedOut && AuthService.sessionActive) {
+      AuthService.endSession();
+
+      final NavigatorState? nav = navigatorKey.currentState;
+      final BuildContext? ctx = navigatorKey.currentContext;
+      if (nav == null || ctx == null) return;
+
+      final ScaffoldMessengerState messenger = ScaffoldMessenger.of(ctx);
+      nav.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const WelcomePage()),
+            (route) => false,
+      );
+      messenger.showSnackBar(
+        const SnackBar(content: Text('You were logged out. Please log in again.')),
+      );
+    }
+  });
 }
 
 class PawnderApp extends StatelessWidget {
@@ -18,6 +62,7 @@ class PawnderApp extends StatelessWidget {
       valueListenable: themeModeNotifier,
       builder: (context, mode, _) {
         return MaterialApp(
+          navigatorKey: navigatorKey,
           debugShowCheckedModeBanner: false,
           title: 'Pawnder',
           themeMode: mode,
@@ -36,7 +81,7 @@ class PawnderApp extends StatelessWidget {
             scaffoldBackgroundColor: kDarkBg,
           ),
           builder: (context, child) => _ResponsiveFrame(child: child!),
-          home: const WelcomePage(),
+          home: const StartupPage(),
         );
       },
     );

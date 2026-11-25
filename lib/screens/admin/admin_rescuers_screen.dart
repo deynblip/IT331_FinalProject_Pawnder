@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/rescuer_application.dart';
-import '../../services/response_service.dart';
 import '../../services/rescuer_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/responsive.dart';
 import '../../widgets/admin_top_bar.dart';
+import '../../widgets/refreshing_builder.dart';
 
 String _dateText(DateTime d) {
   const months = [
@@ -94,8 +94,6 @@ class _AdminRescuersScreenState extends State<AdminRescuersScreen> {
         child: ListenableBuilder(
           listenable: RescuerService.changes,
           builder: (context, _) {
-            final items = RescuerService.byStatus(_tab);
-
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -131,22 +129,30 @@ class _AdminRescuersScreenState extends State<AdminRescuersScreen> {
                   ),
                 ),
                 Expanded(
-                  child: items.isEmpty
-                      ? const Center(
-                    child: Text(
-                      'No applications here.',
-                      style: TextStyle(color: kHintGray),
-                    ),
-                  )
-                      : ListView.separated(
-                    padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 24),
-                    itemCount: items.length,
-                    separatorBuilder: (_, _) =>
-                    const SizedBox(height: 12),
-                    itemBuilder: (_, i) => _ApplicationCard(
-                      app: items[i],
-                      onTap: () => _openDetail(items[i]),
-                    ),
+                  child: RefreshingBuilder(
+                    listenable: RescuerService.changes,
+                    onRefresh: RescuerService.refresh,
+                    builder: (context, _) {
+                      final items = RescuerService.byStatus(_tab);
+                      if (items.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'No applications here.',
+                            style: TextStyle(color: kHintGray),
+                          ),
+                        );
+                      }
+                      return ListView.separated(
+                        padding: EdgeInsets.fromLTRB(
+                            context.hPad, 8, context.hPad, 24),
+                        itemCount: items.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
+                        itemBuilder: (_, i) => _ApplicationCard(
+                          app: items[i],
+                          onTap: () => _openDetail(items[i]),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -365,7 +371,7 @@ class _RescuerDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stats = ResponseService.statsFor(app.email);
+    final stats = RescuerService.statsFor(app.email);
     final flagged = RescuerService.isFlagged(app.email);
 
     return DraggableScrollableSheet(

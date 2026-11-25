@@ -1,84 +1,43 @@
-// ======================================
-// TEMPORARY IN-MEMORY NOTIFICATION STORE
-// ======================================
-// Sample notifications so you can SEE every type before the backend exists.
-// They reset every time the app restarts.
-// Later, the backend will create these (for example when an admin forwards
-// an application) and this service will just read them.
+// ===================================
+// NOTIFICATIONS (Supabase)  -  Batch 6.2
+// ===================================
+// The DATABASE creates the notifications (for example when an admin forwards
+// an application). This service only reads the logged-in user's own rows and
+// marks them as read. The bell and the Notifications screen listen to
+// [changes]. They refresh by polling (see MainLayout and AdminLayout).
+
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/app_notification.dart';
 import 'auth_service.dart';
+import 'db_errors.dart';
 
 class NotificationService {
-  static DateTime _ago(Duration d) => DateTime.now().subtract(d);
+  static SupabaseClient get _db => Supabase.instance.client;
 
-  // targetId values match the sample data:
-  //   report '1'      = Injured Dog (posted by the logged-in user)
-  //   'demo1'..'demo3' = the user's applications, 'demo4' = application for
-  //   the user's own pet (Brownie)
-  static final List<AppNotification> _items = [
-    AppNotification(
-      id: 'n1',
-      type: NotificationType.rescueResponse,
-      title: 'Someone is on the way',
-      message: 'A community member is responding to your Injured Dog report.',
-      createdAt: _ago(const Duration(minutes: 20)),
-      targetId: '1',
-    ),
-    AppNotification(
-      id: 'n2',
-      type: NotificationType.applicationForOwner,
-      title: 'New application for Brownie',
-      message: 'An application passed admin screening and needs your '
-          'decision.',
-      createdAt: _ago(const Duration(hours: 3)),
-      targetId: 'demo4',
-    ),
-    AppNotification(
-      id: 'n3',
-      type: NotificationType.applicationForwarded,
-      title: 'Application forwarded',
-      message: 'Your application for Buddy was forwarded to the pet owner '
-          'for the final decision.',
-      createdAt: _ago(const Duration(days: 1, hours: 1)),
-      read: true,
-      targetId: 'demo1',
-    ),
-    AppNotification(
-      id: 'n4',
-      type: NotificationType.applicationApproved,
-      title: 'Application approved',
-      message: 'Good news! Your application for Mingming was approved.',
-      createdAt: _ago(const Duration(days: 2)),
-      read: true,
-      targetId: 'demo2',
-    ),
-    AppNotification(
-      id: 'n5',
-      type: NotificationType.applicationRejected,
-      title: 'Application not approved',
-      message: 'Your application for Mimi was not approved.',
-      createdAt: _ago(const Duration(days: 4)),
-      read: true,
-      targetId: 'demo3',
-    ),
-    AppNotification(
-      id: 'n6',
-      type: NotificationType.postRemoved,
-      title: 'Post removed by admin',
-      message: 'One of your adoption posts was removed by an administrator '
-          'because it did not follow the community guidelines.',
-      createdAt: _ago(const Duration(days: 6)),
-      read: true,
-    ),
-  ];
+  /// Rows from the database (only the logged-in user's own).
+  static List<AppNotification> _fromDb = [];
+
+  /// Ids the user already opened here, so a refresh does not flip them back
+  /// to unread before the database has saved the change.
+  static final Set<String> _readHere = {};
+
+  static bool _loaded = false;
+  static Future<void>? _loading;
+  static String? _loadError;
+  static DateTime? _lastTry;
+  static int _generation = 0;
 
   /// Bumps every time something changes so screens can refresh.
   static final ValueNotifier<int> changes = ValueNotifier<int>(0);
 
   static void _notify() => changes.value++;
+
+  static bool get isLoaded => _loaded;
+  static String? get loadError => _loadError;
 
   // ---- Settings > Notifications switches ----
   // They live here so the bell and the Notifications screen follow them.
@@ -102,6 +61,102 @@ class NotificationService {
     _notify();
   }
 
+  // ---------------------------------------------------------------- Loading
+
+  static Future<void> load() {
+    final Future<void>? running = _loading;
+    if (running != null) return running;
+    final Future<void> f = _fetch().whenComplete(() => _loading = null);
+    _loading = f;
+    return f;
+  }
+
+  static void _kick() {
+    if (_loaded || _loading != null) return;
+    if (AuthService.currentUserId == null) return;
+    final DateTime? t = _lastTry;
+    if (t != null &&
+        DateTime.now().difference(t) < const Duration(seconds: 15)) {
+      return;
+    }
+    unawaited(load());
+  }
+
+  static Future<void> _fetch() async {
+    final int gen = _generation;
+    _lastTry = DateTime.now();
+    try {
+      final rows = await _db
+          .from('notifications')
+          .select()
+          .order('created_at', ascending: false)
+          .limit(100);
+      if (gen != _generation) return; // logged out while loading
+
+      final List<AppNotification> list = [];
+      for (final dynamic r in rows) {
+        final AppNotification? n =
+        _fromRow(Map<String, dynamic>.from(r as Map));
+        if (n != null) list.add(n);
+      }
+      _fromDb = list;
+      _loaded = true;
+      _loadError = null;
+    } catch (e) {
+      if (gen != _generation) return;
+      _loadError =
+          friendlyDbError(e, fallback: 'Could not load the notifications.');
+    }
+    _notify();
+  }
+
+  /// Forget everything (log out / switch account).
+  static void reset() {
+    _generation++;
+    _fromDb = [];
+    _readHere.clear();
+    _loaded = false;
+    _loading = null;
+    _loadError = null;
+    _lastTry = null;
+    _notify();
+  }
+
+  // ---------------------------------------------------------------- Mapping
+
+  static AppNotification? _fromRow(Map<String, dynamic> row) {
+    final NotificationType? type = _typeFrom(row['type'] as String? ?? '');
+    if (type == null) return null; // a type this app version does not know
+
+    final String id = row['id'] as String;
+    return AppNotification(
+      id: id,
+      type: type,
+      title: row['title'] as String? ?? '',
+      message: row['message'] as String? ?? '',
+      createdAt: DateTime.parse(row['created_at'] as String).toLocal(),
+      read: row['is_read'] == true || _readHere.contains(id),
+      targetId: row['target_id'] as String?,
+    );
+  }
+
+  static NotificationType? _typeFrom(String v) => switch (v) {
+    'rescue_response' => NotificationType.rescueResponse,
+    'application_submitted' => NotificationType.applicationSubmitted,
+    'application_for_owner' => NotificationType.applicationForOwner,
+    'application_forwarded' => NotificationType.applicationForwarded,
+    'application_approved' => NotificationType.applicationApproved,
+    'application_rejected' => NotificationType.applicationRejected,
+    'post_approved' => NotificationType.postApproved,
+    'post_removed' => NotificationType.postRemoved,
+    'rescuer_approved' => NotificationType.rescuerApproved,
+    'rescuer_rejected' => NotificationType.rescuerRejected,
+    'rescuer_flagged' => NotificationType.rescuerFlagged,
+    _ => null,
+  };
+
+  // ---------------------------------------------------------------- Reading
+
   /// Is this notification allowed by the user's Settings?
   static bool _visible(AppNotification n) {
     if (!pushEnabled) return false;
@@ -121,52 +176,63 @@ class NotificationService {
     };
   }
 
+  static List<AppNotification> get _everything => [..._fromDb];
+
   /// Newest first. Only the notifications the user's Settings allow.
   static List<AppNotification> get all {
-    final list = _items.where(_visible).toList();
+    _kick();
+    final list = _everything.where(_visible).toList();
     list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return list;
   }
 
-  static int get unreadCount =>
-      _items.where((n) => _visible(n) && !n.read).length;
+  static int get unreadCount {
+    _kick();
+    return _everything.where((n) => _visible(n) && !n.read).length;
+  }
+
+  // ---------------------------------------------------------------- Actions
 
   static void markRead(String id) {
-    final i = _items.indexWhere((n) => n.id == id);
-    if (i == -1 || _items[i].read) return;
-    _items[i] = _items[i].copyWith(read: true);
-    _notify();
+    final int d = _fromDb.indexWhere((n) => n.id == id);
+    if (d != -1) {
+      if (_fromDb[d].read) return;
+      _fromDb[d] = _fromDb[d].copyWith(read: true);
+      _readHere.add(id);
+      _notify();
+      unawaited(_saveRead(id));
+      return;
+    }
   }
 
   static void markAllRead() {
     if (unreadCount == 0) return;
-    for (var i = 0; i < _items.length; i++) {
-      if (_visible(_items[i])) _items[i] = _items[i].copyWith(read: true);
+
+    var anyFromDb = false;
+    for (var i = 0; i < _fromDb.length; i++) {
+      if (_visible(_fromDb[i]) && !_fromDb[i].read) {
+        _readHere.add(_fromDb[i].id);
+        _fromDb[i] = _fromDb[i].copyWith(read: true);
+        anyFromDb = true;
+      }
     }
     _notify();
+    if (anyFromDb) unawaited(_saveAllRead());
   }
 
-  /// Adds a new (unread) notification. Used by the app/backend when
-  /// something happens that the user should know about.
-  /// Pass [userEmail] to show it only to that user.
-  static void add({
-    required NotificationType type,
-    required String title,
-    required String message,
-    String? targetId,
-    String? userEmail,
-  }) {
-    _items.add(
-      AppNotification(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
-        type: type,
-        title: title,
-        message: message,
-        createdAt: DateTime.now(),
-        targetId: targetId,
-        userEmail: userEmail,
-      ),
-    );
-    _notify();
+  static Future<void> _saveRead(String id) async {
+    try {
+      await _db.rpc('mark_notification_read', params: {'p_id': id});
+    } catch (e) {
+      debugPrint('Could not save "read": $e');
+    }
+  }
+
+  static Future<void> _saveAllRead() async {
+    try {
+      await _db.rpc('mark_all_notifications_read');
+    } catch (e) {
+      debugPrint('Could not save "read all": $e');
+    }
   }
 }

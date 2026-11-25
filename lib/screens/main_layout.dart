@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../utils/app_colors.dart';
@@ -8,8 +10,13 @@ import 'report_stray.dart';
 import 'adopt.dart';
 import 'profile.dart';
 import 'login.dart';
-import 'notifications_screen.dart';
+import '../services/auth_service.dart';
+import '../services/adoption_service.dart';
+import '../services/application_service.dart';
 import '../services/notification_service.dart';
+import '../services/rescuer_service.dart';
+import '../services/response_service.dart';
+import 'notifications_screen.dart';
 import 'drawer/about.dart';
 import 'drawer/settings.dart';
 import 'drawer/help_support.dart';
@@ -36,6 +43,29 @@ class _MainLayoutState extends State<MainLayout> {
 
   // Inside the Reports tab: false = Map (default), true = Reports Bulletin
   bool _showBulletin = false;
+
+  // Keeps the user's application statuses fresh (forwarded, approved...).
+  Timer? _poll;
+
+  @override
+  void initState() {
+    super.initState();
+    _poll = Timer.periodic(
+      const Duration(seconds: 20),
+          (_) {
+            ApplicationService.load();
+            NotificationService.load();
+            RescuerService.load(); // Pending / Verified / Not approved
+            ResponseService.loadMe(); // Verified permissions and rescue record
+          },
+    );
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    super.dispose();
+  }
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -143,8 +173,8 @@ class _MainLayoutState extends State<MainLayout> {
         );
       },
     );
-
     if (confirmed == true && mounted) {
+      AuthService.signOut();
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -369,6 +399,8 @@ class _MainLayoutState extends State<MainLayout> {
               _selectedIndex = index;
               if (index == 1) _showBulletin = false;
             });
+            if (index == 2) AdoptionService.load();
+            if (index == 3) ApplicationService.load();
           },
           items: const [
             BottomNavigationBarItem(

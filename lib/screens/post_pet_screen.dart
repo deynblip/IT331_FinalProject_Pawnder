@@ -21,7 +21,6 @@ const String _kProvince = 'Batangas';
 class PostPetScreen extends StatefulWidget {
   final String posterName;
 
-  /// When set, the form edits this existing post.
   final AdoptionPet? pet;
 
   const PostPetScreen({super.key, required this.posterName, this.pet});
@@ -88,6 +87,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
     final parts = pet.location.split(', ');
     _barangay.text = parts.isNotEmpty ? parts[0] : '';
     _city.text = parts.length > 1 ? parts[1] : '';
+    _street.text = pet.street;
     _contactPerson.text = pet.contactPerson;
     _phone.text = pet.contactPhone;
     _email.text = pet.contactEmail;
@@ -264,6 +264,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
           healthInfo: _health.text.trim(),
           reasonForAdoption: _reason.text.trim(),
           posterName: widget.posterName,
+          street: _street.text.trim(),
           photos: List.of(_photos),
           contactPerson: _contactPerson.text.trim(),
           contactPhone: _phone.text.trim(),
@@ -281,6 +282,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
           description: _description.text.trim(),
           healthInfo: _health.text.trim(),
           reasonForAdoption: _reason.text.trim(),
+          street: _street.text.trim(),
           photos: List.of(_photos),
           contactPerson: _contactPerson.text.trim(),
           contactPhone: _phone.text.trim(),
@@ -315,6 +317,8 @@ class _PostPetScreenState extends State<PostPetScreen> {
       if (!mounted) return;
 
       Navigator.pop(context, true); // tells the Bulletin to reload
+    } on StateError catch (e) {
+      _snack(e.message);
     } catch (_) {
       _snack('Could not save the post. Please try again.');
     } finally {

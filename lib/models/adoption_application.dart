@@ -3,6 +3,7 @@ enum ApplicationStatus {
   forwardedToOwner,
   approved,
   rejected,
+  withdrawn,
 }
 
 extension ApplicationStatusX on ApplicationStatus {
@@ -11,6 +12,7 @@ extension ApplicationStatusX on ApplicationStatus {
     ApplicationStatus.forwardedToOwner => 'Forwarded to Pet Owner',
     ApplicationStatus.approved => 'Approved',
     ApplicationStatus.rejected => 'Rejected',
+    ApplicationStatus.withdrawn => 'Withdrawn',
   };
 }
 
@@ -38,12 +40,13 @@ class AdoptionApplication {
   final String householdMembers;
   final String previousPets;
   final String careExperience;
+  final String reasonForAdopting;
 
   final ApplicationStatus status;
   final DateTime createdAt;
 
   // Who submitted it, and why it was rejected (if it was).
-  final String applicantEmail;
+  final String applicantId;
   final String? rejectionReason;
 
   const AdoptionApplication({
@@ -64,9 +67,18 @@ class AdoptionApplication {
     required this.careExperience,
     required this.status,
     required this.createdAt,
-    required this.applicantEmail,
+    required this.applicantId,
+    this.reasonForAdopting = '',
     this.rejectionReason,
   });
+
+  /// The applicant can still change the answers (only before screening).
+  bool get canEdit => status == ApplicationStatus.pendingScreening;
+
+  /// The applicant can still take the application back.
+  bool get canWithdraw =>
+      status == ApplicationStatus.pendingScreening ||
+          status == ApplicationStatus.forwardedToOwner;
 
   /// Example: "November 12, 2026"
   String get dateText {
@@ -100,9 +112,10 @@ class AdoptionApplication {
       householdMembers: householdMembers,
       previousPets: previousPets,
       careExperience: careExperience,
+      reasonForAdopting: reasonForAdopting,
       status: status ?? this.status,
       createdAt: createdAt,
-      applicantEmail: applicantEmail,
+      applicantId: applicantId,
       rejectionReason: rejectionReason ?? this.rejectionReason,
     );
   }

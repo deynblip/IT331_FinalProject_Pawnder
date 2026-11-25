@@ -1,24 +1,42 @@
-// ======================================
-// TEMPORARY IN-MEMORY RESPONDER STORE
-// ======================================
-// Who is responding to which stray report, and each responder's history
-// (used as the "track record" the admin checks). Resets on app restart.
-
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/stray_report.dart';
 import 'auth_service.dart';
-import 'rescuer_service.dart';
+import 'db_errors.dart';
+import 'report_service.dart';
+
+// ======================================
+// RESCUE RESPONSES (Supabase)
+// ======================================
+// "I'm on my way!", "I've arrived", "Cancel", "Take over" and
+// "Mark as Rescued". Each button calls a database function, and the
+// DATABASE checks the rules (one report at a time, within 200 m, only
+// Verified Rescuers can take over, etc.). The app only shows the result.
+//
+// The table `rescue_responses` is also everyone's track record
+// (completed rescues, cancellations). Trust level is calculated here from
+// those numbers; it is not saved anywhere.
 
 enum ResponderRole { lead, assisting }
 
 enum RescueOutcome {
-  rescuedOnSite,
-  broughtToVetShelter,
-  unableToLocate;
+  rescuedOnSite('rescued_on_site'),
+  broughtToVetShelter('brought_to_vet_shelter'),
+  unableToLocate('unable_to_locate');
+
+  const RescueOutcome(this.dbValue);
+  final String dbValue;
+
+  static RescueOutcome? fromDb(String? value) {
+    for (final o in RescueOutcome.values) {
+      if (o.dbValue == value) return o;
+    }
+    return null;
+  }
 
   String get label => switch (this) {
     RescueOutcome.rescuedOnSite => 'Rescued on site',
@@ -29,8 +47,9 @@ enum RescueOutcome {
   bool get isSuccess => this != RescueOutcome.unableToLocate;
 }
 
+/// Someone who is currently responding to a report.
 class ReportResponder {
-  final String email;
+  final String userId;
   final String name;
   final String? organization; // set = Verified Rescuer when they responded
   final ResponderRole role;
@@ -39,7 +58,7 @@ class ReportResponder {
   final DateTime lastUpdate;
 
   const ReportResponder({
-    required this.email,
+    required this.userId,
     required this.name,
     this.organization,
     required this.role,
@@ -48,46 +67,23 @@ class ReportResponder {
     required this.lastUpdate,
   });
 
-  bool get isVerified => organization != null;
-
-  ReportResponder copyWith({
-    ResponderRole? role,
-    bool? checkedIn,
-    DateTime? lastUpdate,
-  }) {
+  factory ReportResponder.fromRow(Map<String, dynamic> row) {
+    final Map<String, dynamic>? profile =
+    row['responder'] as Map<String, dynamic>?;
     return ReportResponder(
-      email: email,
-      name: name,
-      organization: organization,
-      role: role ?? this.role,
-      checkedIn: checkedIn ?? this.checkedIn,
-      joinedAt: joinedAt,
-      lastUpdate: lastUpdate ?? this.lastUpdate,
+      userId: row['responder_id'] as String,
+      name: (profile?['full_name'] as String?) ?? 'Pawnder User',
+      organization: row['organization'] as String?,
+      role: row['role'] == 'lead' ? ResponderRole.lead : ResponderRole.assisting,
+      checkedIn: row['checked_in_at'] != null,
+      joinedAt: DateTime.parse(row['joined_at'] as String).toLocal(),
+      lastUpdate: DateTime.parse(row['last_update_at'] as String).toLocal(),
     );
   }
-}
 
-class ResponseRecord {
-  final String email;
-  final String reportId;
-  final RescueOutcome? outcome; // null = assisted only
-  final bool checkedIn;
-  final bool cancelled; // "Cancel / I can't make it"
-  final DateTime date;
+  bool get isVerified => organization != null;
 
-  const ResponseRecord({
-    required this.email,
-    required this.reportId,
-    this.outcome,
-    required this.checkedIn,
-    this.cancelled = false,
-    required this.date,
-  });
-
-  /// Checked in at the location and the animal was rescued
-  /// (as the one who closed it, or as an assisting responder).
-  bool get isCompletedRescue =>
-      !cancelled && checkedIn && (outcome == null || outcome!.isSuccess);
+  bool get isMe => userId == AuthService.currentUserId;
 }
 
 /// Trust level for responders, based on their track record.
@@ -117,6 +113,26 @@ class ResponderStats {
     required this.unableToLocate,
     required this.checkIns,
   });
+
+  static const ResponderStats empty = ResponderStats(
+    responses: 0,
+    rescues: 0,
+    cancelled: 0,
+    unableToLocate: 0,
+    checkIns: 0,
+  );
+
+  /// From one row of the database function `responder_stats`.
+  factory ResponderStats.fromRow(Map<String, dynamic> row) {
+    int n(String key) => (row[key] as num?)?.toInt() ?? 0;
+    return ResponderStats(
+      responses: n('responses'),
+      rescues: n('rescues'),
+      cancelled: n('cancelled'),
+      unableToLocate: n('unable_to_locate'),
+      checkIns: n('check_ins'),
+    );
+  }
 
   // Example thresholds (README: to be finalized by the team).
   static const int activeHelperRescues = 3;
@@ -150,415 +166,320 @@ class ResponderStats {
       responses >= minResponsesForFlag && cancelRate >= maxTrustedCancelRate;
 }
 
+/// How a rescued report ended.
 class RescueClosure {
-  final ReportResponder by;
   final RescueOutcome outcome;
-  const RescueClosure(this.by, this.outcome);
+  final String? organization; // set when a Verified Rescuer closed it
+  const RescueClosure(this.outcome, this.organization);
+}
+
+/// Everything the Report Details screen needs about the rescue.
+class RescueDetails {
+  final StrayReport report;
+  final List<ReportResponder> responders; // lead first
+  final Map<String, ResponderStats> stats; // by user id
+  final RescueClosure? closure; // only when rescued
+
+  const RescueDetails({
+    required this.report,
+    required this.responders,
+    required this.stats,
+    this.closure,
+  });
+
+  /// The logged-in user's response on this report (null = not responding).
+  ReportResponder? get mine {
+    for (final r in responders) {
+      if (r.isMe) return r;
+    }
+    return null;
+  }
+
+  ResponderStats statsOf(String userId) =>
+      stats[userId] ?? ResponderStats.empty;
+
+  /// In progress, but nobody has posted an update for 24 hours.
+  bool get isInactive {
+    if (report.status != RescueStatus.inProgress) return false;
+    if (responders.isEmpty) return true;
+    final DateTime latest = responders
+        .map((r) => r.lastUpdate)
+        .reduce((a, b) => a.isAfter(b) ? a : b);
+    return DateTime.now().difference(latest) > ResponseService.inactiveAfter;
+  }
 }
 
 class ActionResult {
   final String? error;
-  final RescueStatus? status; // the report's new status (if it changed)
 
-  const ActionResult.ok([this.status]) : error = null;
-  const ActionResult.fail(this.error) : status = null;
+  const ActionResult.ok() : error = null;
+  const ActionResult.fail(this.error);
 
   bool get ok => error == null;
 }
 
 class ResponseService {
+  static SupabaseClient get _db => Supabase.instance.client;
+
   /// A report with no update for this long can be taken over by a rescuer.
   static const Duration inactiveAfter = Duration(hours: 24);
 
-  /// How close (in meters) a responder's GPS must be to the report's pin
-  /// before they can check in with "I've arrived".
+  /// How close (in meters) the phone must be to the report's pin for
+  /// "I've arrived" and "Mark as Rescued". (The database checks this too.)
   static const double checkInRadiusMeters = 200;
 
-  static DateTime _ago(Duration d) => DateTime.now().subtract(d);
-
-  // Report '2' (Injured Cat) starts with two quiet responders so you can
-  // try "Take over" with a Verified Rescuer account.
-  static final Map<String, List<ReportResponder>> _active = {
-    '2': [
-      ReportResponder(
-        email: 'seed.juan@pawnder.test',
-        name: 'Juan D.',
-        role: ResponderRole.assisting,
-        joinedAt: _ago(const Duration(days: 3)),
-        lastUpdate: _ago(const Duration(days: 3)),
-      ),
-      ReportResponder(
-        email: 'seed.ana@pawnder.test',
-        name: 'Ana R.',
-        role: ResponderRole.assisting,
-        joinedAt: _ago(const Duration(days: 3)),
-        lastUpdate: _ago(const Duration(days: 3)),
-      ),
-    ],
-  };
-
-  static final Map<String, RescueClosure> _closed = {};
-
-  // Sample history for the seeded applicant (Maria Santos).
-  static final List<ResponseRecord> _history = [
-    for (var i = 0; i < 5; i++)
-      ResponseRecord(
-        email: 'maria.santos@example.com',
-        reportId: 'old$i',
-        outcome: i == 3
-            ? RescueOutcome.broughtToVetShelter
-            : RescueOutcome.rescuedOnSite,
-        checkedIn: true,
-        date: _ago(Duration(days: 10 + i * 5)),
-      ),
-    ResponseRecord(
-      email: 'maria.santos@example.com',
-      reportId: 'old5',
-      outcome: RescueOutcome.unableToLocate,
-      checkedIn: false,
-      date: _ago(const Duration(days: 40)),
-    ),
-  ];
-
+  /// Goes up by one when the logged-in user's record or status changes.
   static final ValueNotifier<int> changes = ValueNotifier<int>(0);
   static void _notify() => changes.value++;
 
-  static String _nameOf(String email) =>
-      AuthService.nameOf(email) ?? 'Pawnder User';
-
-  // ---------------------------------------------------------- Reading
-
-  /// Lead first, then Verified Rescuers, then the others.
-  static List<ReportResponder> forReport(String reportId) {
-    final list = List.of(_active[reportId] ?? const <ReportResponder>[]);
-    list.sort((a, b) {
-      if (a.role != b.role) return a.role == ResponderRole.lead ? -1 : 1;
-      if (a.isVerified != b.isVerified) return a.isVerified ? -1 : 1;
-      return a.joinedAt.compareTo(b.joinedAt);
-    });
-    return list;
+  /// Forgets the logged-in user's cached status and record.
+  static void reset() {
+    _myOrganization = null;
+    _myStats = ResponderStats.empty;
+    _notify();
   }
 
-  static ReportResponder? mine(String reportId) {
-    final email = AuthService.currentEmail;
-    if (email == null) return null;
-    for (final r in _active[reportId] ?? const <ReportResponder>[]) {
-      if (r.email == email) return r;
+  // ---------------------------------------------------------------- Me
+
+  static String? _myOrganization;
+  static ResponderStats _myStats = ResponderStats.empty;
+
+  /// Organization name if the logged-in user is a Verified Rescuer
+  /// (from the database), otherwise null.
+  static String? get myOrganization => _myOrganization;
+
+  static bool get isCurrentVerified => _myOrganization != null;
+
+  /// The logged-in user's Rescue Record (from the database).
+  static ResponderStats get myStats => _myStats;
+
+  static Future<void> loadMe() async {
+    final String? me = AuthService.currentUserId;
+    if (me == null) return;
+    try {
+      final List<Map<String, dynamic>> apps = await _db
+          .from('rescuer_applications')
+          .select('organization')
+          .eq('user_id', me)
+          .eq('status', 'verified')
+          .limit(1);
+      final Map<String, ResponderStats> stats = await _statsFor([me]);
+
+      // Another account may have logged in while this was loading.
+      if (me != AuthService.currentUserId) return;
+
+      _myOrganization =
+      apps.isEmpty ? null : apps.first['organization'] as String?;
+      _myStats = stats[me] ?? ResponderStats.empty;
+      _notify();
+    } catch (e) {
+      debugPrint('Load my rescue record error: $e');
     }
-    return null;
   }
 
-  static int activeCount(String email) => _active.values
-      .expand((l) => l)
-      .where((r) => r.email == email)
-      .length;
-
-  static RescueClosure? closureOf(String reportId) => _closed[reportId];
-
-  /// In progress, but nobody has posted an update for [inactiveAfter].
-  static bool isInactive(StrayReport report) {
-    if (report.status != RescueStatus.inProgress) return false;
-    final list = _active[report.id] ?? const <ReportResponder>[];
-    if (list.isEmpty) return true;
-    final latest = list
-        .map((r) => r.lastUpdate)
-        .reduce((a, b) => a.isAfter(b) ? a : b);
-    return DateTime.now().difference(latest) > inactiveAfter;
+  static Future<Map<String, ResponderStats>> _statsFor(
+      List<String> userIds) async {
+    if (userIds.isEmpty) return {};
+    final dynamic rows = await _db.rpc(
+      'responder_stats',
+      params: {'p_user_ids': userIds},
+    );
+    final Map<String, ResponderStats> result = {};
+    for (final dynamic row in rows as List<dynamic>) {
+      final Map<String, dynamic> map = row as Map<String, dynamic>;
+      result[map['user_id'] as String] = ResponderStats.fromRow(map);
+    }
+    return result;
   }
 
-  /// Track record the admin checks when reviewing a rescuer application.
-  static ResponderStats statsFor(String email) {
-    final key = email.trim().toLowerCase();
-    final mine =
-    _history.where((r) => r.email.toLowerCase() == key).toList();
-    return ResponderStats(
-      responses: mine.length,
-      rescues: mine.where((r) => r.isCompletedRescue).length,
-      cancelled: mine.where((r) => r.cancelled).length,
-      unableToLocate: mine
-          .where((r) => r.outcome == RescueOutcome.unableToLocate)
-          .length,
-      checkIns: mine.where((r) => r.checkedIn).length,
+  // ---------------------------------------------------------------- Report details
+
+  /// Loads the latest report, its responders (with their track records)
+  /// and, if rescued, how it ended. Throws [ReportFailure] (with a message
+  /// for the user) if it fails, or if the report was removed.
+  static Future<RescueDetails> loadDetails(String reportId) async {
+    try {
+      final StrayReport? report = await ReportService.refreshOne(reportId);
+      if (report == null) throw const _Gone();
+
+      final List<Map<String, dynamic>> rows = await _db
+          .from('rescue_responses')
+          .select('responder_id, role, organization, checked_in_at, '
+          'joined_at, last_update_at, '
+          'responder:profiles(full_name)')
+          .eq('report_id', reportId)
+          .eq('state', 'active');
+
+      final List<ReportResponder> responders =
+      rows.map(ReportResponder.fromRow).toList()
+      // Lead first, then Verified Rescuers, then the others.
+        ..sort((a, b) {
+          if (a.role != b.role) return a.role == ResponderRole.lead ? -1 : 1;
+          if (a.isVerified != b.isVerified) return a.isVerified ? -1 : 1;
+          return a.joinedAt.compareTo(b.joinedAt);
+        });
+
+      final Map<String, ResponderStats> stats =
+      await _statsFor(responders.map((r) => r.userId).toList());
+
+      RescueClosure? closure;
+      final RescueOutcome? outcome = RescueOutcome.fromDb(report.outcome);
+      if (report.status == RescueStatus.rescued && outcome != null) {
+        String? org;
+        if (report.closedBy != null) {
+          final List<Map<String, dynamic>> closer = await _db
+              .from('rescue_responses')
+              .select('organization')
+              .eq('report_id', reportId)
+              .eq('responder_id', report.closedBy!)
+              .eq('outcome', outcome.dbValue)
+              .limit(1);
+          if (closer.isNotEmpty) org = closer.first['organization'] as String?;
+        }
+        closure = RescueClosure(outcome, org);
+      }
+
+      return RescueDetails(
+        report: report,
+        responders: responders,
+        stats: stats,
+        closure: closure,
+      );
+    } on _Gone {
+      throw const ReportFailure('This report is no longer available.');
+    } catch (e) {
+      throw ReportFailure(friendlyDbError(e,
+          fallback: 'Could not load this report. Please try again.'));
+    }
+  }
+
+  // ---------------------------------------------------------------- Actions
+
+  /// "I'm on my way!"
+  static Future<ActionResult> respond(StrayReport report) => _run(
+    report,
+        () => _db.rpc('respond_to_report', params: {'p_report_id': report.id}),
+  );
+
+  /// "I've arrived": sends the phone's GPS. The database checks the 200 m.
+  static Future<ActionResult> checkIn(StrayReport report) async {
+    final _Gps gps = await _currentPosition();
+    if (gps.error != null) return ActionResult.fail(gps.error);
+    return _run(
+      report,
+          () => _db.rpc('check_in', params: {
+        'p_report_id': report.id,
+        'p_latitude': gps.lat,
+        'p_longitude': gps.lng,
+      }),
     );
   }
 
-  // ---------------------------------------------------------- Actions
+  /// "Cancel / I can't make it". Counts as a cancelled response.
+  static Future<ActionResult> withdraw(StrayReport report) => _run(
+    report,
+        () => _db.rpc('cancel_response', params: {'p_report_id': report.id}),
+  );
 
-  /// "I'm on my way!"
-  /// Regular users: one active response at a time, always "assisting".
-  /// Verified Rescuers: many at a time, and the first one becomes the lead.
-  static ActionResult respond(StrayReport report) {
-    final email = AuthService.currentEmail;
-    if (email == null) return const ActionResult.fail('Please log in first.');
-    if (report.status == RescueStatus.rescued) {
-      return const ActionResult.fail('This animal was already rescued.');
+  /// Verified Rescuers only: take over a report with no recent updates.
+  static Future<ActionResult> takeOver(StrayReport report) => _run(
+    report,
+        () => _db.rpc('take_over_report', params: {'p_report_id': report.id}),
+  );
+
+  /// Mark as rescued / choose an outcome. Rescue outcomes need the phone's
+  /// GPS (within 200 m). "Unable to locate" does not.
+  static Future<ActionResult> finish(
+      StrayReport report,
+      RescueOutcome outcome,
+      ) async {
+    double? lat;
+    double? lng;
+    if (outcome != RescueOutcome.unableToLocate) {
+      final _Gps gps = await _currentPosition();
+      if (gps.error != null) return ActionResult.fail(gps.error);
+      lat = gps.lat;
+      lng = gps.lng;
     }
-
-    final list = _active[report.id] ?? const <ReportResponder>[];
-    if (list.any((r) => r.email == email)) {
-      return const ActionResult.fail('You are already responding here.');
-    }
-
-    // Regular users: one active response at a time.
-    // Verified Rescuers: many at a time (it is their job).
-    final org = RescuerService.organizationOf(email);
-    if (org == null && activeCount(email) > 0) {
-      return const ActionResult.fail(
-        'You can only respond to one report at a time. Finish or withdraw '
-            'from your current response first.',
-      );
-    }
-
-    final hasLead = list.any((r) => r.role == ResponderRole.lead);
-    final now = DateTime.now();
-    _active[report.id] = [
-      ...list,
-      ReportResponder(
-        email: email,
-        name: _nameOf(email),
-        organization: org,
-        role: (org != null && !hasLead)
-            ? ResponderRole.lead
-            : ResponderRole.assisting,
-        joinedAt: now,
-        lastUpdate: now,
-      ),
-    ];
-    _notify();
-    return const ActionResult.ok(RescueStatus.inProgress);
+    return _run(
+      report,
+          () => _db.rpc('finish_rescue', params: {
+        'p_report_id': report.id,
+        'p_outcome': outcome.dbValue,
+        'p_latitude': lat,
+        'p_longitude': lng,
+      }),
+    );
   }
 
-  /// Reads the phone's GPS and returns a failure unless it is within
-  /// [checkInRadiusMeters] of the report's pin (null = close enough).
-  static Future<ActionResult?> _requireNearby(StrayReport report) async {
-    final Position pos;
+  /// Calls the database, then reloads the report and my record so every
+  /// screen shows the new status.
+  static Future<ActionResult> _run(
+      StrayReport report,
+      Future<dynamic> Function() call,
+      ) async {
+    if (AuthService.currentUserId == null) {
+      return const ActionResult.fail('Please log in first.');
+    }
+    try {
+      await call();
+    } catch (e) {
+      return ActionResult.fail(friendlyDbError(e));
+    }
+    try {
+      await ReportService.refreshOne(report.id);
+    } catch (e) {
+      debugPrint('Refresh report error: $e');
+    }
+    unawaited(loadMe());
+    return const ActionResult.ok();
+  }
+
+  // ---------------------------------------------------------------- GPS
+
+  static Future<_Gps> _currentPosition() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
-        return const ActionResult.fail('Please turn on location services.');
+        return const _Gps.fail('Please turn on location services.');
       }
-      var permission = await Geolocator.checkPermission();
+      LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        return const ActionResult.fail(
-          'Location permission is needed to check in at the animal\'s location.',
+        return const _Gps.fail(
+          "Location permission is needed to check in at the animal's location.",
         );
       }
-      pos = await Geolocator.getCurrentPosition(
+      final Position pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
           timeLimit: Duration(seconds: 15),
         ),
       );
+      return _Gps(pos.latitude, pos.longitude);
     } on TimeoutException {
-      return const ActionResult.fail(
+      return const _Gps.fail(
         'Could not get a GPS fix. Move to an open area and try again.',
       );
     } catch (_) {
-      return const ActionResult.fail('Could not get your location.');
+      return const _Gps.fail('Could not get your location.');
     }
-
-    final meters = Geolocator.distanceBetween(
-      pos.latitude,
-      pos.longitude,
-      report.lat,
-      report.lng,
-    );
-    if (meters > checkInRadiusMeters) {
-      final away = meters >= 1000
-          ? '${(meters / 1000).toStringAsFixed(1)} km'
-          : '${meters.round()} m';
-      return ActionResult.fail(
-        'You are about $away away. You must be within '
-            '${checkInRadiusMeters.round()} m of the animal.',
-      );
-    }
-    return null;
   }
+}
 
-  /// "I've arrived" - the phone's GPS must be within [checkInRadiusMeters]
-  /// of the report's pin. Needed before a responder can mark as rescued.
-  static Future<ActionResult> checkIn(StrayReport report) async {
-    final email = AuthService.currentEmail;
-    if (email == null || mine(report.id) == null) {
-      return const ActionResult.fail('You are not responding to this report.');
-    }
+class _Gps {
+  final double? lat;
+  final double? lng;
+  final String? error;
 
-    final tooFar = await _requireNearby(report);
-    if (tooFar != null) return tooFar;
+  const _Gps(double this.lat, double this.lng) : error = null;
+  const _Gps.fail(this.error)
+      : lat = null,
+        lng = null;
+}
 
-    // Re-read the list: the state may have changed during the GPS wait.
-    final list = _active[report.id];
-    final i = list?.indexWhere((r) => r.email == email) ?? -1;
-    if (list == null || i == -1) {
-      return const ActionResult.fail('You are not responding to this report.');
-    }
-    final updated = List.of(list);
-    updated[i] = updated[i].copyWith(
-      checkedIn: true,
-      lastUpdate: DateTime.now(),
-    );
-    _active[report.id] = updated;
-    _notify();
-    return const ActionResult.ok();
-  }
-
-  /// Verified Rescuers only: take over a report with no recent updates.
-  static ActionResult takeOver(StrayReport report) {
-    final email = AuthService.currentEmail;
-    final org = RescuerService.currentOrganization;
-    if (email == null || org == null) {
-      return const ActionResult.fail(
-        'Only Verified Rescuers can take over a report.',
-      );
-    }
-    if (!isInactive(report)) {
-      return const ActionResult.fail('This report still has recent updates.');
-    }
-    final now = DateTime.now();
-    final others = (_active[report.id] ?? const <ReportResponder>[])
-        .where((r) => r.email != email)
-        .map((r) => r.copyWith(role: ResponderRole.assisting))
-        .toList();
-
-    _active[report.id] = [
-      ReportResponder(
-        email: email,
-        name: _nameOf(email),
-        organization: org,
-        role: ResponderRole.lead,
-        joinedAt: now,
-        lastUpdate: now,
-      ),
-      ...others,
-    ];
-    _notify();
-    return const ActionResult.ok(RescueStatus.inProgress);
-  }
-
-  /// Leave a report without finishing it.
-  /// Counted as a cancelled response in the user's track record.
-  static ActionResult withdraw(String reportId) {
-    final email = AuthService.currentEmail;
-    if (email == null) return const ActionResult.fail('Please log in first.');
-    final me = mine(reportId);
-    if (me == null) {
-      return const ActionResult.fail('You are not responding to this report.');
-    }
-    _history.add(ResponseRecord(
-      email: me.email,
-      reportId: reportId,
-      checkedIn: me.checkedIn,
-      cancelled: true,
-      date: DateTime.now(),
-    ));
-    final result = _remove(reportId, email);
-    RescuerService.checkCancelRate(email);
-    return result;
-  }
-
-  /// Mark as rescued / choose an outcome.
-  /// Only the original reporter, or a responder who has checked in (GPS),
-  /// can mark an animal as rescued, and they must be within
-  /// [checkInRadiusMeters] of the pin at that moment. Regular users: "Rescued on site" only.
-  /// Verified Rescuers: all outcomes. "Unable to locate" needs no check-in.
-  static Future<ActionResult> finish(
-      StrayReport report,
-      RescueOutcome outcome,
-      ) async {
-    final email = AuthService.currentEmail;
-    if (email == null) return const ActionResult.fail('Please log in first.');
-
-    final list = _active[report.id] ?? const <ReportResponder>[];
-    final me = list.where((r) => r.email == email).firstOrNull;
-    final isReporter = report.isMine;
-    final isVerified = RescuerService.organizationOf(email) != null;
-
-    if (outcome == RescueOutcome.unableToLocate) {
-      if (me == null) {
-        return const ActionResult.fail('You are not responding to this report.');
-      }
-      if (!me.isVerified) {
-        return const ActionResult.fail(
-          'Only Verified Rescuers can choose this outcome.',
-        );
-      }
-      _history.add(ResponseRecord(
-        email: me.email,
-        reportId: report.id,
-        outcome: outcome,
-        checkedIn: me.checkedIn,
-        date: DateTime.now(),
-      ));
-      return _remove(report.id, me.email);
-    }
-
-    // A rescue outcome: reporter, or a responder who has checked in.
-    if (me == null && !isReporter) {
-      return const ActionResult.fail(
-        'Only the person who reported this animal, or a responder who has '
-            'checked in, can mark it as rescued.',
-      );
-    }
-    if (!isReporter && !(me?.checkedIn ?? false)) {
-      return const ActionResult.fail('Please check in at the location first.');
-    }
-    if (!isVerified && outcome != RescueOutcome.rescuedOnSite) {
-      return const ActionResult.fail(
-        'Only Verified Rescuers can choose this outcome.',
-      );
-    }
-
-    // Must physically be at the animal when marking it as rescued.
-    final tooFar = await _requireNearby(report);
-    if (tooFar != null) return tooFar;
-
-    final now = DateTime.now();
-    final closer = me ??
-        ReportResponder(
-          email: email,
-          name: _nameOf(email),
-          organization: RescuerService.organizationOf(email),
-          role: ResponderRole.lead,
-          joinedAt: now,
-          lastUpdate: now,
-        );
-
-    for (final r in list) {
-      _history.add(ResponseRecord(
-        email: r.email,
-        reportId: report.id,
-        outcome: r.email == closer.email ? outcome : null,
-        checkedIn: r.checkedIn,
-        date: now,
-      ));
-    }
-    _active.remove(report.id);
-    _closed[report.id] = RescueClosure(closer, outcome);
-    _notify();
-    return const ActionResult.ok(RescueStatus.rescued);
-  }
-
-  static ActionResult _remove(String reportId, String email) {
-    final rest = (_active[reportId] ?? const <ReportResponder>[])
-        .where((r) => r.email != email)
-        .toList();
-
-    if (rest.isEmpty) {
-      _active.remove(reportId);
-    } else {
-      // If the lead left, promote a Verified Rescuer (if any).
-      if (!rest.any((r) => r.role == ResponderRole.lead)) {
-        final i = rest.indexWhere((r) => r.isVerified);
-        if (i != -1) rest[i] = rest[i].copyWith(role: ResponderRole.lead);
-      }
-      _active[reportId] = rest;
-    }
-    _notify();
-    return ActionResult.ok(
-      rest.isEmpty ? RescueStatus.needsRescue : RescueStatus.inProgress,
-    );
-  }
+class _Gone implements Exception {
+  const _Gone();
 }

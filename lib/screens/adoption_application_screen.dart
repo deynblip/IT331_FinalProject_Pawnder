@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/adoption_application.dart';
 import '../models/adoption_pet.dart';
 import '../services/application_service.dart';
 import '../utils/app_colors.dart';
@@ -16,7 +17,14 @@ const String _kProvince = 'Batangas';
 class AdoptionApplicationScreen extends StatefulWidget {
   final AdoptionPet pet;
 
-  const AdoptionApplicationScreen({super.key, required this.pet});
+  /// When set, the form opens filled in and saves the changes (Edit).
+  final AdoptionApplication? existing;
+
+  const AdoptionApplicationScreen({
+    super.key,
+    required this.pet,
+    this.existing,
+  });
 
   @override
   State<AdoptionApplicationScreen> createState() =>
@@ -56,6 +64,27 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
   final _household = TextEditingController();
   final _previousPets = TextEditingController();
   final _care = TextEditingController();
+
+  bool get _editing => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final a = widget.existing;
+    if (a != null) {
+      _fullName.text = a.fullName;
+      _phone.text = a.phone;
+      _email.text = a.email;
+      _city.text = a.city;
+      _barangay.text = a.barangay;
+      _street.text = a.street;
+      _home.text = a.homeEnvironment;
+      _household.text = a.householdMembers;
+      _previousPets.text = a.previousPets;
+      _care.text = a.careExperience;
+      _agreesToShowId = true; // already agreed when it was sent
+    }
+  }
 
   @override
   void dispose() {
@@ -121,7 +150,9 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(
-          'Submit your application for ${widget.pet.name}?',
+          _editing
+              ? 'Save changes to your application for ${widget.pet.name}?'
+              : 'Submit your application for ${widget.pet.name}?',
           style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
         ),
         content: Text(
@@ -157,6 +188,26 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
   Future<void> _submit() async {
     setState(() => _submitting = true);
     try {
+      final existing = widget.existing;
+      if (existing != null) {
+        await ApplicationService.updateMine(
+          existing.id,
+          fullName: _fullName.text,
+          phone: _phone.text,
+          email: _email.text,
+          city: _city.text,
+          barangay: _barangay.text,
+          street: _street.text,
+          homeEnvironment: _home.text,
+          householdMembers: _household.text,
+          previousPets: _previousPets.text,
+          careExperience: _care.text,
+        );
+        if (!mounted) return;
+        _snack('Your changes were saved.');
+        Navigator.pop(context, true);
+        return;
+      }
       await ApplicationService.submit(
         pet: widget.pet,
         fullName: _fullName.text.trim(),
@@ -196,7 +247,9 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
       if (!mounted) return;
 
       Navigator.pop(context, true); // back to the Details screen
-    } catch (_) {
+    } on StateError catch (e) {
+      _snack(e.message);
+      } catch (_) {
       _snack('Could not send your application. Please try again.');
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -245,9 +298,11 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back_ios_new, color: kBlue),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Adoption Application',
+                      _editing
+                          ? 'Edit Application'
+                          : 'Adoption Application',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -330,8 +385,8 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
                       color: Colors.white,
                     ),
                   )
-                      : const Text(
-                    'Submit Application',
+                      : Text(
+                    _editing ? 'Save Changes' : 'Submit Application',
                     style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),

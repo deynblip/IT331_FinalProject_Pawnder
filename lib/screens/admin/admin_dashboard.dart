@@ -103,6 +103,7 @@ class AdminDashboard extends StatelessWidget {
                   ApplicationService.changes,
                   AdoptionService.changes,
                   ContentReportService.changes,
+                  AuthService.userCountChanges,
                 ]),
                 builder: (context, _) {
                   final int posts = AdoptionService.all.length;

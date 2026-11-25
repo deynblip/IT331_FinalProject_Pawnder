@@ -1,23 +1,83 @@
 import 'package:flutter/material.dart';
 
-import '../data/mock_reports.dart';
-import '../models/stray_report.dart';
+import '../services/report_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/report_card.dart';
 import 'report_details_screen.dart';
 import '../utils/responsive.dart';
 
 /// Reports made by the logged-in user (Profile > My Reports).
-class MyReportsScreen extends StatelessWidget {
+/// Comes from the database (ReportService). Pull down to refresh.
+/// Edit / Remove are inside the report details screen (docked at the bottom).
+class MyReportsScreen extends StatefulWidget {
   const MyReportsScreen({super.key});
 
-  // TEMP: replace with the logged-in user's reports from the backend
-  List<StrayReport> get _mine => mockReports.where((r) => r.isMine).toList();
+  @override
+  State<MyReportsScreen> createState() => _MyReportsScreenState();
+}
+
+class _MyReportsScreenState extends State<MyReportsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    ReportService.ensureLoaded();
+  }
+
+  Widget _message(String text) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 80),
+        Center(
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: kHintGray),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _list() {
+    return ListenableBuilder(
+      listenable: ReportService.changes,
+      builder: (context, _) {
+        if (!ReportService.isLoaded) {
+          if (ReportService.loadError != null) {
+            return _message(ReportService.loadError!);
+          }
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final items = ReportService.mine;
+        if (items.isEmpty) {
+          return _message("You haven't submitted any reports yet.");
+        }
+
+        return ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount: items.length,
+          itemBuilder: (_, i) => ReportCard(
+            report: items[i],
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ReportDetailsScreen(
+                  report: items[i],
+                  onChanged: (_) {}, // the list updates itself
+                  showOwnerActions: true,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final items = _mine;
-
     return Scaffold(
       backgroundColor: kCream,
       body: SafeArea(
@@ -45,27 +105,10 @@ class MyReportsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: items.isEmpty
-                    ? const Center(
-                  child: Text(
-                    "You haven't submitted any reports yet.",
-                    style: TextStyle(color: kHintGray),
-                  ),
-                )
-                    : ListView.builder(
-                  itemCount: items.length,
-                  itemBuilder: (_, i) => ReportCard(
-                    report: items[i],
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ReportDetailsScreen(
-                          report: items[i],
-                          onChanged: (_) {}, // TEMP: connect to the backend later
-                        ),
-                      ),
-                    ),
-                  ),
+                child: RefreshIndicator(
+                  color: kBlue,
+                  onRefresh: ReportService.load,
+                  child: _list(),
                 ),
               ),
             ],

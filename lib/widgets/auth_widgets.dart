@@ -12,6 +12,7 @@ class AuthField extends StatefulWidget {
   final bool obscure; // true = password field with show/hide eye icon
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
+  final ValueChanged<String>? onChanged;
 
   const AuthField({
     super.key,
@@ -20,6 +21,7 @@ class AuthField extends StatefulWidget {
     this.obscure = false,
     this.keyboardType,
     this.validator,
+    this.onChanged,
   });
 
   @override
@@ -61,6 +63,7 @@ class _AuthFieldState extends State<AuthField> {
             obscureText: widget.obscure && _hidden,
             keyboardType: widget.keyboardType,
             validator: widget.validator,
+            onChanged: widget.onChanged,
             style: const TextStyle(fontSize: 15, color: kNavy),
             decoration: InputDecoration(
               border: InputBorder.none,
@@ -144,6 +147,47 @@ class AuthLink extends StatelessWidget {
           style: const TextStyle(color: kHintGray, fontSize: 12),
         ),
       ),
+    );
+  }
+}
+
+class PasswordChecklist extends StatelessWidget {
+  final String password;
+
+  const PasswordChecklist({super.key, required this.password});
+
+  Widget _row(bool ok, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        children: [
+          Icon(
+            ok ? Icons.check_circle : Icons.radio_button_unchecked,
+            size: 18,
+            color: ok ? kOrange : kHintGray,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              color: ok ? kNavy : kHintGray,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _row(password.length >= 8, 'At least 8 characters'),
+        _row(RegExp(r'[A-Za-z]').hasMatch(password), 'Has a letter'),
+        _row(RegExp(r'\d').hasMatch(password), 'Has a number'),
+      ],
     );
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
-import '../services/rescuer_service.dart';
 import '../utils/validators.dart';
 import '../utils/app_colors.dart';
 import '../widgets/auth_layout.dart';
@@ -9,6 +8,7 @@ import '../widgets/auth_widgets.dart';
 import '../widgets/rescuer_form.dart';
 
 import 'login.dart';
+import 'verify_email.dart';
 
 // ===============================
 // SIGN UP PAGE
@@ -262,7 +262,11 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   // SIGN UP FUNCTION
-  void _signUp() {
+  bool _busy = false;
+
+  Future<void> _signUp() async {
+    if (_busy) return;
+
     if (!_agreedToTerms) {
       showMessage(
         context,
@@ -275,33 +279,46 @@ class _SignUpPageState extends State<SignUpPage> {
 
     final email = emailController.text.trim();
 
-    if (AuthService.emailExists(email)) {
-      showMessage(
-        context,
-        'An account with this email already exists.',
+    final bool applying = _accountType == AccountType.professional;
+
+    bool needsCode = false; // true = the user must enter the emailed code
+    setState(() => _busy = true);
+    try {
+      needsCode = await AuthService.signUp(
+        name: nameController.text,
+        email: email,
+        password: passwordController.text,
+        rescuerApplication: applying
+            ? {
+          'organization': _rescuer.organization.text.trim(),
+          'role_in_org': _rescuer.roleInOrg.text.trim(),
+          'contact_person': _rescuer.contactPerson.text.trim(),
+          'contact_number': _rescuer.contactNumber.text.trim(),
+          'official_page': _rescuer.officialPage.text.trim(),
+        }
+            : null,
       );
+    } on AuthFailure catch (e) {
+      if (mounted) showMessage(context, e.message);
       return;
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
 
-    AuthService.register(
-      nameController.text,
-      email,
-      passwordController.text,
-    );
+    if (!mounted) return;
 
-    // Professional Rescuer: the account is a regular one until the admin
-    // approves the application (status = Pending Verification).
-    final bool applying = _accountType == AccountType.professional;
-    if (applying) {
-      RescuerService.submit(
-        email: email,
-        applicantName: nameController.text.trim(),
-        organization: _rescuer.organization.text,
-        roleInOrg: _rescuer.roleInOrg.text,
-        contactPerson: _rescuer.contactPerson.text,
-        contactNumber: _rescuer.contactNumber.text,
-        officialPage: _rescuer.officialPage.text,
+    // Confirm email is ON: go to the Enter code screen.
+    if (needsCode) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VerifyEmailPage(
+            email: email,
+            applying: applying,
+          ),
+        ),
       );
+      return;
     }
 
     showMessage(
@@ -352,8 +369,10 @@ class _SignUpPageState extends State<SignUpPage> {
                 label: 'Password',
                 controller: passwordController,
                 obscure: true,
-                validator: validatePassword,
+                validator: validateNewPassword,
+                onChanged: (_) => setState(() {}),
               ),
+              PasswordChecklist(password: passwordController.text),
 
               const SizedBox(height: 14),
 
@@ -420,7 +439,7 @@ class _SignUpPageState extends State<SignUpPage> {
               const SizedBox(height: 14),
 
               AuthButton(
-                text: 'Sign Up',
+                text: _busy ? 'Creating account...' : 'Sign Up',
                 onPressed: _signUp,
               ),
             ],

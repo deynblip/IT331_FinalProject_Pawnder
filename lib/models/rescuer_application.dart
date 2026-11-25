@@ -14,6 +14,7 @@ enum RescuerStatus {
 
 class RescuerApplication {
   final String id;
+  final String userId; // the applicant's account id
   final String email;
   final String applicantName;
   final String organization;
@@ -28,6 +29,7 @@ class RescuerApplication {
 
   const RescuerApplication({
     required this.id,
+    this.userId = '',
     required this.email,
     required this.applicantName,
     required this.organization,
@@ -48,6 +50,7 @@ class RescuerApplication {
   }) {
     return RescuerApplication(
       id: id,
+      userId: userId,
       email: email,
       applicantName: applicantName,
       organization: organization,

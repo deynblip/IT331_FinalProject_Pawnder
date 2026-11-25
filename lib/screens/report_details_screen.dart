@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/stray_report.dart';
-import '../services/auth_service.dart';
-import '../services/rescuer_service.dart';
+import '../services/report_service.dart';
 import '../services/response_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/report_style.dart';
@@ -12,12 +11,23 @@ import '../widgets/rescuer_badge.dart';
 import '../models/content_report.dart';
 import '../widgets/report_content_dialog.dart';
 import '../utils/responsive.dart';
+import 'edit_report_screen.dart';
+import 'edit_report_screen.dart';
 
 class ReportDetailsScreen extends StatefulWidget {
   final StrayReport report;
   final ValueChanged<StrayReport> onChanged;
 
-  const ReportDetailsScreen({super.key, required this.report, required this.onChanged});
+  /// True lang kapag galing sa Profile > My Reports. Doon lang lalabas ang
+  /// Edit / Remove.
+  final bool showOwnerActions;
+
+  const ReportDetailsScreen({
+    super.key,
+    required this.report,
+    required this.onChanged,
+    this.showOwnerActions = false,
+  });
 
   @override
   State<ReportDetailsScreen> createState() => _ReportDetailsScreenState();
@@ -25,13 +35,38 @@ class ReportDetailsScreen extends StatefulWidget {
 
 class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
   late StrayReport _report = widget.report;
-  bool _checkingIn = false;
 
-  bool get _isVerified => RescuerService.isCurrentVerified;
+  /// Responders, track records and outcome (null while loading).
+  RescueDetails? _details;
+  String? _loadError;
 
-  void _apply(StrayReport updated) {
-    setState(() => _report = updated);
-    widget.onChanged(updated); // so the list updates too
+  /// True while a button is waiting for the database (or GPS).
+  bool _busy = false;
+  String _busyText = '';
+
+  bool get _isVerified => ResponseService.isCurrentVerified;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  /// Loads the latest status and responders from the database.
+  Future<void> _refresh() async {
+    try {
+      final details = await ResponseService.loadDetails(_report.id);
+      if (!mounted) return;
+      setState(() {
+        _details = details;
+        _report = details.report;
+        _loadError = null;
+      });
+      widget.onChanged(details.report); // so the list updates too
+    } on ReportFailure catch (e) {
+      if (!mounted) return;
+      setState(() => _loadError = e.message);
+    }
   }
 
   void _snack(String message) {
@@ -40,19 +75,27 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  /// Shows an error, or updates the report from the service result.
-  void _handle(ActionResult result) {
+  /// Runs a button's action: shows "busy", then an error or [success],
+  /// then reloads the report so the screen shows the new status.
+  Future<void> _run(
+      String busyText,
+      Future<ActionResult> Function() action, {
+        String? success,
+      }) async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _busyText = busyText;
+    });
+    final result = await action();
+    if (!mounted) return;
     if (!result.ok) {
       _snack(result.error!);
-      return;
+    } else if (success != null) {
+      _snack(success);
     }
-    final newStatus = result.status ?? _report.status;
-    _apply(_report.copyWith(
-      status: newStatus,
-      responders: newStatus == RescueStatus.rescued
-          ? _report.responders
-          : ResponseService.forReport(_report.id).length,
-    ));
+    await _refresh();
+    if (mounted) setState(() => _busy = false);
   }
 
   Future<bool> _confirm(String title, String message, String yes) async {
@@ -90,19 +133,19 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
       );
       if (!ok || !mounted) return;
     }
-    _handle(ResponseService.respond(_report));
+    await _run(
+      'Sending...',
+          () => ResponseService.respond(_report),
+      success: "You're on your way. The reporter was notified.",
+    );
   }
 
-  /// "I've arrived": checks the phone's GPS against the report's pin.
-  Future<void> _checkIn() async {
-    if (_checkingIn) return;
-    setState(() => _checkingIn = true);
-    final result = await ResponseService.checkIn(_report);
-    if (!mounted) return;
-    setState(() => _checkingIn = false);
-    _handle(result);
-    if (result.ok) _snack('Checked in. You are now on site.');
-  }
+  /// "I've arrived": sends the phone's GPS. The database checks the 200 m.
+  Future<void> _checkIn() => _run(
+    'Checking your location...',
+        () => ResponseService.checkIn(_report),
+    success: 'Checked in. You are now on site.',
+  );
 
   Future<void> _withdraw() async {
     final ok = await _confirm(
@@ -113,7 +156,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
       'Withdraw',
     );
     if (!ok || !mounted) return;
-    _handle(ResponseService.withdraw(_report.id));
+    await _run('Cancelling...', () => ResponseService.withdraw(_report));
   }
 
   Future<void> _takeOver() async {
@@ -124,7 +167,11 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
       'Take over',
     );
     if (!ok || !mounted) return;
-    _handle(ResponseService.takeOver(_report));
+    await _run(
+      'Taking over...',
+          () => ResponseService.takeOver(_report),
+      success: 'You are now the lead responder.',
+    );
   }
 
   IconData _outcomeIcon(RescueOutcome o) => switch (o) {
@@ -171,12 +218,12 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
       outcome = picked;
     }
 
-    if (_checkingIn) return;
-    setState(() => _checkingIn = true);
-    final result = await ResponseService.finish(_report, outcome);
-    if (!mounted) return;
-    setState(() => _checkingIn = false);
-    _handle(result);
+    await _run(
+      outcome == RescueOutcome.unableToLocate
+          ? 'Saving...'
+          : 'Checking your location...',
+          () => ResponseService.finish(_report, outcome),
+    );
   }
 
   Future<void> _openDirections() async {
@@ -254,6 +301,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
   }
 
   Widget _primaryButton(String text, VoidCallback? onPressed) {
+    if (_busy) onPressed = null;
     return SizedBox(
       width: double.infinity,
       height: 50,
@@ -270,6 +318,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
   }
 
   Widget _secondaryButton(String text, VoidCallback? onPressed) {
+    if (_busy) onPressed = null;
     return SizedBox(
       width: double.infinity,
       height: 46,
@@ -285,10 +334,10 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     );
   }
 
-  Widget _responderTile(ReportResponder r) {
-    final isMe = r.email == AuthService.currentEmail;
+  Widget _responderTile(ReportResponder r, RescueDetails details) {
+    final isMe = r.isMe;
     final isLead = r.role == ResponderRole.lead;
-    final stats = ResponseService.statsFor(r.email);
+    final stats = details.statsOf(r.userId);
     final record = r.isVerified
         ? '${stats.rescues} rescues'
         : '${stats.trustLevel.label} · ${stats.rescues} rescues';
@@ -336,7 +385,54 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     );
   }
 
+  /// Small "busy" line under the buttons (e.g. "Checking your location...").
+  Widget _busyLine() {
+    if (!_busy) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: 8),
+          Text(_busyText,
+              style: const TextStyle(color: ReportColors.grey, fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
   Widget _statusCard() {
+    final details = _details;
+
+    // Still loading the responders (or it failed).
+    if (details == null) {
+      return _cardBox(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Center(
+            child: _loadError == null
+                ? const CircularProgressIndicator()
+                : Column(
+              children: [
+                Text(_loadError!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: ReportColors.grey)),
+                TextButton(
+                  onPressed: _refresh,
+                  child: const Text('Try again'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final Widget content;
     switch (_report.status) {
       case RescueStatus.needsRescue:
@@ -353,15 +449,16 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
               const SizedBox(height: 10),
               _secondaryButton('Mark as Rescued', _markRescued),
             ],
+            _busyLine(),
           ],
         );
         break;
 
       case RescueStatus.inProgress:
-        final me = ResponseService.mine(_report.id);
-        final responders = ResponseService.forReport(_report.id);
-        final inactive = ResponseService.isInactive(_report);
-        final count = responders.isEmpty ? _report.responders : responders.length;
+        final me = details.mine;
+        final responders = details.responders;
+        final inactive = details.isInactive;
+        final count = responders.length;
 
         content = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -392,7 +489,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
             ],
             if (responders.isNotEmpty) ...[
               const SizedBox(height: 12),
-              ...responders.map(_responderTile),
+              ...responders.map((r) => _responderTile(r, details)),
             ],
             if (inactive) ...[
               const SizedBox(height: 4),
@@ -413,12 +510,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
               ],
             ] else ...[
               if (!me.checkedIn) ...[
-                _secondaryButton(
-                  _checkingIn
-                      ? 'Checking your location…'
-                      : "I've arrived · Check in",
-                  _checkingIn ? null : _checkIn,
-                ),
+                _secondaryButton("I've arrived · Check in", _checkIn),
                 const SizedBox(height: 6),
                 Text(
                   'You must be within ${ResponseService.checkInRadiusMeters.round()} m of the animal.',
@@ -441,10 +533,11 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                   style: TextStyle(color: ReportColors.grey, fontSize: 12),
                 ),
               ],
+              _busyLine(),
               Align(
                 alignment: Alignment.center,
                 child: TextButton(
-                  onPressed: _withdraw,
+                  onPressed: _busy ? null : _withdraw,
                   child: const Text("Cancel · I can't make it",
                       style: TextStyle(color: ReportColors.grey)),
                 ),
@@ -455,7 +548,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
         break;
 
       case RescueStatus.rescued:
-        final closure = ResponseService.closureOf(_report.id);
+        final closure = details.closure;
         content = Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Center(
@@ -469,9 +562,9 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                 if (closure != null) ...[
                   Text(closure.outcome.label,
                       style: const TextStyle(color: ReportColors.grey, fontSize: 13)),
-                  if (closure.by.organization != null) ...[
+                  if (closure.organization != null) ...[
                     const SizedBox(height: 8),
-                    RescuerBadge(organization: closure.by.organization!),
+                    RescuerBadge(organization: closure.organization!),
                   ],
                   const SizedBox(height: 6),
                 ],
@@ -484,6 +577,10 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
         break;
     }
 
+    return _cardBox(content);
+  }
+
+  Widget _cardBox(Widget child) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -493,7 +590,127 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
         border: Border.all(color: const Color(0xFFF5DEC8)),
         boxShadow: const [BoxShadow(color: Color(0x14C4531F), blurRadius: 10, offset: Offset(0, 3))],
       ),
-      child: content,
+      child: child,
+    );
+  }
+
+  Future<void> _editReport() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => EditReportScreen(report: _report)),
+    );
+    if (mounted) await _refresh(); // ipakita ang bagong laman
+  }
+
+  Future<void> _removeReport() async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Remove this report?',
+            style: TextStyle(fontWeight: FontWeight.w800)),
+        content: const Text(
+            'It will no longer show on Home, Map or the Reports list. '
+                "This can't be undone."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Remove',
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _busy = true);
+    try {
+      await ReportService.removeMine(_report.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('Report removed.')));
+      Navigator.pop(context); // balik sa listahan
+    } on ReportFailure catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _snack(e.message);
+    }
+  }
+
+  /// Full-screen na photo; puwedeng i-pinch para mag-zoom.
+  void _openPhoto() {
+    final String? src = _report.imageAsset;
+    if (src == null || src.isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              minScale: 1,
+              maxScale: 5,
+              child: src.startsWith('http')
+                  ? Image.network(src, fit: BoxFit.contain)
+                  : Image.asset(src, fit: BoxFit.contain),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget? _ownerBar() {
+    if (!widget.showOwnerActions || !ReportService.canChange(_report)) {
+      return null;
+    }
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(context.hPad, 10, context.hPad, 12),
+        decoration: const BoxDecoration(
+          color: kCream,
+          border: Border(top: BorderSide(color: Color(0xFFF5DEC8))),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _busy ? null : _editReport,
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Edit'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: kBlue,
+                  side: const BorderSide(color: kBlue),
+                  minimumSize: const Size(0, 48),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _busy ? null : _removeReport,
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: const Text('Remove'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: const BorderSide(color: Colors.red),
+                  minimumSize: const Size(0, 48),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -501,93 +718,102 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kCream,
+      bottomNavigationBar: _ownerBar(),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(context.hPad, 12, context.hPad, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_ios_new, color: ReportColors.blue),
-                  ),
-                  const Text('Reports',
-                      style: TextStyle(color: ReportColors.navy, fontSize: 28, fontWeight: FontWeight.w800)),
-                  // Report button (not shown on your own report)
-                  if (!_report.isMine) ...[
-                    const Spacer(),
+        child: RefreshIndicator(
+          onRefresh: _refresh,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(context.hPad, 12, context.hPad, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
                     IconButton(
-                      tooltip: 'Report this post',
-                      icon: const Icon(Icons.flag_outlined, color: ReportColors.grey),
-                      onPressed: () => showReportContentDialog(
-                        context,
-                        target: ReportTarget.strayReport,
-                        targetId: _report.id,
-                        targetTitle: _report.title,
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back_ios_new, color: ReportColors.blue),
+                    ),
+                    const Text('Reports',
+                        style: TextStyle(color: ReportColors.navy, fontSize: 28, fontWeight: FontWeight.w800)),
+                    // Report button (not shown on your own report)
+                    if (!_report.isMine) ...[
+                      const Spacer(),
+                      IconButton(
+                        tooltip: 'Report this post',
+                        icon: const Icon(Icons.flag_outlined, color: ReportColors.grey),
+                        onPressed: () => showReportContentDialog(
+                          context,
+                          target: ReportTarget.strayReport,
+                          targetId: _report.id,
+                          targetTitle: _report.title,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: _openPhoto,
+                      child: ReportImage(
+                          asset: _report.imageAsset, width: 150, height: 150),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          StatusChip(
+                            label: _report.urgency.label,
+                            color: urgencyColor(_report.urgency),
+                            fontSize: 18,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(_report.title,
+                              style: const TextStyle(
+                                  color: ReportColors.navy, fontSize: 22, fontWeight: FontWeight.w800)),
+                          const SizedBox(height: 6),
+                          Text(_report.distanceText,
+                              style: const TextStyle(color: ReportColors.grey, fontSize: 15)),
+                          Text(_report.dateText,
+                              style: const TextStyle(color: ReportColors.grey, fontSize: 15)),
+                        ],
                       ),
                     ),
                   ],
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ReportImage(asset: _report.imageAsset, width: 150, height: 150),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+                const SizedBox(height: 20),
+                _field('Animal Type', _report.animalType),
+                _field('Urgency Level', _report.urgency.label),
+                _field('Location', _report.location),
+                Center(
+                  child: OutlinedButton.icon(
+                    onPressed: _openDirections,
+                    icon: const Icon(Icons.navigation, color: ReportColors.navy),
+                    label: const Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        StatusChip(
-                          label: _report.urgency.label,
-                          color: urgencyColor(_report.urgency),
-                          fontSize: 18,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(_report.title,
-                            style: const TextStyle(
-                                color: ReportColors.navy, fontSize: 22, fontWeight: FontWeight.w800)),
-                        const SizedBox(height: 6),
-                        Text(_report.distanceText,
-                            style: const TextStyle(color: ReportColors.grey, fontSize: 15)),
-                        Text(_report.dateText,
-                            style: const TextStyle(color: ReportColors.grey, fontSize: 15)),
+                        Text('Get Directions', style: TextStyle(color: ReportColors.navy, fontSize: 17)),
+                        Text('Open in Google Maps', style: TextStyle(color: ReportColors.grey, fontSize: 12)),
                       ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              _field('Animal Type', _report.animalType),
-              _field('Urgency Level', _report.urgency.label),
-              _field('Location', _report.location),
-              Center(
-                child: OutlinedButton.icon(
-                  onPressed: _openDirections,
-                  icon: const Icon(Icons.navigation, color: ReportColors.navy),
-                  label: const Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Get Directions', style: TextStyle(color: ReportColors.navy, fontSize: 17)),
-                      Text('Open in Google Maps', style: TextStyle(color: ReportColors.grey, fontSize: 12)),
-                    ],
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 56),
-                    side: const BorderSide(color: Color(0xFFF5DEC8)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 56),
+                      side: const BorderSide(color: Color(0xFFF5DEC8)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 18),
-              if (_report.possiblyLostPet) _lostPetNotice(),
-              _field('Condition and Behavior', _report.descriptionOrDefault),
-              const SizedBox(height: 4),
-              _statusCard(),
-            ],
+                const SizedBox(height: 18),
+                if (_report.possiblyLostPet) _lostPetNotice(),
+                _field('Condition and Behavior', _report.descriptionOrDefault),
+                const SizedBox(height: 4),
+                _statusCard(),
+              ],
+            ),
           ),
         ),
       ),

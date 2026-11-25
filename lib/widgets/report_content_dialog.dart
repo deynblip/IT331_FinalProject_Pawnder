@@ -62,14 +62,23 @@ class _ReportDialogState extends State<_ReportDialog> {
     final reason = _reason;
     if (reason == null) return;
 
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _sending = true);
-    await ContentReportService.submit(
-      target: widget.target,
-      targetId: widget.targetId,
-      targetTitle: widget.targetTitle,
-      reason: reason,
-      details: _details.text.trim(),
-    );
+    try {
+      await ContentReportService.submit(
+        target: widget.target,
+        targetId: widget.targetId,
+        targetTitle: widget.targetTitle,
+        reason: reason,
+        details: _details.text.trim(),
+      );
+    } on StateError catch (e) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(e.message)));
+      if (mounted) Navigator.pop(context, false);
+      return;
+    }
     if (!mounted) return;
     Navigator.pop(context, true);
   }
