@@ -20,6 +20,16 @@ class PetPhoto extends StatelessWidget {
         errorBuilder: (_, _, _) => fallback,
       );
     }
+    if (path.startsWith('http')) {
+      // Photo from the database (Supabase Storage).
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        loadingBuilder: (_, child, progress) =>
+        progress == null ? child : fallback,
+        errorBuilder: (_, _, _) => fallback,
+      );
+    }
     if (kIsWeb) {
       // On web, the picked photo's path is a browser URL, not a real file.
       return Image.network(

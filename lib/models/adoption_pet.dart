@@ -48,6 +48,9 @@ class AdoptionPet {
   final String contactPhone;
   final String contactEmail;
 
+  /// Street / landmark (private: only the poster sees it when editing).
+  final String street;
+
   /// Admin review state. New posts start as pending.
   final PostStatus status;
 
@@ -85,6 +88,7 @@ class AdoptionPet {
     this.contactPerson = '',
     this.contactPhone = '',
     this.contactEmail = '',
+    this.street = '',
     this.status = PostStatus.pending,
     this.postedAt,
     this.rescuedBy,
@@ -147,6 +151,7 @@ class AdoptionPet {
       contactPerson: contactPerson ?? this.contactPerson,
       contactPhone: contactPhone ?? this.contactPhone,
       contactEmail: contactEmail ?? this.contactEmail,
+      street: street,
       status: newStatus,
       postedAt: postedAt,
       rescuedBy: rescuedBy,

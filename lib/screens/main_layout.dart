@@ -9,6 +9,7 @@ import 'adopt.dart';
 import 'profile.dart';
 import 'login.dart';
 import '../services/auth_service.dart';
+import '../services/adoption_service.dart';
 import 'notifications_screen.dart';
 import '../services/notification_service.dart';
 import 'drawer/about.dart';
@@ -370,6 +371,7 @@ class _MainLayoutState extends State<MainLayout> {
               _selectedIndex = index;
               if (index == 1) _showBulletin = false;
             });
+            if (index == 2) AdoptionService.load();
           },
           items: const [
             BottomNavigationBarItem(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../services/adoption_service.dart';
@@ -23,6 +25,25 @@ class _AdoptPageState extends State<AdoptPage> {
 
   // Second filter row: where the pet comes from (null = All).
   PetSource? _source;
+
+  // Quietly reloads the posts so a newly approved post shows up by itself.
+  Timer? _poll;
+
+  @override
+  void initState() {
+    super.initState();
+    AdoptionService.load();
+    _poll = Timer.periodic(
+      const Duration(seconds: 20),
+          (_) => AdoptionService.load(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    super.dispose();
+  }
 
   // Only ADMIN-APPROVED posts are shown here. Read fresh on every build.
   // Rescued Strays are always listed first (they are the priority).
@@ -149,17 +170,27 @@ class _AdoptPageState extends State<AdoptPage> {
               ),
             ),
             const SizedBox(height: 12),
-            Expanded(
-              child: items.isEmpty
-                  ? const Center(
-                child: Text(
-                  'No pets available right now.',
-                  style: TextStyle(color: kHintGray),
+        Expanded(
+          child: RefreshIndicator(
+            color: kBlue,
+            onRefresh: AdoptionService.load,
+            child: items.isEmpty
+                ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                SizedBox(height: 120),
+                Center(
+                  child: Text(
+                    'No pets available right now.',
+                    style: TextStyle(color: kHintGray),
+                  ),
                 ),
-              )
-                  : GridView.builder(
-                // extra bottom space so the + button doesn't cover the last row
-                padding: const EdgeInsets.only(bottom: 88),
+              ],
+            )
+                : GridView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              // extra bottom space so the + button doesn't cover the last row
+              padding: const EdgeInsets.only(bottom: 88),
                 itemCount: items.length,
                 // 2 columns on phones, 3 on wider screens.
                 gridDelegate:
@@ -169,9 +200,10 @@ class _AdoptPageState extends State<AdoptPage> {
                   mainAxisSpacing: 14,
                   childAspectRatio: 0.70,
                 ),
-                itemBuilder: (_, i) => AdoptionPetCard(
-                  pet: items[i],
-                  onViewDetails: () => _openDetails(items[i]),
+                  itemBuilder: (_, i) => AdoptionPetCard(
+                    pet: items[i],
+                    onViewDetails: () => _openDetails(items[i]),
+                  ),
                 ),
               ),
             ),
