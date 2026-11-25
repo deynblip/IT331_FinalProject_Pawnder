@@ -13,8 +13,10 @@ import 'login.dart';
 import '../services/auth_service.dart';
 import '../services/adoption_service.dart';
 import '../services/application_service.dart';
-import 'notifications_screen.dart';
 import '../services/notification_service.dart';
+import '../services/rescuer_service.dart';
+import '../services/response_service.dart';
+import 'notifications_screen.dart';
 import 'drawer/about.dart';
 import 'drawer/settings.dart';
 import 'drawer/help_support.dart';
@@ -51,9 +53,11 @@ class _MainLayoutState extends State<MainLayout> {
     _poll = Timer.periodic(
       const Duration(seconds: 20),
           (_) {
-        ApplicationService.load();
-        NotificationService.load();
-      },
+            ApplicationService.load();
+            NotificationService.load();
+            RescuerService.load(); // Pending / Verified / Not approved
+            ResponseService.loadMe(); // Verified permissions and rescue record
+          },
     );
   }
 

@@ -9,6 +9,7 @@ import '../../utils/app_colors.dart';
 import '../../widgets/adopt_pet_photo.dart';
 import '../../utils/responsive.dart';
 import '../../widgets/admin_top_bar.dart';
+import '../../widgets/refreshing_builder.dart';
 
 // ---------------------------------------------------------------- Helpers
 
@@ -289,12 +290,19 @@ class _AdminReportedScreenState extends State<AdminReportedScreen> {
             ),
             Expanded(
               // Rebuilds when a report or a post changes.
-              child: ListenableBuilder(
+              child: RefreshingBuilder(
                 listenable: Listenable.merge([
                   ContentReportService.changes,
                   AdoptionService.changes,
                   ReportService.changes,
                 ]),
+                onRefresh: () async {
+                  await Future.wait([
+                    ContentReportService.refresh(),
+                    AdoptionService.load(),
+                    ReportService.load(),
+                  ]);
+                },
                 builder: (context, _) {
                   final reports =
                   ContentReportService.all.where(_matches).toList();

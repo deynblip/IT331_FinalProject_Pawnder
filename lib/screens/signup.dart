@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
-import '../services/rescuer_service.dart';
 import '../utils/validators.dart';
 import '../utils/app_colors.dart';
 import '../widgets/auth_layout.dart';
@@ -304,20 +303,6 @@ class _SignUpPageState extends State<SignUpPage> {
       return;
     } finally {
       if (mounted) setState(() => _busy = false);
-    }
-
-    // TEMPORARY: also add it to the in-memory rescuer list so the current
-    // Rescuer screens keep working until they move to Supabase.
-    if (applying) {
-      RescuerService.submit(
-        email: email,
-        applicantName: nameController.text.trim(),
-        organization: _rescuer.organization.text,
-        roleInOrg: _rescuer.roleInOrg.text,
-        contactPerson: _rescuer.contactPerson.text,
-        contactNumber: _rescuer.contactNumber.text,
-        officialPage: _rescuer.officialPage.text,
-      );
     }
 
     if (!mounted) return;

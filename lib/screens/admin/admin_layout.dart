@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../services/adoption_service.dart';
 import '../../services/application_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/content_report_service.dart';
 import '../../services/rescuer_service.dart';
 import '../../services/notification_service.dart';
 import '../../utils/app_colors.dart';
@@ -33,11 +34,14 @@ class _AdminLayoutState extends State<AdminLayout> {
     AdoptionService.load();
     ApplicationService.load();
     NotificationService.load();
+    RescuerService.load();
+    ContentReportService.load();
   }
 
   @override
   void initState() {
     super.initState();
+    _reload();
     _poll = Timer.periodic(const Duration(seconds: 10), (_) => _reload());
   }
 
@@ -109,12 +113,14 @@ class _AdminLayoutState extends State<AdminLayout> {
           RescuerService.changes,
           AdoptionService.changes,
           ApplicationService.changes,
+          ContentReportService.changes,
         ]),
         builder: (context, _) {
           final pendingRescuers =
               RescuerService.pendingCount + RescuerService.flaggedCount;
           final pendingPosts = AdoptionService.pendingCount;
           final pendingApps = ApplicationService.pendingCount;
+          final pendingReports = ContentReportService.pendingCount;
 
           return BottomNavigationBar(
             currentIndex: _selectedIndex,
@@ -145,9 +151,9 @@ class _AdminLayoutState extends State<AdminLayout> {
                 activeIcon: _badged(Icons.insert_drive_file, pendingApps),
                 label: 'Application',
               ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.flag_outlined),
-                activeIcon: Icon(Icons.flag),
+              BottomNavigationBarItem(
+                icon: _badged(Icons.flag_outlined, pendingReports),
+                activeIcon: _badged(Icons.flag, pendingReports),
                 label: 'Reported',
               ),
               BottomNavigationBarItem(

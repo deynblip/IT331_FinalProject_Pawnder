@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'report_service.dart';
 import 'response_service.dart';
+import 'rescuer_service.dart';
 import 'adoption_service.dart';
 import 'application_service.dart';
 import 'content_report_service.dart';
@@ -142,6 +143,7 @@ class AuthService {
     ApplicationService.reset();
     ContentReportService.reset();
     NotificationService.reset();
+    RescuerService.reset();
   }
 
   static Future<void> signOut() async {

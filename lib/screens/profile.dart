@@ -381,12 +381,21 @@ class _ProfilePageState extends State<ProfilePage> {
             );
 
           case RescuerStatus.rejected:
+            final bool badgeRemoved =
+            (app!.rejectionReason ?? '').startsWith('Badge removed:');
+            final String reason = (app.rejectionReason ?? '-')
+                .replaceFirst('Badge removed:', '')
+                .trim();
             return _rescuerCard(
-              icon: Icons.cancel_outlined,
+              icon: badgeRemoved
+                  ? Icons.remove_moderator_outlined
+                  : Icons.cancel_outlined,
               color: const Color(0xFFE04F4F),
-              title: 'Rescuer application not approved',
-              message: 'Reason: ${app!.rejectionReason ?? '-'}\n'
-                  'You are still a regular user. You can apply again.',
+              title: badgeRemoved
+                  ? 'Verified Rescuer badge removed'
+                  : 'Rescuer application not approved',
+              message: 'Reason: $reason\n'
+                  'You are now a regular user. You can apply again.',
               buttonText: 'Apply Again',
               onPressed: () => _openRescuerForm(app),
             );

@@ -467,32 +467,6 @@ class ResponseService {
       return const _Gps.fail('Could not get your location.');
     }
   }
-
-  // ---------------------------------------------------------------- TEMPORARY
-  static final List<_SampleRecord> _sample = [
-    for (var i = 0; i < 5; i++) const _SampleRecord(rescued: true),
-    const _SampleRecord(rescued: false, unableToLocate: true),
-  ];
-
-  /// TEMPORARY (admin Rescuers screen only, until Batch 5).
-  static ResponderStats statsFor(String email) {
-    if (email.trim().toLowerCase() != 'maria.santos@example.com') {
-      return ResponderStats.empty;
-    }
-    return ResponderStats(
-      responses: _sample.length,
-      rescues: _sample.where((r) => r.rescued).length,
-      cancelled: 0,
-      unableToLocate: _sample.where((r) => r.unableToLocate).length,
-      checkIns: _sample.where((r) => r.rescued).length,
-    );
-  }
-}
-
-class _SampleRecord {
-  final bool rescued;
-  final bool unableToLocate;
-  const _SampleRecord({required this.rescued, this.unableToLocate = false});
 }
 
 class _Gps {
