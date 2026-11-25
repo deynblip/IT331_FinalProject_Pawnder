@@ -9,6 +9,7 @@ import '../models/stray_report.dart';
 import '../services/report_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/report_style.dart';
+import '../widgets/location_banner.dart';
 import '../widgets/report_card.dart';
 import 'report_details_screen.dart';
 
@@ -207,7 +208,9 @@ class _MapsPageState extends State<MapsPage> {
           ),
           const SizedBox(height: 12),
           Row(children: _radii.keys.map(_chip).toList()),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
+          const LocationBanner(),
+          const SizedBox(height: 4),
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),

@@ -1,3 +1,5 @@
+// File: lib/services/report_service.dart
+// (includes the Batch 4 reset() edits, so replace the WHOLE file)
 import 'dart:async';
 import 'dart:io';
 
@@ -33,6 +35,7 @@ class ReportService {
   static List<StrayReport> _reports = [];
   static bool _loaded = false;
   static Future<void>? _loading;
+  static int _generation = 0; // goes up on reset(), so old loads are ignored
 
   /// Message to show when the last load failed (null = no error).
   static String? loadError;
@@ -40,11 +43,26 @@ class ReportService {
   /// The phone's last known location (null = unknown or not allowed).
   static double? myLat;
   static double? myLng;
-  static bool _askedPermission = false;
+
+  /// Why the location is not available. Null = it works (or not tried yet).
+  /// 'ask' = the app has not asked for permission yet (shows a
+  /// "Use location" button first), 'denied' = the user said no,
+  /// 'forever' = "Don't ask again", 'off' = the phone's location is off.
+  static String? locationProblem;
 
   /// Goes up by one whenever the list changes.
   static final ValueNotifier<int> changes = ValueNotifier<int>(0);
   static void _notify() => changes.value++;
+
+  /// Forgets all cached reports (called on log out / before log in).
+  static void reset() {
+    _generation++;
+    _reports = [];
+    _loaded = false;
+    _loading = null;
+    loadError = null;
+    _notify();
+  }
 
   // ---------------------------------------------------------------- Reading
 
@@ -76,6 +94,7 @@ class ReportService {
   }
 
   static Future<void> _load() async {
+    final int gen = _generation;
     try {
       final List<Map<String, dynamic>> rows = await _db
           .from('stray_reports')
@@ -85,6 +104,7 @@ class ReportService {
           .limit(500);
 
       final Map<String, int> counts = await _activeResponderCounts();
+      if (gen != _generation) return; // account changed while loading
 
       _reports = rows
           .map((row) => _fromRow(row, counts[row['id']] ?? 0))
@@ -175,19 +195,36 @@ class ReportService {
   }
 
   /// Gets the phone's location and updates every report's distance.
-  /// If location is off or not allowed, distances show "Distance unknown".
-  static Future<void> refreshLocation() async {
+  ///
+  /// The permission pop-up is NEVER shown by itself. When the app has not
+  /// asked yet, [locationProblem] becomes 'ask' and the screens show a
+  /// "Use location" button. The pop-up appears only after the user taps it
+  /// ([userTapped] = true).
+  static Future<void> refreshLocation({bool userTapped = false}) async {
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) return;
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        locationProblem = 'off';
+        _notify();
+        return;
+      }
 
       LocationPermission permission = await Geolocator.checkPermission();
-      // Ask only once per app session (no repeated pop-ups).
-      if (permission == LocationPermission.denied && !_askedPermission) {
-        _askedPermission = true;
+      if (permission == LocationPermission.denied) {
+        if (!userTapped) {
+          locationProblem = 'ask';
+          _notify();
+          return;
+        }
         permission = await Geolocator.requestPermission();
       }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.deniedForever) {
+        locationProblem = 'forever';
+        _notify();
+        return;
+      }
+      if (permission == LocationPermission.denied) {
+        locationProblem = 'denied';
+        _notify();
         return;
       }
 
@@ -199,6 +236,7 @@ class ReportService {
       );
       myLat = pos.latitude;
       myLng = pos.longitude;
+      locationProblem = null;
 
       _reports = _reports
           .map((r) => r.copyWith(distanceKm: _distanceKm(r.lat, r.lng)))
@@ -206,6 +244,18 @@ class ReportService {
       _notify();
     } catch (e) {
       debugPrint('Location error: $e');
+    }
+  }
+
+  /// Called by the banner button: asks for permission (shows the pop-up),
+  /// or opens the phone's settings when the app can't ask anymore.
+  static Future<void> fixLocation() async {
+    if (locationProblem == 'off') {
+      await Geolocator.openLocationSettings();
+    } else if (locationProblem == 'forever') {
+      await Geolocator.openAppSettings();
+    } else {
+      await refreshLocation(userTapped: true);
     }
   }
 

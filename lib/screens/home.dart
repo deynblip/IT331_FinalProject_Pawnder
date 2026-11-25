@@ -5,6 +5,7 @@ import '../models/stray_report.dart';
 import '../widgets/report_card.dart';
 import 'report_details_screen.dart';
 import '../utils/responsive.dart';
+import '../widgets/location_banner.dart';
 import '../widgets/paw_banner.dart';
 
 class HomePage extends StatefulWidget {
@@ -179,6 +180,7 @@ class _HomePageState extends State<HomePage> {
 
           const SizedBox(height: 4),
 
+          const LocationBanner(),
           ListenableBuilder(
             listenable: ReportService.changes,
             builder: (context, _) {

@@ -11,8 +11,7 @@ import '../widgets/status_chip.dart';
 import 'application_details_screen.dart';
 import '../utils/responsive.dart';
 
-/// Applications submitted by the logged-in user
-/// (Profile > My Activity > Adoption Applications).
+
 class MyApplicationsScreen extends StatelessWidget {
   /// Called after this screen closes, to switch to the Adopt tab.
   final VoidCallback? onBrowseAdoptions;

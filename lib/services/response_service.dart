@@ -232,6 +232,13 @@ class ResponseService {
   static final ValueNotifier<int> changes = ValueNotifier<int>(0);
   static void _notify() => changes.value++;
 
+  /// Forgets the logged-in user's cached status and record.
+  static void reset() {
+    _myOrganization = null;
+    _myStats = ResponderStats.empty;
+    _notify();
+  }
+
   // ---------------------------------------------------------------- Me
 
   static String? _myOrganization;
@@ -246,7 +253,6 @@ class ResponseService {
   /// The logged-in user's Rescue Record (from the database).
   static ResponderStats get myStats => _myStats;
 
-  /// Loads the logged-in user's Verified Rescuer status and Rescue Record.
   static Future<void> loadMe() async {
     final String? me = AuthService.currentUserId;
     if (me == null) return;
@@ -257,10 +263,13 @@ class ResponseService {
           .eq('user_id', me)
           .eq('status', 'verified')
           .limit(1);
+      final Map<String, ResponderStats> stats = await _statsFor([me]);
+
+      // Another account may have logged in while this was loading.
+      if (me != AuthService.currentUserId) return;
+
       _myOrganization =
       apps.isEmpty ? null : apps.first['organization'] as String?;
-
-      final Map<String, ResponderStats> stats = await _statsFor([me]);
       _myStats = stats[me] ?? ResponderStats.empty;
       _notify();
     } catch (e) {

@@ -1,5 +1,9 @@
+// Ilagay sa: lib/services/auth_service.dart  (PALITAN ANG BUONG LAMAN)
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'report_service.dart';
+import 'response_service.dart';
 
 // ===============================
 // AUTH SERVICE (Supabase)
@@ -21,6 +25,9 @@ class AuthFailure implements Exception {
   String toString() => message;
 }
 
+/// Result of checking the saved session when the app opens.
+enum SessionStatus { none, ready, offline, restricted }
+
 class AuthService {
   static SupabaseClient get _db => Supabase.instance.client;
 
@@ -34,6 +41,10 @@ class AuthService {
   static bool _isAdmin = false;
   static bool _isRestricted = false;
   static int _userCount = 0;
+
+  // True only while someone is logged in and their profile is loaded.
+  static bool _sessionActive = false;
+  static bool get sessionActive => _sessionActive;
 
   // Names of accounts used on this device. TEMPORARY: lets the in-memory
   // services (reports, responses, rescuers) still show names until they
@@ -64,24 +75,74 @@ class AuthService {
 
   /// Logs in and loads the user's profile. Throws [AuthFailure].
   static Future<void> logIn(String email, String password) async {
+    endSession(); // forget the previous account's data first
     await _run(() => _db.auth.signInWithPassword(
       email: email.trim(),
       password: password,
     ));
     await _loadProfile();
+    if (_isRestricted) {
+      await signOut();
+      throw const AuthFailure('Your account has been restricted.');
+    }
+    _sessionActive = true;
+  }
+
+  /// App start: checks the session saved on the phone.
+  /// Only logs out when the SERVER says the session is invalid, the
+  /// account was deleted, or it is restricted. No internet = offline.
+  static Future<SessionStatus> restoreSession() async {
+    if (_user == null) return SessionStatus.none;
+    try {
+      await _db.auth.getUser();
+      await _fetchProfile();
+    } on AuthException catch (e) {
+      final String? s = e.statusCode;
+      if (s == '401' || s == '403' || s == '404') {
+        await signOut();
+        return SessionStatus.none;
+      }
+      return SessionStatus.offline;
+    } on PostgrestException catch (e) {
+      if (e.code == 'PGRST116') {
+        // No profile row: the account was deleted.
+        await signOut();
+        return SessionStatus.none;
+      }
+      return SessionStatus.offline;
+    } catch (e) {
+      debugPrint('Restore session error: $e');
+      return SessionStatus.offline;
+    }
+
+    if (_isRestricted) {
+      await signOut();
+      return SessionStatus.restricted;
+    }
+    _sessionActive = true;
+    return SessionStatus.ready;
+  }
+
+  /// Clears everything remembered about the logged-in user (details and
+  /// cached reports/stats) so the next account never sees old data.
+  static void endSession() {
+    _name = null;
+    _isAdmin = false;
+    _isRestricted = false;
+    _userCount = 0;
+    _sessionActive = false;
+    ReportService.reset();
+    ResponseService.reset();
   }
 
   static Future<void> signOut() async {
+    endSession();
     try {
       await _db.auth.signOut();
     } catch (e) {
       // Still logged out on this phone even if the server can't be reached.
       debugPrint('Sign out error: $e');
     }
-    _name = null;
-    _isAdmin = false;
-    _isRestricted = false;
-    _userCount = 0;
   }
 
   // ---------------------------------------------------------------- Sign up
@@ -168,21 +229,27 @@ class AuthService {
 
   // ---------------------------------------------------------------- Profile
 
+  /// Loads the profile. Throws the raw error if it fails.
+  static Future<void> _fetchProfile() async {
+    final Map<String, dynamic> row = await _db
+        .from('profiles')
+        .select('full_name, role, is_restricted')
+        .eq('id', currentUserId!)
+        .single();
+
+    _name = row['full_name'] as String?;
+    _isAdmin = row['role'] == 'admin';
+    _isRestricted = row['is_restricted'] == true;
+    if (currentEmail != null && _name != null) {
+      _knownNames[currentEmail!] = _name!;
+    }
+    if (_isAdmin) await refreshUserCount();
+  }
+
+  /// Used by Log In: logs out and shows a message if it fails.
   static Future<void> _loadProfile() async {
     try {
-      final Map<String, dynamic> row = await _db
-          .from('profiles')
-          .select('full_name, role, is_restricted')
-          .eq('id', currentUserId!)
-          .single();
-
-      _name = row['full_name'] as String?;
-      _isAdmin = row['role'] == 'admin';
-      _isRestricted = row['is_restricted'] == true;
-      if (currentEmail != null && _name != null) {
-        _knownNames[currentEmail!] = _name!;
-      }
-      if (_isAdmin) await refreshUserCount();
+      await _fetchProfile();
     } catch (e) {
       debugPrint('Load profile error: $e');
       await signOut();
