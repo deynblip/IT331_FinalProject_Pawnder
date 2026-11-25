@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../services/adoption_service.dart';
+import '../../services/application_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/rescuer_service.dart';
 import '../../utils/app_colors.dart';
@@ -23,6 +26,24 @@ class AdminLayout extends StatefulWidget {
 
 class _AdminLayoutState extends State<AdminLayout> {
   int _selectedIndex = 0;
+  Timer? _poll;
+
+  void _reload() {
+    AdoptionService.load();
+    ApplicationService.load();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _poll = Timer.periodic(const Duration(seconds: 10), (_) => _reload());
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    super.dispose();
+  }
 
   Future<void> _confirmLogout() async {
     final bool? confirmed = await showDialog<bool>(
@@ -85,11 +106,13 @@ class _AdminLayoutState extends State<AdminLayout> {
         listenable: Listenable.merge([
           RescuerService.changes,
           AdoptionService.changes,
+          ApplicationService.changes,
         ]),
         builder: (context, _) {
           final pendingRescuers =
               RescuerService.pendingCount + RescuerService.flaggedCount;
           final pendingPosts = AdoptionService.pendingCount;
+          final pendingApps = ApplicationService.pendingCount;
 
           return BottomNavigationBar(
             currentIndex: _selectedIndex,
@@ -100,7 +123,10 @@ class _AdminLayoutState extends State<AdminLayout> {
             showUnselectedLabels: true,
             selectedFontSize: 11,
             unselectedFontSize: 11,
-            onTap: (i) => setState(() => _selectedIndex = i),
+            onTap: (i) {
+              setState(() => _selectedIndex = i);
+              _reload();
+            },
             items: [
               const BottomNavigationBarItem(
                 icon: Icon(Icons.home_outlined),
@@ -112,9 +138,9 @@ class _AdminLayoutState extends State<AdminLayout> {
                 activeIcon: _badged(Icons.pets, pendingPosts),
                 label: 'Posts',
               ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.insert_drive_file_outlined),
-                activeIcon: Icon(Icons.insert_drive_file),
+              BottomNavigationBarItem(
+                icon: _badged(Icons.insert_drive_file_outlined, pendingApps),
+                activeIcon: _badged(Icons.insert_drive_file, pendingApps),
                 label: 'Application',
               ),
               const BottomNavigationBarItem(

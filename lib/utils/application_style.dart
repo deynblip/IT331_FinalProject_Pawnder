@@ -8,6 +8,7 @@ Color applicationStatusColor(ApplicationStatus s) => switch (s) {
   ApplicationStatus.forwardedToOwner => ReportColors.blue,
   ApplicationStatus.approved => ReportColors.green,
   ApplicationStatus.rejected => ReportColors.red,
+  ApplicationStatus.withdrawn => const Color(0xFF7A7A7A),
 };
 
 /// Plain-language explanation shown on the Application Details screen.
@@ -22,4 +23,6 @@ String applicationStatusMessage(AdoptionApplication a) => switch (a.status) {
   'Good news! Your application for ${a.petName} was approved.',
   ApplicationStatus.rejected =>
   'Unfortunately, your application for ${a.petName} was not approved.',
+  ApplicationStatus.withdrawn =>
+  'You withdrew this application. It is no longer being reviewed.',
 };

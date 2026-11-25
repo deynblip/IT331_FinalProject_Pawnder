@@ -7,6 +7,7 @@ import '../utils/app_colors.dart';
 import '../utils/application_style.dart';
 import '../utils/report_style.dart';
 import '../widgets/adopt_pet_photo.dart';
+import '../widgets/refreshing_builder.dart';
 import '../widgets/status_chip.dart';
 import 'application_details_screen.dart';
 import '../utils/responsive.dart';
@@ -46,9 +47,10 @@ class MyApplicationsScreen extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: context.hPad),
           // Rebuilds by itself when an application is added or changed.
-          child: ValueListenableBuilder<int>(
-            valueListenable: ApplicationService.changes,
-            builder: (context, _, _) {
+          child: RefreshingBuilder(
+            listenable: ApplicationService.changes,
+            onRefresh: ApplicationService.refresh,
+            builder: (context, _) {
               final items = ApplicationService.forCurrentUser();
 
               return Column(
@@ -125,6 +127,7 @@ class MyApplicationsScreen extends StatelessWidget {
                             MaterialPageRoute(
                               builder: (_) => ApplicationDetailsScreen(
                                 application: items[i],
+                                showOwnerActions: true,
                               ),
                             ),
                           ),

@@ -6,6 +6,7 @@ import '../../utils/app_colors.dart';
 import '../../widgets/adopt_pet_photo.dart';
 import '../../utils/responsive.dart';
 import '../../widgets/admin_top_bar.dart';
+import '../../widgets/refreshing_builder.dart';
 
 // ---------------------------------------------------------------- Helpers
 
@@ -353,9 +354,10 @@ class _AdminPostsScreenState extends State<AdminPostsScreen> {
             ),
             Expanded(
               // Rebuilds whenever a post is added, edited or reviewed.
-              child: ValueListenableBuilder<int>(
-                valueListenable: AdoptionService.changes,
-                builder: (context, _, _) {
+              child: RefreshingBuilder(
+                listenable: AdoptionService.changes,
+                onRefresh: AdoptionService.load,
+                builder: (context, _) {
                   final pets =
                   AdoptionService.all.where(_matches).toList();
 

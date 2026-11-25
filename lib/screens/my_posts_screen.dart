@@ -7,6 +7,7 @@ import '../services/application_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/application_style.dart';
 import '../widgets/adopt_pet_photo.dart';
+import '../widgets/refreshing_builder.dart';
 import '../widgets/status_chip.dart';
 import 'owner_application_screen.dart';
 import 'post_pet_screen.dart';
@@ -141,11 +142,17 @@ class MyPostsScreen extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: context.hPad),
           // Rebuilds by itself when a post or an application changes.
-          child: ListenableBuilder(
+          child: RefreshingBuilder(
             listenable: Listenable.merge([
               AdoptionService.changes,
               ApplicationService.changes,
             ]),
+            onRefresh: () async {
+              await Future.wait([
+                AdoptionService.load(),
+                ApplicationService.refresh(),
+              ]);
+            },
             builder: (context, _) {
               final pets = AdoptionService.mine;
               final requests = ApplicationService.forMyPets();

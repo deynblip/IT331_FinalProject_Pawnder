@@ -11,6 +11,7 @@ import '../widgets/rescuer_badge.dart';
 import '../models/content_report.dart';
 import '../widgets/report_content_dialog.dart';
 import '../utils/responsive.dart';
+import '../widgets/pet_contact_buttons.dart';
 
 class AdoptionDetailsScreen extends StatelessWidget {
   final AdoptionPet pet;
@@ -284,24 +285,7 @@ class AdoptionDetailsScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const Tooltip(
-                          message:
-                          'Available after your application passes screening',
-                          triggerMode: TooltipTriggerMode.tap,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                onPressed: null,
-                                icon: Icon(Icons.mail_outline),
-                              ),
-                              IconButton(
-                                onPressed: null,
-                                icon: Icon(Icons.phone_outlined),
-                              ),
-                            ],
-                          ),
-                        ),
+                        PetContactButtons(pet: pet),
                       ],
                     ),
                     const SizedBox(height: 16),

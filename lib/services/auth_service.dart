@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'report_service.dart';
 import 'response_service.dart';
 import 'adoption_service.dart';
+import 'application_service.dart';
 
 // ===============================
 // AUTH SERVICE (Supabase)
@@ -137,6 +138,7 @@ class AuthService {
     ReportService.reset();
     ResponseService.reset();
     AdoptionService.reset();
+    ApplicationService.reset();
   }
 
   static Future<void> signOut() async {
