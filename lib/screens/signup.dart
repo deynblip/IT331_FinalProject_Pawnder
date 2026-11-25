@@ -369,8 +369,10 @@ class _SignUpPageState extends State<SignUpPage> {
                 label: 'Password',
                 controller: passwordController,
                 obscure: true,
-                validator: validatePassword,
+                validator: validateNewPassword,
+                onChanged: (_) => setState(() {}),
               ),
+              PasswordChecklist(password: passwordController.text),
 
               const SizedBox(height: 14),
 
