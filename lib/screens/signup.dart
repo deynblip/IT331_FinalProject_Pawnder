@@ -9,6 +9,7 @@ import '../widgets/auth_widgets.dart';
 import '../widgets/rescuer_form.dart';
 
 import 'login.dart';
+import 'verify_email.dart';
 
 // ===============================
 // SIGN UP PAGE
@@ -279,15 +280,12 @@ class _SignUpPageState extends State<SignUpPage> {
 
     final email = emailController.text.trim();
 
-    // Professional Rescuer: the account is a regular one until the admin
-    // approves the application (status = Pending Verification).
     final bool applying = _accountType == AccountType.professional;
 
-    // Create the account in Supabase. For Professional Rescuers, the
-    // database also saves their Verified Rescuer application.
+    bool needsCode = false; // true = the user must enter the emailed code
     setState(() => _busy = true);
     try {
-      await AuthService.signUp(
+      needsCode = await AuthService.signUp(
         name: nameController.text,
         email: email,
         password: passwordController.text,
@@ -323,6 +321,21 @@ class _SignUpPageState extends State<SignUpPage> {
     }
 
     if (!mounted) return;
+
+    // Confirm email is ON: go to the Enter code screen.
+    if (needsCode) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VerifyEmailPage(
+            email: email,
+            applying: applying,
+          ),
+        ),
+      );
+      return;
+    }
+
     showMessage(
       context,
       applying

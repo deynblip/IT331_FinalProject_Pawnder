@@ -19,7 +19,9 @@ import 'response_service.dart';
 /// An error with a message that can be shown to the user as-is.
 class AuthFailure implements Exception {
   final String message;
-  const AuthFailure(this.message);
+  final bool emailNotConfirmed;
+
+  const AuthFailure(this.message, {this.emailNotConfirmed = false});
 
   @override
   String toString() => message;
@@ -152,9 +154,10 @@ class AuthService {
   /// application. Keys: organization, role_in_org, contact_person,
   /// contact_number, official_page. Throws [AuthFailure].
   ///
-  /// The user is logged out afterwards because the app asks new users to
-  /// log in.
-  static Future<void> signUp({
+  /// Returns true when the user must now enter the code that was emailed
+  /// (Confirm email is ON in Supabase). Returns false when Confirm email is
+  /// OFF: then the user is logged out and the app asks them to log in.
+  static Future<bool> signUp({
     required String name,
     required String email,
     required String password,
@@ -178,7 +181,41 @@ class AuthService {
     }
 
     _knownNames[email.trim().toLowerCase()] = name.trim();
+
+    // Confirm email ON: there is no session yet. The user enters the code.
+    if (res.session == null) return true;
+
+    // Confirm email OFF: log out, the app asks the user to log in.
     await signOut();
+    return false;
+  }
+
+  /// Sign up, step 2: checks the code from the email. When it is right the
+  /// email is verified and the user is logged in. Throws [AuthFailure].
+  static Future<void> verifyEmailCode({
+    required String email,
+    required String code,
+  }) async {
+    endSession(); // forget the previous account's data first
+    await _run(() => _db.auth.verifyOTP(
+      type: OtpType.signup,
+      email: email.trim(),
+      token: code.trim(),
+    ));
+    await _loadProfile();
+    if (_isRestricted) {
+      await signOut();
+      throw const AuthFailure('Your account has been restricted.');
+    }
+    _sessionActive = true;
+  }
+
+  /// Sends a new verification code to the email.
+  static Future<void> resendSignupCode(String email) async {
+    await _run(() => _db.auth.resend(
+      type: OtpType.signup,
+      email: email.trim(),
+    ));
   }
 
   // ---------------------------------------------------------------- Passwords
@@ -281,7 +318,10 @@ class AuthService {
       return await call();
     } on AuthException catch (e) {
       debugPrint('Auth error: ${e.code} ${e.statusCode} ${e.message}');
-      throw AuthFailure(_friendly(e));
+      throw AuthFailure(
+        _friendly(e),
+        emailNotConfirmed: e.code == 'email_not_confirmed',
+      );
     } catch (e) {
       debugPrint('Auth error: $e');
       throw AuthFailure(_isNetworkError(e)

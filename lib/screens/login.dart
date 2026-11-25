@@ -8,6 +8,7 @@ import '../widgets/auth_widgets.dart';
 import 'signup.dart';
 import 'forgot_password.dart';
 import 'main_layout.dart';
+import 'verify_email.dart';
 
 // ===============================
 // LOG IN PAGE
@@ -38,6 +39,21 @@ class _LoginPageState extends State<LoginPage> {
 
   bool _busy = false;
 
+  // The email is not verified yet: send a new code, then show Enter code.
+  Future<void> _goToVerify(String email) async {
+    try {
+      await AuthService.resendSignupCode(email);
+    } on AuthFailure catch (_) {
+      // Too soon for a new email? The user can still use the earlier code.
+    }
+    if (!mounted) return;
+    showMessage(context, 'Please verify your email first. Enter the code we sent you.');
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => VerifyEmailPage(email: email)),
+    );
+  }
+
   Future<void> _logIn() async {
     if (_busy) return;
 
@@ -52,9 +68,14 @@ class _LoginPageState extends State<LoginPage> {
     try {
       await AuthService.logIn(email, password);
     } on AuthFailure catch (e) {
-      if (mounted) showMessage(context, e.message);
+      if (!mounted) return;
+      if (e.emailNotConfirmed) {
+        await _goToVerify(email);
+        return;
+      }
+      showMessage(context, e.message);
       return;
-    } finally {
+  } finally {
       if (mounted) setState(() => _busy = false);
     }
     if (!mounted) return;
