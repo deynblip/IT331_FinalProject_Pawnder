@@ -132,7 +132,7 @@ class _MapsPageState extends State<MapsPage> {
           child: Container(
             alignment: Alignment.center,padding: const EdgeInsets.symmetric(vertical: 7),
             decoration: BoxDecoration(
-              color: selected ? kBlue : Colors.white,
+              color: selected ? kBlue : kSurfaceWhite,
               border: Border.all(color: selected ? kBlue : kNavy, width: 1.5),
               borderRadius: BorderRadius.circular(30),
             ),
@@ -210,7 +210,7 @@ class _MapsPageState extends State<MapsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(left: 4),
             child: Text(
               'Map',
@@ -311,7 +311,7 @@ class _MapsPageState extends State<MapsPage> {
                                   'Loading reports...')
                                   : 'No reports in this range.',
                               textAlign: TextAlign.center,
-                              style: const TextStyle(color: kHintGray),
+                              style: TextStyle(color: kHintGray),
                             ),
                           ),
                         const SizedBox(height: 8),

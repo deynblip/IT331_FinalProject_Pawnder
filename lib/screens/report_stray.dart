@@ -337,7 +337,7 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
       await showDialog<void>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text(
+          title: Text(
             'Report submitted',
             style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
           ),
@@ -388,7 +388,7 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back_ios_new, color: kBlue),
                   ),
-                  const Text(
+                  Text(
                     'Report a Stray',
                     style: TextStyle(
                       fontSize: 22,
@@ -424,7 +424,7 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
                     const SizedBox(height: 20),
                     _SectionTitle('Location', key: _locationKey, required: true),
                     const SizedBox(height: 2),
-                    const Text(
+                    Text(
                       "Pinpoint the animal's location to help rescuers find it.",
                       style: TextStyle(fontSize: 12, color: kHintGray),
                     ),
@@ -496,13 +496,13 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
             const SizedBox(height: 4),
             Text(
               count == 0 ? 'Add photos' : 'Add another photo',
-              style: const TextStyle(
+              style: TextStyle(
                   fontWeight: FontWeight.w800, color: kNavy),
             ),
             Text(
               'Take a photo or choose from gallery '
                   '($count/${ReportService.maxPhotos})',
-              style: const TextStyle(fontSize: 12, color: kHintGray),
+              style: TextStyle(fontSize: 12, color: kHintGray),
             ),
           ],
         ),
@@ -561,7 +561,7 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
           selected: selected,
           showCheckmark: false,
           selectedColor: kBlue,
-          backgroundColor: Colors.white,
+          backgroundColor: kSurfaceWhite,
           side: const BorderSide(color: kBlue),
           labelStyle: TextStyle(color: selected ? Colors.white : kBlue),
           onSelected: (_) => setState(() => _draft.animalType = type),
@@ -642,7 +642,7 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
                   ? Container(
                 color: kPeach,
                 alignment: Alignment.center,
-                child: const Column(
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.map_outlined, size: 40, color: kBlue),
@@ -772,9 +772,9 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
       decoration: InputDecoration(
         hintText:
         'e.g. limping, wound on leg, very thin; scared but not aggressive',
-        hintStyle: const TextStyle(color: kHintGray),
+        hintStyle: TextStyle(color: kHintGray),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: kSurfaceWhite,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey.shade300),
@@ -798,11 +798,11 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
       contentPadding: EdgeInsets.zero,
       controlAffinity: ListTileControlAffinity.leading,
       activeColor: kBlue,
-      title: const Text(
+      title: Text(
         "Has a collar / looks like someone's pet",
         style: TextStyle(color: kNavy, fontSize: 14),
       ),
-      subtitle: const Text(
+      subtitle: Text(
         'Responders will be reminded that it may be a lost pet.',
         style: TextStyle(color: kHintGray, fontSize: 12),
       ),
@@ -900,7 +900,7 @@ class _LocationPickerPageState extends State<_LocationPickerPage> {
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back_ios_new, color: kBlue),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Pin the location',
                       style: TextStyle(
@@ -915,7 +915,7 @@ class _LocationPickerPageState extends State<_LocationPickerPage> {
             ),
             Padding(
               padding: EdgeInsets.fromLTRB(pad, 0, pad, 10),
-              child: const Text(
+              child: Text(
                 'Tap the map where you saw the animal.',
                 style: TextStyle(fontSize: 12, color: kHintGray),
               ),
@@ -1091,7 +1091,7 @@ class _BottomBar extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(pad, 12, pad, 12),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: kCream,
         border: Border(top: BorderSide(color: kCardBorder)),
       ),

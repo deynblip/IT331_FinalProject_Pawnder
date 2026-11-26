@@ -37,7 +37,7 @@ class _PhotoGalleryState extends State<PhotoGallery> {
   Widget _fallback() {
     return Container(
       color: kPeach,
-      child: const Center(
+      child: Center(
         child: Icon(Icons.pets, size: 48, color: ReportColors.grey),
       ),
     );

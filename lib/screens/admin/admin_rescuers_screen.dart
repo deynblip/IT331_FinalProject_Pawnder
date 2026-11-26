@@ -99,7 +99,7 @@ class _AdminRescuersScreenState extends State<AdminRescuersScreen> {
               children: [
                 Padding(
                   padding: EdgeInsets.fromLTRB(context.hPad, 8, context.hPad, 0),
-                  child: const Column(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       AdminTopBar(),
@@ -135,7 +135,7 @@ class _AdminRescuersScreenState extends State<AdminRescuersScreen> {
                     builder: (context, _) {
                       final items = RescuerService.byStatus(_tab);
                       if (items.isEmpty) {
-                        return const Center(
+                        return Center(
                           child: Text(
                             'No applications here.',
                             style: TextStyle(color: kHintGray),
@@ -205,7 +205,7 @@ class _ApplicationCard extends StatelessWidget {
                     app.organization,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: kNavy,
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
@@ -215,12 +215,12 @@ class _ApplicationCard extends StatelessWidget {
                     '${app.applicantName} · ${app.roleInOrg}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: kHintGray, fontSize: 13),
+                    style: TextStyle(color: kHintGray, fontSize: 13),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Submitted ${_dateText(app.submittedAt)}',
-                    style: const TextStyle(color: kHintGray, fontSize: 11),
+                    style: TextStyle(color: kHintGray, fontSize: 11),
                   ),
                   if (RescuerService.isFlagged(app.email)) ...[
                     const SizedBox(height: 4),
@@ -279,12 +279,12 @@ class _RescuerDetailSheet extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(color: kHintGray, fontSize: 12),
+            style: TextStyle(color: kHintGray, fontSize: 12),
           ),
           const SizedBox(height: 2),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               color: kNavy,
               fontSize: 15,
               fontWeight: FontWeight.w600,
@@ -386,7 +386,7 @@ class _RescuerDetailSheet extends StatelessWidget {
           children: [
             Text(
               app.organization,
-              style: const TextStyle(
+              style: TextStyle(
                 color: kNavy,
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
@@ -395,7 +395,7 @@ class _RescuerDetailSheet extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'Submitted ${_dateText(app.submittedAt)}',
-              style: const TextStyle(color: kHintGray, fontSize: 12),
+              style: TextStyle(color: kHintGray, fontSize: 12),
             ),
             const SizedBox(height: 18),
 
@@ -423,7 +423,7 @@ class _RescuerDetailSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Track record on Pawnder',
                     style: TextStyle(
                       color: kNavy,
@@ -432,7 +432,7 @@ class _RescuerDetailSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   if (stats.responses == 0)
-                    const Text(
+                    Text(
                       'No responses yet.',
                       style: TextStyle(color: kHintGray, fontSize: 13),
                     )
@@ -446,7 +446,7 @@ class _RescuerDetailSheet extends StatelessWidget {
                           '(${stats.cancelRateText})\n'
                           'Unable to locate: ${stats.unableToLocate}\n'
                           'Check-in rate: ${stats.checkInRate}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: kNavy,
                         fontSize: 13,
                         height: 1.5,
@@ -456,7 +456,7 @@ class _RescuerDetailSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'Confirm the applicant with the organization through its '
                   'official page or contact details before approving.',
               style: TextStyle(color: kHintGray, fontSize: 12, height: 1.4),
@@ -561,7 +561,7 @@ class _RejectDialogState extends State<_RejectDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
         widget.title ?? 'Reject ${widget.applicantName}?',
-        style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+        style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
       ),
       content: TextField(
         controller: _reason,

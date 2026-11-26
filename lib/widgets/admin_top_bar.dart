@@ -10,7 +10,7 @@ import '../utils/app_colors.dart';
 const LinearGradient kAdminGradient = LinearGradient(
   begin: Alignment.topCenter,
   end: Alignment.bottomCenter,
-  colors: [kPeach, kCream],
+  colors: [Color(0xFFFFE8D6), Color(0xFFFFF6EC)], // fixed light: admin stays light
   stops: [0.0, 0.35],
 );
 
@@ -28,7 +28,7 @@ class AdminTopBar extends StatelessWidget {
           children: [
             IconButton(
               tooltip: 'Menu',
-              icon: const Icon(Icons.menu, color: kNavy),
+              icon: Icon(Icons.menu, color: kNavy),
               onPressed: () => Scaffold.of(context).openDrawer(),
             ),
             Expanded(
@@ -45,7 +45,7 @@ class AdminTopBar extends StatelessWidget {
                   icon: Badge(
                     isLabelVisible: unread > 0,
                     label: Text('$unread'),
-                    child: const Icon(
+                    child: Icon(
                       Icons.notifications_none,
                       color: kNavy,
                     ),

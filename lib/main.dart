@@ -16,8 +16,9 @@ import 'utils/theme_controller.dart';
 /// Lets us change screens from outside a widget (used when the session ends).
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await loadDarkPref(); // saved dark / light choice
 
   // Show the app right away; the database connects while the loading screen shows.
   runApp(PawnderApp(backendReady: _initBackend()));
@@ -58,6 +59,19 @@ void _listenForEndedSession() {
   });
 }
 
+ThemeMode _shownMode = ThemeMode.light;
+
+/// Colors come from getters in app_colors.dart, so after the theme flips we
+/// mark every screen dirty once and each one re-reads its colors.
+void _rebuildAllScreens() {
+  void mark(Element e) {
+    e.markNeedsBuild();
+    e.visitChildren(mark);
+  }
+
+  (navigatorKey.currentContext as Element?)?.visitChildren(mark);
+}
+
 class PawnderApp extends StatelessWidget {
   final Future<void>? backendReady;
 
@@ -68,6 +82,10 @@ class PawnderApp extends StatelessWidget {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeModeNotifier,
       builder: (context, mode, _) {
+        if (mode != _shownMode) {
+          _shownMode = mode;
+          WidgetsBinding.instance.addPostFrameCallback((_) => _rebuildAllScreens());
+        }
         return MaterialApp(
           navigatorKey: navigatorKey,
           debugShowCheckedModeBanner: false,

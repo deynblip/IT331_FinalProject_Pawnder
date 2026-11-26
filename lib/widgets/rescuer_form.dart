@@ -27,10 +27,10 @@ class AccountTypeSelector extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFFFFE8D6) : Colors.white,
+            color: selected ? kPeach : kSurfaceWhite,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: selected ? kBlue : const Color(0xFFF5DEC8),
+              color: selected ? kBlue : kCardBorder,
               width: selected ? 2 : 1,
             ),
           ),
@@ -59,7 +59,7 @@ class AccountTypeSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
+        Padding(
           padding: EdgeInsets.only(left: 4),
           child: Text(
             'Account Type',
@@ -93,7 +93,7 @@ class RescuerPendingNote extends StatelessWidget {
         color: kPeach,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.info_outline, color: kBlue, size: 18),

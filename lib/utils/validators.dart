@@ -72,7 +72,7 @@ void showMessage(BuildContext context, String message) {
       SnackBar(
         content: Text(message),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: kNavy,
+        backgroundColor: kNavyFill,
       ),
     );
 }
@@ -85,7 +85,7 @@ void showAuthMessage(BuildContext context, String message) {
       SnackBar(
         content: Text(message),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: kNavy,
+        backgroundColor: kNavyFill,
         margin: EdgeInsets.fromLTRB(16, 0, 16, keyboard + 16),
       ),
     );

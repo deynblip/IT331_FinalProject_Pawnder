@@ -51,7 +51,11 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => PushService.openPendingTap());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      applySavedMode(); // user side: use the saved dark / light choice
+      PushService.openPendingTap();
+    });
+
     _poll = Timer.periodic(
       const Duration(seconds: 20),
           (_) {

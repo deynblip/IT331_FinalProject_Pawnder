@@ -153,7 +153,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
           _editing
               ? 'Save changes to your application for ${widget.pet.name}?'
               : 'Submit your application for ${widget.pet.name}?',
-          style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+          style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
         ),
         content: Text(
           '${_fullName.text.trim()}\n'
@@ -227,7 +227,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
       await showDialog<void>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text(
+          title: Text(
             'Application sent!',
             style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
           ),
@@ -317,7 +317,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
               padding: EdgeInsets.fromLTRB(pad + 40, 0, pad, 4),
               child: Text(
                 'Applying for ${widget.pet.name}',
-                style: const TextStyle(fontSize: 13, color: kHintGray),
+                style: TextStyle(fontSize: 13, color: kHintGray),
               ),
             ),
 
@@ -347,7 +347,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
                     const SizedBox(height: 16),
                     _buildIdAgreement(),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       'Your application will be screened by an admin before '
                           'it is forwarded to the pet owner.',
                       style: TextStyle(fontSize: 12, color: kHintGray),
@@ -361,7 +361,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
             Container(
               width: double.infinity,
               padding: EdgeInsets.fromLTRB(pad, 12, pad, 12),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: kCream,
                 border: Border(top: BorderSide(color: kCardBorder)),
               ),
@@ -414,12 +414,12 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
             contentPadding: EdgeInsets.zero,
             controlAffinity: ListTileControlAffinity.leading,
             activeColor: kBlue,
-            title: const Text(
+            title: Text(
               'I agree to present a valid ID during the in-person meet-up or '
                   'turnover.',
               style: TextStyle(color: kNavy, fontSize: 14),
             ),
-            subtitle: const Text(
+            subtitle: Text(
               'Required. Your ID is checked in person and is not uploaded or '
                   'stored in the app.',
               style: TextStyle(color: kHintGray, fontSize: 12),
@@ -540,7 +540,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
           _sectionHeading('Living Environment'),
           const SizedBox(height: 12),
           _title('Home Environment', required: true),
-          const Text(
+          Text(
             'Describe the space where the pet will stay.',
             style: TextStyle(fontSize: 12, color: kHintGray),
           ),
@@ -555,7 +555,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
           ),
           const SizedBox(height: 14),
           _title('Household Members', required: true),
-          const Text(
+          Text(
             'Who will be living with the adopted pet?',
             style: TextStyle(fontSize: 12, color: kHintGray),
           ),
@@ -572,7 +572,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
           _sectionHeading('Pet Ownership Experience'),
           const SizedBox(height: 12),
           _title('Previous or Current Pets', required: true),
-          const Text(
+          Text(
             'List the pets you currently own or have cared for.',
             style: TextStyle(fontSize: 12, color: kHintGray),
           ),
@@ -587,7 +587,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
           ),
           const SizedBox(height: 14),
           _title('Pet Care Experience', required: true),
-          const Text(
+          Text(
             'Briefly describe your experience in caring for animals.',
             style: TextStyle(fontSize: 12, color: kHintGray),
           ),
@@ -613,7 +613,7 @@ class _AdoptionApplicationScreenState extends State<AdoptionApplicationScreen> {
 
   Widget _sectionHeading(String text) => Text(
     text,
-    style: const TextStyle(
+    style: TextStyle(
       fontWeight: FontWeight.w800,
       fontSize: 18,
       color: kNavy,
@@ -632,9 +632,9 @@ OutlineInputBorder _border(Color color) => OutlineInputBorder(
 
 InputDecoration _dec(String hint) => InputDecoration(
   hintText: hint,
-  hintStyle: const TextStyle(color: kHintGray),
+  hintStyle: TextStyle(color: kHintGray),
   filled: true,
-  fillColor: Colors.white,
+  fillColor: kSurfaceWhite,
   counterText: '',
   // hide the "0/30" counter
   border: _border(Colors.grey.shade300),

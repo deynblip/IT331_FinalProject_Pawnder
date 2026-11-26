@@ -10,17 +10,13 @@ const Color kRequiredColor = Color(0xFFE04F4F);
 class FieldLabel extends StatelessWidget {
   final String text;
   final bool required;
-  final TextStyle style;
+  final TextStyle? style;
 
   const FieldLabel(
       this.text, {
         super.key,
         this.required = false,
-        this.style = const TextStyle(
-          fontWeight: FontWeight.w800,
-          fontSize: 15,
-          color: kNavy,
-        ),
+        this.style,
       });
 
   @override
@@ -28,7 +24,12 @@ class FieldLabel extends StatelessWidget {
     return Text.rich(
       TextSpan(
         text: text,
-        style: style,
+        style: style ??
+            TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
+              color: kNavy,
+            ),
         children: [
           if (required)
             const TextSpan(
@@ -47,7 +48,7 @@ class RequiredNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Text.rich(
+    return Text.rich(
       TextSpan(
         style: TextStyle(fontSize: 12, color: kHintGray),
         children: [

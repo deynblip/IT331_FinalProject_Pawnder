@@ -33,7 +33,7 @@ class ReportCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: kCardColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFF5DEC8)),
+            border: Border.all(color: kCardBorder),
             boxShadow: const [
               BoxShadow(color: Color(0x14C4531F), blurRadius: 10, offset: Offset(0, 3)),
             ],
@@ -77,7 +77,7 @@ class ReportCard extends StatelessWidget {
                       report.title,
                       maxLines: compact ? 1 : null,
                       overflow: compact ? TextOverflow.ellipsis : null,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: ReportColors.navy,
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
@@ -85,12 +85,12 @@ class ReportCard extends StatelessWidget {
                     ),
                     Text(
                       '${report.distanceText}  ·  ${report.dateText}',
-                      style: const TextStyle(color: ReportColors.grey, fontSize: 13),
+                      style: TextStyle(color: ReportColors.grey, fontSize: 13),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: ReportColors.grey),
+              Icon(Icons.chevron_right, color: ReportColors.grey),
             ],
           ),
         ),

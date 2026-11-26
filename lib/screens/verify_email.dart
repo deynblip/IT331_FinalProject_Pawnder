@@ -137,7 +137,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
         Text(
           'We sent a code to\n${widget.email}\nEnter it below to finish creating your account.',
           textAlign: TextAlign.center,
-          style: const TextStyle(color: kHintGray, fontSize: 13, height: 1.3),
+          style: TextStyle(color: kHintGray, fontSize: 13, height: 1.3),
         ),
         const SizedBox(height: 22),
         Form(
@@ -166,7 +166,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           "Can't find it? Check your Spam folder.",
           textAlign: TextAlign.center,
           style: TextStyle(color: kHintGray, fontSize: 12),

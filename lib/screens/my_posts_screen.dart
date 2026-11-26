@@ -46,14 +46,14 @@ class MyPostsScreen extends StatelessWidget {
         children: [
           Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               color: kNavy,
               fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
           ),
           if (subtitle != null)
-            Text(subtitle, style: const TextStyle(color: kHintGray)),
+            Text(subtitle, style: TextStyle(color: kHintGray)),
         ],
       ),
     );
@@ -99,7 +99,7 @@ class MyPostsScreen extends StatelessWidget {
                         icon: const Icon(Icons.arrow_back_ios_new,
                             color: kBlue),
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'My Adoption Posts',
                           maxLines: 1,
@@ -118,7 +118,7 @@ class MyPostsScreen extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 12, top: 2),
                       child: Text(
                         pets.length == 1 ? '1 post' : '${pets.length} posts',
-                        style: const TextStyle(color: kHintGray),
+                        style: TextStyle(color: kHintGray),
                       ),
                     ),
                   const SizedBox(height: 12),
@@ -128,10 +128,10 @@ class MyPostsScreen extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.volunteer_activism_outlined,
+                          Icon(Icons.volunteer_activism_outlined,
                               size: 48, color: kHintGray),
                           const SizedBox(height: 12),
-                          const Text(
+                          Text(
                             "You haven't posted any pets for "
                                 'adoption yet.',
                             textAlign: TextAlign.center,
@@ -211,7 +211,7 @@ class MyPostsScreen extends StatelessWidget {
 
 // ------------------------------------------------------------ Shared bits
 
-const Color _kBorder = Color(0xFFF5DEC8);
+Color get _kBorder => kCardBorder;
 
 BoxDecoration _cardDecoration() => BoxDecoration(
   color: kCardColor,
@@ -225,7 +225,7 @@ BoxDecoration _cardDecoration() => BoxDecoration(
 
 Widget _petThumb(String? photo) {
   final placeholder = Container(
-    color: const Color(0xFFFFE8D6),
+    color: kPeach,
     child: const Center(
       child: Icon(Icons.pets, size: 30, color: Color(0xFF8A746C)),
     ),
@@ -277,7 +277,7 @@ class _PetPostCard extends StatelessWidget {
                       pet.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: kNavy,
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
@@ -287,13 +287,13 @@ class _PetPostCard extends StatelessWidget {
                       '${pet.animalType}  ·  ${pet.summary}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: kHintGray, fontSize: 13),
+                      style: TextStyle(color: kHintGray, fontSize: 13),
                     ),
                     Text(
                       pet.location,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: kHintGray, fontSize: 13),
+                      style: TextStyle(color: kHintGray, fontSize: 13),
                     ),
                     const SizedBox(height: 6),
                     StatusChip(
@@ -318,7 +318,7 @@ class _PetPostCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: kHintGray),
+              Icon(Icons.chevron_right, color: kHintGray),
             ],
           ),
         ),
@@ -371,7 +371,7 @@ class _RequestCard extends StatelessWidget {
                       application.fullName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: kNavy,
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
@@ -381,12 +381,12 @@ class _RequestCard extends StatelessWidget {
                       'For ${application.petName}  ·  ${application.dateText}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: kHintGray, fontSize: 13),
+                      style: TextStyle(color: kHintGray, fontSize: 13),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: kHintGray),
+              Icon(Icons.chevron_right, color: kHintGray),
             ],
           ),
         ),

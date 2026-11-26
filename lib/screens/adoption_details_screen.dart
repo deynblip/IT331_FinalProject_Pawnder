@@ -96,7 +96,7 @@ class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
   void _showHealthInfo(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: kSurfaceWhite,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -106,7 +106,7 @@ class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Health Information',
               style: TextStyle(
                 color: kNavy,
@@ -117,7 +117,7 @@ class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
             const SizedBox(height: 10),
             Text(
               pet.healthInfoOrDefault,
-              style: const TextStyle(color: kNavy, fontSize: 16),
+              style: TextStyle(color: kNavy, fontSize: 16),
             ),
           ],
         ),
@@ -159,7 +159,7 @@ class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: kNavy,
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -193,7 +193,7 @@ class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
                             color: kBlue,
                           ),
                         ),
-                        const Text(
+                        Text(
                           'Details',
                           style: TextStyle(
                             color: kNavy,
@@ -206,7 +206,7 @@ class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
                           const Spacer(),
                           IconButton(
                             tooltip: 'Report this post',
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.flag_outlined,
                               color: ReportColors.grey,
                             ),
@@ -249,7 +249,7 @@ class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
                               ],
                               Text(
                                 pet.name.toUpperCase(),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: kNavy,
                                   fontSize: 30,
                                   fontWeight: FontWeight.w800,
@@ -258,7 +258,7 @@ class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.location_on,
                                     size: 16,
                                     color: ReportColors.grey,
@@ -267,7 +267,7 @@ class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
                                   Expanded(
                                     child: Text(
                                       pet.location,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: ReportColors.grey,
                                         fontSize: 15,
                                       ),
@@ -281,7 +281,7 @@ class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
                         InkWell(
                           borderRadius: BorderRadius.circular(12),
                           onTap: () => _showHealthInfo(context),
-                          child: const Padding(
+                          child: Padding(
                             padding: EdgeInsets.all(6),
                             child: Column(
                               children: [
@@ -315,7 +315,7 @@ class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
                         horizontal: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFE8D6),
+                        color: kPeach,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -334,9 +334,9 @@ class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
                     // Poster + contact icons (disabled until screening is passed)
                     Row(
                       children: [
-                        const CircleAvatar(
+                        CircleAvatar(
                           radius: 26,
-                          backgroundColor: Color(0xFFFFE8D6),
+                          backgroundColor: kPeach,
                           child: Icon(
                             Icons.person,
                             color: ReportColors.grey,
@@ -350,13 +350,13 @@ class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
                             children: [
                               Text(
                                 pet.posterName,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: kNavy,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
-                              const Text(
+                              Text(
                                 'Pet Owner',
                                 style: TextStyle(
                                   color: ReportColors.grey,
@@ -374,7 +374,7 @@ class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
                     // About
                     Text(
                       'ABOUT ${pet.name.toUpperCase()}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: kNavy,
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -384,13 +384,13 @@ class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
                     Text(
                       pet.descriptionOrDefault,
                       textAlign: TextAlign.justify,
-                      style: const TextStyle(color: kNavy, fontSize: 16),
+                      style: TextStyle(color: kNavy, fontSize: 16),
                     ),
                     if (pet.reasonForAdoption.trim().isNotEmpty) ...[
                       const SizedBox(height: 16),
                       Text(
                         pet.source.reasonLabel.toUpperCase(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: kNavy,
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
@@ -400,7 +400,7 @@ class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
                       Text(
                         pet.reasonForAdoption,
                         textAlign: TextAlign.justify,
-                        style: const TextStyle(color: kNavy, fontSize: 16),
+                        style: TextStyle(color: kNavy, fontSize: 16),
                       ),
                     ],
                   ],
@@ -477,8 +477,8 @@ class _PetPhotosState extends State<_PetPhotos> {
 
   Widget _fallback() {
     return Container(
-      color: const Color(0xFFFFE8D6),
-      child: const Center(
+      color: kPeach,
+      child: Center(
         child: Icon(Icons.pets, size: 48, color: ReportColors.grey),
       ),
     );

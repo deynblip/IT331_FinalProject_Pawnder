@@ -64,14 +64,14 @@ class AdminDashboard extends StatelessWidget {
                     children: [
                       Text(
                         'Welcome, ${name.isNotEmpty ? name : 'Admin'}!',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: kNavy,
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(height: 6),
-                      const Text(
+                      Text(
                         'Manage listings, applications, and keep\n'
                             'the community safe for stray animals',
                         style: TextStyle(
@@ -185,7 +185,7 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             '$value',
-            style: const TextStyle(
+            style: TextStyle(
               color: kNavy,
               fontSize: 30,
               fontWeight: FontWeight.w800,

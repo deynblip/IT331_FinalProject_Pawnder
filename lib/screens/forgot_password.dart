@@ -102,7 +102,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       title: _emailVerified ? 'Reset Password' : 'Forgot Password?',
       children: [
         if (!_emailVerified) ...[
-          const Text(
+          Text(
             "Enter the email you signed up with and we'll help you reset your password.",
             textAlign: TextAlign.center,
             style: TextStyle(color: kHintGray, fontSize: 13, height: 1.3),
@@ -130,7 +130,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           Text(
             'Enter the code we sent to\n${emailController.text.trim()}\nand choose a new password.',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: kHintGray, fontSize: 13, height: 1.3),
+            style: TextStyle(color: kHintGray, fontSize: 13, height: 1.3),
           ),
           const SizedBox(height: 22),
           Form(

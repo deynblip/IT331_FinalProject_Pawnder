@@ -10,6 +10,7 @@ import 'adoption_service.dart';
 import 'application_service.dart';
 import 'content_report_service.dart';
 import 'notification_service.dart';
+import '../utils/theme_controller.dart';
 import 'rescuer_service.dart';
 
 // ===============================
@@ -127,6 +128,7 @@ class AuthService {
   /// Clears everything remembered about the logged-in user (details and
   /// cached reports/stats) so the next account never sees old data.
   static void endSession() {
+    resetToLightMode(); // dark mode is for the user side only
     _name = null;
     _isAdmin = false;
     _isRestricted = false;

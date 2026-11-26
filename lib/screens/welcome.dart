@@ -180,7 +180,7 @@ class _WelcomePageState extends State<WelcomePage>
       key: const ValueKey('offline'),
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(
+        Text(
           "Can't connect. Try again.",
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -190,7 +190,7 @@ class _WelcomePageState extends State<WelcomePage>
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Please check your internet connection.',
           textAlign: TextAlign.center,
           style: TextStyle(color: kNavy),

@@ -164,7 +164,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
       builder: (dialogContext) => AlertDialog(
         title: Text(
           editing ? 'Save changes?' : 'Publish this post?',
-          style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+          style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
         ),
         content: Text(
           '${_name.text.trim()} · $_animalType · ${_source.label}\n'
@@ -297,7 +297,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
         builder: (dialogContext) => AlertDialog(
           title: Text(
             editing == null ? 'Post submitted!' : 'Changes saved!',
-            style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+            style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
           ),
           content: Text(
             editing == null
@@ -373,7 +373,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
                       widget.isEditing
                           ? 'Edit Pet Post'
                           : 'Post a Pet for Adoption',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                         color: kNavy,
@@ -404,7 +404,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
                     SizedBox(key: _sectionKeys[2]),
                     _buildLocationSection(),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Your contact details stay hidden until an applicant '
                           'passes admin screening.',
                       style: TextStyle(fontSize: 12, color: kHintGray),
@@ -418,7 +418,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
             Container(
               width: double.infinity,
               padding: EdgeInsets.fromLTRB(pad, 12, pad, 12),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: kCream,
                 border: Border(top: BorderSide(color: kCardBorder)),
               ),
@@ -477,7 +477,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
                 children: [
                   const Icon(Icons.photo_camera, size: 40, color: kBlue),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     'Add a photo',
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
@@ -487,7 +487,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
                   Text(
                     'Take a photo or choose from gallery '
                         '(${_photos.length}/$_kMaxPhotos)',
-                    style: const TextStyle(fontSize: 12, color: kHintGray),
+                    style: TextStyle(fontSize: 12, color: kHintGray),
                   ),
                 ],
               ),
@@ -527,7 +527,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
                 selected: selected,
                 showCheckmark: false,
                 selectedColor: kBlue,
-                backgroundColor: Colors.white,
+                backgroundColor: kSurfaceWhite,
                 side: const BorderSide(color: kBlue),
                 labelStyle: TextStyle(color: selected ? Colors.white : kBlue),
                 onSelected: (_) => setState(() => _animalType = type),
@@ -551,7 +551,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
                 selected: selected,
                 showCheckmark: false,
                 selectedColor: kBlue,
-                backgroundColor: Colors.white,
+                backgroundColor: kSurfaceWhite,
                 side: const BorderSide(color: kBlue),
                 labelStyle: TextStyle(color: selected ? Colors.white : kBlue),
                 onSelected: (_) => setState(() => _source = src),
@@ -565,7 +565,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
                 'first in the Adoption Bulletin.'
                 : 'A pet you can no longer care for. You will be asked for '
                 'your reason for rehoming.',
-            style: const TextStyle(color: kHintGray, fontSize: 12),
+            style: TextStyle(color: kHintGray, fontSize: 12),
           ),
           const SizedBox(height: 20),
           Row(
@@ -623,8 +623,8 @@ class _PostPetScreenState extends State<PostPetScreen> {
             child: PetPhoto(
               path: _photos[index],
               fallback: Container(
-                color: const Color(0xFFFFE8D6),
-                child: const Icon(Icons.pets, color: kHintGray),
+                color: kPeach,
+                child: Icon(Icons.pets, color: kHintGray),
               ),
             ),
           ),
@@ -704,7 +704,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Selling, asking for fees, and breeding or "for stud" posts are '
                 'not allowed and will be rejected.',
             style: TextStyle(color: kHintGray, fontSize: 12),
@@ -800,7 +800,7 @@ class _PostPetScreenState extends State<PostPetScreen> {
   Widget _sectionHeading(String text, {Key? key}) => Text(
     text,
     key: key,
-    style: const TextStyle(
+    style: TextStyle(
       fontWeight: FontWeight.w800,
       fontSize: 18,
       color: kNavy,
@@ -817,9 +817,9 @@ OutlineInputBorder _border(Color color) => OutlineInputBorder(
 
 InputDecoration _dec(String hint) => InputDecoration(
   hintText: hint,
-  hintStyle: const TextStyle(color: kHintGray),
+  hintStyle: TextStyle(color: kHintGray),
   filled: true,
-  fillColor: Colors.white,
+  fillColor: kSurfaceWhite,
   counterText: '', // hide the "0/30" counter
   border: _border(Colors.grey.shade300),
   enabledBorder: _border(Colors.grey.shade300),

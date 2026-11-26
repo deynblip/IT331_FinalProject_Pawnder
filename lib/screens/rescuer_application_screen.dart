@@ -75,12 +75,12 @@ class _RescuerApplicationScreenState extends State<RescuerApplicationScreen> {
     return Scaffold(
       backgroundColor: kCream,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: kSurfaceWhite,
         foregroundColor: kNavy,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Apply as Verified Rescuer',
           style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
         ),

@@ -82,7 +82,7 @@ class _HomePageState extends State<HomePage> {
           // Welcome message
           Row(
             children: [
-              const Text(
+              Text(
                 'Welcome back, ',
                 style: TextStyle(
                   color: kNavy,
@@ -113,7 +113,7 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 25),
 
           // Report a Stray
-          const Text(
+          Text(
             'See an animal in need?',
             style: TextStyle(
               color: kNavy,
@@ -124,7 +124,7 @@ class _HomePageState extends State<HomePage> {
 
           const SizedBox(height: 4),
 
-          const Text(
+          Text(
             'Report it so rescuers can find it.',
             style: TextStyle(
               color: kHintGray,
@@ -138,7 +138,7 @@ class _HomePageState extends State<HomePage> {
             icon: Container(
               width: 56,
               height: 56,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: kPeach,
                 shape: BoxShape.circle,
               ),
@@ -160,7 +160,7 @@ class _HomePageState extends State<HomePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Nearby Reports',
                 style: TextStyle(
                   color: kNavy,
@@ -170,7 +170,7 @@ class _HomePageState extends State<HomePage> {
               ),
               TextButton(
                 onPressed: widget.onViewAllTap,
-                child: const Text(
+                child: Text(
                   'View All',
                   style: TextStyle(color: kHintGray),
                 ),
@@ -223,7 +223,7 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 30),
 
           // Safety guidelines
-          const Text(
+          Text(
             'Safety Guidelines',
             style: TextStyle(
               color: kNavy,
@@ -234,7 +234,7 @@ class _HomePageState extends State<HomePage> {
 
           const SizedBox(height: 5),
 
-          const Text(
+          Text(
             'Keep yourself and the animals safe.',
             style: TextStyle(
               color: kHintGray,
@@ -295,7 +295,7 @@ class _HomePageState extends State<HomePage> {
           Text(
             text,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: kHintGray, fontSize: 14),
+            style: TextStyle(color: kHintGray, fontSize: 14),
           ),
           if (onRetry != null)
             TextButton(onPressed: onRetry, child: const Text('Try again')),
@@ -337,7 +337,7 @@ class _HomePageState extends State<HomePage> {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 color: kNavy,
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -388,7 +388,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: kNavy,
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -399,7 +399,7 @@ class _HomePageState extends State<HomePage> {
 
                 Text(
                   description,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: kHintGray,
                     fontSize: 12,
                     height: 1.5,

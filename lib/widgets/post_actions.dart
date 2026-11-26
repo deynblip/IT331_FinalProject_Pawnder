@@ -16,7 +16,7 @@ Future<void> editMyPost(BuildContext context, AdoptionPet pet) async {
     final go = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text(
+        title: Text(
           'Edit approved post?',
           style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
         ),
@@ -55,7 +55,7 @@ Future<bool> removeMyPost(BuildContext context, AdoptionPet pet) async {
     builder: (dialogContext) => AlertDialog(
       title: Text(
         'Remove ${pet.name}?',
-        style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+        style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
       ),
       content: const Text(
         'This post will be removed from the Adoption Board. '

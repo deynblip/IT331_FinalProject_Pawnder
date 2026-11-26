@@ -89,7 +89,7 @@ class _ReportDialogState extends State<_ReportDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
         'Report ${widget.targetTitle}',
-        style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+        style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
       ),
       content: SingleChildScrollView(
         child: Column(

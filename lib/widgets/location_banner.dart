@@ -90,7 +90,7 @@ class _LocationBannerState extends State<LocationBanner>
               Expanded(
                 child: Text(
                   text,
-                  style: const TextStyle(color: kNavy, fontSize: 12.5),
+                  style: TextStyle(color: kNavy, fontSize: 12.5),
                 ),
               ),
               TextButton(

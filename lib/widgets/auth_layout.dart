@@ -91,7 +91,7 @@ class AuthLayout extends StatelessWidget {
                       child: Text(
                         title,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: kNavy,
                           fontSize: 26,
                           fontWeight: FontWeight.w800,

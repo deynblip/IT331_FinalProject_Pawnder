@@ -84,7 +84,7 @@ class NotificationsScreen extends StatelessWidget {
           builder: (dialogContext) => AlertDialog(
             title: Text(
               n.title,
-              style: const TextStyle(
+              style: TextStyle(
                 color: kNavy,
                 fontWeight: FontWeight.w800,
               ),
@@ -106,11 +106,11 @@ class NotificationsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: kCream,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: kSurfaceWhite,
         foregroundColor: kNavy,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Notifications',
           style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
         ),
@@ -126,9 +126,9 @@ class NotificationsScreen extends StatelessWidget {
             ),
           ),
         ],
-        bottom: const PreferredSize(
+        bottom: PreferredSize(
           preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, thickness: 1, color: Color(0xFFF0E2D6)),
+          child: Divider(height: 1, thickness: 1, color: kCardBorder),
         ),
       ),
       body: ListenableBuilder(
@@ -143,7 +143,7 @@ class NotificationsScreen extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.notifications_none,
+                    Icon(Icons.notifications_none,
                         size: 48, color: kHintGray),
                     const SizedBox(height: 12),
                     Text(
@@ -152,7 +152,7 @@ class NotificationsScreen extends StatelessWidget {
                           : 'Notifications are turned off. '
                           'You can turn them on in Settings.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: kHintGray),
+                      style: TextStyle(color: kHintGray),
                     ),
                   ],
                 ),
@@ -217,9 +217,9 @@ class _NotificationCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: unread ? kPeach : Colors.white,
+          color: unread ? kPeach : kSurfaceWhite,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFF5DEC8)),
+          border: Border.all(color: kCardBorder),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,7 +249,7 @@ class _NotificationCard extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     notification.message,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: kHintGray,
                       fontSize: 13,
                       height: 1.4,
@@ -258,7 +258,7 @@ class _NotificationCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     notification.timeText,
-                    style: const TextStyle(color: kHintGray, fontSize: 11),
+                    style: TextStyle(color: kHintGray, fontSize: 11),
                   ),
                 ],
               ),

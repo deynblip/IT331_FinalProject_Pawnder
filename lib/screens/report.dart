@@ -64,7 +64,7 @@ class _ReportsPageState extends State<ReportsPage> {
           child: Text(
             text,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: kHintGray),
+            style: TextStyle(color: kHintGray),
           ),
         ),
         if (showRetry)
@@ -114,7 +114,7 @@ class _ReportsPageState extends State<ReportsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Reports',
                 style: TextStyle(
                   fontSize: 28,
@@ -167,7 +167,7 @@ class _ReportsPageState extends State<ReportsPage> {
                     selected: _selected == f,
                     showCheckmark: false,
                     selectedColor: kBlue,
-                    backgroundColor: Colors.white,
+                    backgroundColor: kSurfaceWhite,
                     side: const BorderSide(color: kBlue),
                     padding: const EdgeInsets.symmetric(horizontal: 2),
                     labelPadding: EdgeInsets.zero,

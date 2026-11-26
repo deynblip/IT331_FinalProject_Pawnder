@@ -10,6 +10,7 @@ import '../../services/rescuer_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/push_service.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/theme_controller.dart';
 import '../drawer/about.dart';
 import '../drawer/settings.dart';
 import '../login.dart';
@@ -46,7 +47,10 @@ class _AdminLayoutState extends State<AdminLayout> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => PushService.openPendingTap());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      resetToLightMode(); // Admin stays light
+      PushService.openPendingTap();
+    });
     _reload();
     _poll = Timer.periodic(const Duration(seconds: 10), (_) => _reload());
   }
@@ -165,8 +169,8 @@ class _AdminLayoutState extends State<AdminLayout> {
             ),
             const SizedBox(height: 10),
             ListTile(
-              leading: const Icon(Icons.lock_outline, color: kNavy),
-              title: const Text(
+              leading: Icon(Icons.lock_outline, color: kNavy),
+              title: Text(
                 'Change Password',
                 style: TextStyle(
                   color: kNavy,
@@ -177,8 +181,8 @@ class _AdminLayoutState extends State<AdminLayout> {
               onTap: _openChangePassword,
             ),
             ListTile(
-              leading: const Icon(Icons.info_outline, color: kNavy),
-              title: const Text(
+              leading: Icon(Icons.info_outline, color: kNavy),
+              title: Text(
                 'About Pawnder',
                 style: TextStyle(
                   color: kNavy,
@@ -189,7 +193,7 @@ class _AdminLayoutState extends State<AdminLayout> {
               onTap: _openAbout,
             ),
             const Spacer(),
-            const Divider(color: kCardBorder),
+            Divider(color: kCardBorder),
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text(
@@ -201,7 +205,7 @@ class _AdminLayoutState extends State<AdminLayout> {
               ),
               onTap: _logoutFromDrawer,
             ),
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(top: 4, bottom: 14),
               child: Text(
                 'Pawnder · Version 1.0.0',

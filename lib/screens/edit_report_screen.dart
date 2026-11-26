@@ -136,7 +136,7 @@ class _EditReportScreenState extends State<EditReportScreen> {
   Widget _photoStrip() {
     final fallback = Container(
       color: kPeach,
-      child: const Icon(Icons.pets, color: kHintGray),
+      child: Icon(Icons.pets, color: kHintGray),
     );
     final List<Widget> items = [
       for (int i = 0; i < _kept.length; i++)
@@ -239,7 +239,7 @@ class _EditReportScreenState extends State<EditReportScreen> {
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back_ios_new, color: kBlue),
                   ),
-                  const Text(
+                  Text(
                     'Edit Report',
                     style: TextStyle(
                       fontSize: 26,
@@ -299,11 +299,11 @@ class _EditReportScreenState extends State<EditReportScreen> {
                   fillColor: kCardColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: kCardBorder),
+                    borderSide: BorderSide(color: kCardBorder),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: kCardBorder),
+                    borderSide: BorderSide(color: kCardBorder),
                   ),
                 ),
               ),
@@ -314,7 +314,7 @@ class _EditReportScreenState extends State<EditReportScreen> {
                 contentPadding: EdgeInsets.zero,
                 value: _lostPet,
                 activeColor: kBlue,
-                title: const Text(
+                title: Text(
                   'This may be a lost pet',
                   style: TextStyle(
                     color: kNavy,
@@ -330,12 +330,12 @@ class _EditReportScreenState extends State<EditReportScreen> {
               const SizedBox(height: 6),
               Text(
                 widget.report.location,
-                style: const TextStyle(color: kNavy, fontSize: 14),
+                style: TextStyle(color: kNavy, fontSize: 14),
               ),
               const SizedBox(height: 6),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Icon(Icons.lock_outline, size: 16, color: kHintGray),
                   SizedBox(width: 6),
                   Expanded(
