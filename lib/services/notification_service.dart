@@ -1,5 +1,5 @@
 // ===================================
-// NOTIFICATIONS (Supabase)  -  Batch 6.2
+// NOTIFICATIONS (Supabase)
 // ===================================
 // The DATABASE creates the notifications (for example when an admin forwards
 // an application). This service only reads the logged-in user's own rows and
@@ -7,6 +7,7 @@
 // [changes]. They refresh by polling (see MainLayout and AdminLayout).
 
 import 'dart:async';
+import 'push_service.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -48,6 +49,7 @@ class NotificationService {
 
   static void setPushEnabled(bool value) {
     pushEnabled = value;
+    unawaited(PushService.setEnabled(value));
     _notify();
   }
 

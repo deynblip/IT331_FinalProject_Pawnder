@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'push_service.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -82,6 +85,7 @@ class AuthService {
       throw const AuthFailure('Your account has been restricted.');
     }
     _sessionActive = true;
+    unawaited(PushService.register());
   }
 
   /// App start: checks the session saved on the phone.
@@ -116,6 +120,7 @@ class AuthService {
       return SessionStatus.restricted;
     }
     _sessionActive = true;
+    unawaited(PushService.register());
     return SessionStatus.ready;
   }
 
@@ -137,6 +142,7 @@ class AuthService {
   }
 
   static Future<void> signOut() async {
+    await PushService.unregister(); // habang may session pa
     endSession();
     try {
       await _db.auth.signOut();
@@ -205,9 +211,10 @@ class AuthService {
       throw const AuthFailure('Your account has been restricted.');
     }
     _sessionActive = true;
+    unawaited(PushService.register());
   }
 
-  /// Sends a new verification code to the email.
+  /// Sends a new verification codeto the email.
   static Future<void> resendSignupCode(String email) async {
     await _run(() => _db.auth.resend(
       type: OtpType.signup,

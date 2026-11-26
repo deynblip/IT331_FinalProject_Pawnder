@@ -1,4 +1,6 @@
-// Ilagay sa: lib/main.dart  (PALITAN ANG BUONG LAMAN)
+import 'dart:async';
+import 'services/push_service.dart';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -19,6 +21,7 @@ void main() {
 
   // Show the app right away; the database connects while the loading screen shows.
   runApp(PawnderApp(backendReady: _initBackend()));
+  unawaited(PushService.init(navigatorKey));
 }
 
 Future<void> _initBackend() async {

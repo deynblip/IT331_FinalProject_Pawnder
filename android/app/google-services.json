@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "541852348746",
+    "project_id": "pawnder-a353d",
+    "storage_bucket": "pawnder-a353d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:541852348746:android:d1cb72a6ebcec6752351b3",
+        "android_client_info": {
+          "package_name": "com.pawnder.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCgdOaLnjEJQkeW0Xlokb0UIZeBACrGxQU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

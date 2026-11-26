@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../services/content_report_service.dart';
 import '../../services/rescuer_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/push_service.dart';
 import '../../utils/app_colors.dart';
 import '../login.dart';
 import 'admin_dashboard.dart';
@@ -42,6 +43,7 @@ class _AdminLayoutState extends State<AdminLayout> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => PushService.openPendingTap());
     _reload();
     _poll = Timer.periodic(const Duration(seconds: 10), (_) => _reload());
   }
