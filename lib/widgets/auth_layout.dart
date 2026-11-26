@@ -22,14 +22,17 @@ class AuthLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final double panelTop = size.height * panelTopFraction;
+    final double keyboard = MediaQuery.of(context).viewInsets.bottom;
+    final bool typing = keyboard > 0;
+    final double logoZone = size.height * panelTopFraction;
+    final double panelTop = typing ? size.height * 0.12 : logoZone;
     const double curveRadius = 70;
 
     return Scaffold(
       backgroundColor: kCream,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
-          // Background image
           Positioned.fill(
             child: Image.asset(
               'assets/background.png',
@@ -37,13 +40,11 @@ class AuthLayout extends StatelessWidget {
               alignment: Alignment.topCenter,
             ),
           ),
-
-          // Logo
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            height: panelTop,
+            height: logoZone,
             child: SafeArea(
               bottom: false,
               child: Center(
@@ -58,14 +59,16 @@ class AuthLayout extends StatelessWidget {
               ),
             ),
           ),
-
-          // White panel
-          Positioned(
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
             top: panelTop,
             left: 0,
             right: 0,
-            bottom: 0,
+            bottom: keyboard,
             child: Container(
+              // Clip so nothing scrolls outside the rounded corner
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 color: kCardColor,
                 borderRadius: BorderRadius.only(
@@ -79,12 +82,13 @@ class AuthLayout extends StatelessWidget {
               ),
               child: SafeArea(
                 top: false,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 36),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 36),
-                      Text(
+                bottom: !typing,
+                child: Column(
+                  children: [
+                    // Title stays fixed; only the fields scroll below it
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(36, 32, 36, 14),
+                      child: Text(
                         title,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
@@ -93,11 +97,16 @@ class AuthLayout extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(height: 28),
-                      ...children,
-                      const SizedBox(height: 24),
-                    ],
-                  ),
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: const EdgeInsets.fromLTRB(36, 10, 36, 24),
+                        child: Column(children: children),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

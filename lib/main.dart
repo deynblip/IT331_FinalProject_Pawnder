@@ -14,18 +14,20 @@ import 'utils/theme_controller.dart';
 /// Lets us change screens from outside a widget (used when the session ends).
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Connect to the Pawnder database (Supabase) before the app starts.
+  // Show the app right away; the database connects while the loading screen shows.
+  runApp(PawnderApp(backendReady: _initBackend()));
+}
+
+Future<void> _initBackend() async {
   await Supabase.initialize(
     url: SupabaseConfig.url,
     publishableKey: SupabaseConfig.publishableKey,
   );
 
   _listenForEndedSession();
-
-  runApp(const PawnderApp());
 }
 
 /// If the server ends the session while the app is open (expired, or the
@@ -54,7 +56,9 @@ void _listenForEndedSession() {
 }
 
 class PawnderApp extends StatelessWidget {
-  const PawnderApp({super.key});
+  final Future<void>? backendReady;
+
+  const PawnderApp({super.key, this.backendReady});
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +85,7 @@ class PawnderApp extends StatelessWidget {
             scaffoldBackgroundColor: kDarkBg,
           ),
           builder: (context, child) => _ResponsiveFrame(child: child!),
-          home: const StartupPage(),
+          home: StartupPage(backendReady: backendReady),
         );
       },
     );

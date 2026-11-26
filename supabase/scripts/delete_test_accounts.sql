@@ -1,12 +1,3 @@
--- File: supabase/scripts/delete_test_accounts.sql
--- Burahin ang TEST accounts at lahat ng kaugnay nito (reports, posts, applications,
--- responses). HINDI nito binubura ang admin. Isang transaksyon: kapag may error,
--- walang mababago.
---
--- 1) PALITAN ang emails sa BOTH queries sa ibaba.
--- 2) I-run muna ang PREVIEW. Dapat tama ang mga lumabas.
--- 3) Saka i-run ang DELETE.
-
 -- ===================== PREVIEW (walang binubura) =====================
 select u.id, u.email, p.full_name, p.role
 from auth.users u join public.profiles p on p.id = u.id
