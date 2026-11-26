@@ -82,14 +82,14 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
         code: codeController.text,
       );
     } on AuthFailure catch (e) {
-      if (mounted) showMessage(context, e.message);
+      if (mounted) showAuthMessage(context, e.message);
       return;
     } finally {
       if (mounted) setState(() => _busy = false);
     }
     if (!mounted) return;
 
-    showMessage(
+    showAuthMessage(
       context,
       widget.applying
           ? 'Email verified! Your rescuer application is pending verification.'
@@ -118,10 +118,10 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
     try {
       await AuthService.resendSignupCode(widget.email);
       if (!mounted) return;
-      showMessage(context, 'We sent a new code to ${widget.email}.');
+      showAuthMessage(context, 'We sent a new code to ${widget.email}.');
       setState(_startCooldown);
     } on AuthFailure catch (e) {
-      if (mounted) showMessage(context, e.message);
+      if (mounted) showAuthMessage(context, e.message);
     } finally {
       if (mounted) setState(() => _resending = false);
     }

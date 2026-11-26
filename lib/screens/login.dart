@@ -47,7 +47,7 @@ class _LoginPageState extends State<LoginPage> {
       // Too soon for a new email? The user can still use the earlier code.
     }
     if (!mounted) return;
-    showMessage(context, 'Please verify your email first. Enter the code we sent you.');
+    showAuthMessage(context, 'Please verify your email first. Enter the code we sent you.');
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => VerifyEmailPage(email: email)),
@@ -73,9 +73,9 @@ class _LoginPageState extends State<LoginPage> {
         await _goToVerify(email);
         return;
       }
-      showMessage(context, e.message);
+      showAuthMessage(context, e.message);
       return;
-  } finally {
+    } finally {
       if (mounted) setState(() => _busy = false);
     }
     if (!mounted) return;

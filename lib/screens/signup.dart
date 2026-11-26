@@ -268,7 +268,7 @@ class _SignUpPageState extends State<SignUpPage> {
     if (_busy) return;
 
     if (!_agreedToTerms) {
-      showMessage(
+      showAuthMessage(
         context,
         'Please read and agree to the Terms & Conditions.',
       );
@@ -299,7 +299,7 @@ class _SignUpPageState extends State<SignUpPage> {
             : null,
       );
     } on AuthFailure catch (e) {
-      if (mounted) showMessage(context, e.message);
+      if (mounted) showAuthMessage(context, e.message);
       return;
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -321,7 +321,7 @@ class _SignUpPageState extends State<SignUpPage> {
       return;
     }
 
-    showMessage(
+    showAuthMessage(
       context,
       applying
           ? 'Account created! Your rescuer application is pending '

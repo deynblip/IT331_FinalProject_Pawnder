@@ -9,8 +9,6 @@ import '../widgets/auth_widgets.dart';
 // ===============================
 // FORGOT PASSWORD PAGE
 // ===============================
-// Step 1: enter the email of your account. Supabase emails a reset code.
-// Step 2: enter the code from the email and choose a new password.
 
 class ForgotPasswordPage extends StatefulWidget {
   final String initialEmail;
@@ -58,14 +56,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     try {
       await AuthService.sendPasswordResetCode(emailController.text);
     } on AuthFailure catch (e) {
-      if (mounted) showMessage(context, e.message);
+      if (mounted) showAuthMessage(context, e.message);
       return;
     } finally {
       if (mounted) setState(() => _busy = false);
     }
     if (!mounted) return;
 
-    showMessage(
+    showAuthMessage(
       context,
       'If an account exists for this email, we sent a reset code to it.',
     );
@@ -85,14 +83,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         newPassword: newPasswordController.text,
       );
     } on AuthFailure catch (e) {
-      if (mounted) showMessage(context, e.message);
+      if (mounted) showAuthMessage(context, e.message);
       return;
     } finally {
       if (mounted) setState(() => _busy = false);
     }
     if (!mounted) return;
 
-    showMessage(context, 'Password updated! Please log in.');
+    showAuthMessage(context, 'Password updated! Please log in.');
     Navigator.pop(context);
   }
 

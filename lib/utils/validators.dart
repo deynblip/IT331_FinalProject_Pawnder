@@ -76,3 +76,17 @@ void showMessage(BuildContext context, String message) {
       ),
     );
 }
+
+void showAuthMessage(BuildContext context, String message) {
+  final double keyboard = MediaQuery.of(context).viewInsets.bottom;
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: kNavy,
+        margin: EdgeInsets.fromLTRB(16, 0, 16, keyboard + 16),
+      ),
+    );
+}
