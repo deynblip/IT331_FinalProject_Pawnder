@@ -9,99 +9,24 @@ import '../utils/application_style.dart';
 import '../widgets/adopt_pet_photo.dart';
 import '../widgets/refreshing_builder.dart';
 import '../widgets/status_chip.dart';
+import 'adoption_details_screen.dart';
 import 'owner_application_screen.dart';
 import 'post_pet_screen.dart';
 import '../utils/responsive.dart';
 
-/// Pets posted by the logged-in user, plus the applications forwarded to
-/// them for the final decision (Profile > My Activity > My Adoption Posts).
-/// Each post shows its review status: Pending, Approved or Rejected.
 class MyPostsScreen extends StatelessWidget {
   final String posterName;
 
   const MyPostsScreen({super.key, required this.posterName});
 
-  Future<void> _edit(BuildContext context, AdoptionPet pet) async {
-    // Editing an approved post sends it back to Pending: warn first.
-    if (pet.status == PostStatus.approved) {
-      final go = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text(
-            'Edit approved post?',
-            style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
-          ),
-          content: const Text(
-            'Saving changes sends this post back to Pending. It will be '
-                'hidden from the Adoption Bulletin until the admin approves '
-                'it again.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Continue'),
-            ),
-          ],
-        ),
-      );
-      if (go != true || !context.mounted) return;
-    }
-
-    await Navigator.push(
+  void _openPost(BuildContext context, AdoptionPet pet) {
+    Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => PostPetScreen(posterName: pet.posterName, pet: pet),
+        builder: (_) =>
+            AdoptionDetailsScreen(pet: pet, showOwnerActions: true),
       ),
     );
-  }
-
-  Future<void> _remove(BuildContext context, AdoptionPet pet) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(
-          'Remove ${pet.name}?',
-          style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
-        ),
-        content: const Text(
-          'This post will be removed from the Adoption Board. '
-              'This cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Remove', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-    if (ok != true) return;
-
-    try {
-      await AdoptionService.remove(pet.id);
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text('${pet.name} was removed.')));
-    } on StateError catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
-    } catch (_) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not remove the post.')),
-      );
-    }
   }
 
   void _openApplication(BuildContext context, AdoptionApplication a) {
@@ -121,14 +46,14 @@ class MyPostsScreen extends StatelessWidget {
         children: [
           Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               color: kNavy,
               fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
           ),
           if (subtitle != null)
-            Text(subtitle, style: const TextStyle(color: kHintGray)),
+            Text(subtitle, style: TextStyle(color: kHintGray)),
         ],
       ),
     );
@@ -174,7 +99,7 @@ class MyPostsScreen extends StatelessWidget {
                         icon: const Icon(Icons.arrow_back_ios_new,
                             color: kBlue),
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'My Adoption Posts',
                           maxLines: 1,
@@ -193,7 +118,7 @@ class MyPostsScreen extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 12, top: 2),
                       child: Text(
                         pets.length == 1 ? '1 post' : '${pets.length} posts',
-                        style: const TextStyle(color: kHintGray),
+                        style: TextStyle(color: kHintGray),
                       ),
                     ),
                   const SizedBox(height: 12),
@@ -203,10 +128,10 @@ class MyPostsScreen extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.volunteer_activism_outlined,
+                          Icon(Icons.volunteer_activism_outlined,
                               size: 48, color: kHintGray),
                           const SizedBox(height: 12),
-                          const Text(
+                          Text(
                             "You haven't posted any pets for "
                                 'adoption yet.',
                             textAlign: TextAlign.center,
@@ -257,8 +182,7 @@ class MyPostsScreen extends StatelessWidget {
                             waitingCount: waiting
                                 .where((a) => a.petId == p.id)
                                 .length,
-                            onEdit: () => _edit(context, p),
-                            onRemove: () => _remove(context, p),
+                            onTap: () => _openPost(context, p),
                           ),
                         ),
                         if (decided.isNotEmpty) ...[
@@ -287,7 +211,7 @@ class MyPostsScreen extends StatelessWidget {
 
 // ------------------------------------------------------------ Shared bits
 
-const Color _kBorder = Color(0xFFF5DEC8);
+Color get _kBorder => kCardBorder;
 
 BoxDecoration _cardDecoration() => BoxDecoration(
   color: kCardColor,
@@ -301,7 +225,7 @@ BoxDecoration _cardDecoration() => BoxDecoration(
 
 Widget _petThumb(String? photo) {
   final placeholder = Container(
-    color: const Color(0xFFFFE8D6),
+    color: kPeach,
     child: const Center(
       child: Icon(Icons.pets, size: 30, color: Color(0xFF8A746C)),
     ),
@@ -323,181 +247,80 @@ Widget _petThumb(String? photo) {
 class _PetPostCard extends StatelessWidget {
   final AdoptionPet pet;
   final int waitingCount;
-  final VoidCallback onEdit;
-  final VoidCallback onRemove;
+  final VoidCallback onTap;
 
   const _PetPostCard({
     required this.pet,
     required this.waitingCount,
-    required this.onEdit,
-    required this.onRemove,
+    required this.onTap,
   });
-
-  /// Explains the review status to the poster.
-  Widget _reviewNote() {
-    switch (pet.status) {
-      case PostStatus.pending:
-        return _noteBox(
-          icon: Icons.hourglass_top,
-          color: const Color(0xFF8A6D00),
-          bg: const Color(0xFFFFF8D6),
-          text: pet.resubmitted
-              ? 'Your changes are waiting for admin review. This post is '
-              'hidden from the Adoption Bulletin until it is approved.'
-              : 'Waiting for admin review. This post is not in the '
-              'Adoption Bulletin yet.',
-        );
-      case PostStatus.rejected:
-        return _noteBox(
-          icon: Icons.cancel_outlined,
-          color: const Color(0xFF9B1C1C),
-          bg: const Color(0xFFFFE3E3),
-          text: 'Not approved. Reason: '
-              '${pet.rejectionReason ?? 'No reason given.'}\n'
-              'Edit the post and resubmit it for review.',
-        );
-      case PostStatus.approved:
-        return _noteBox(
-          icon: Icons.check_circle_outline,
-          color: const Color(0xFF1F5E10),
-          bg: const Color(0xFFE6F6DE),
-          text: 'Approved. This post is live in the Adoption Bulletin.',
-        );
-    }
-  }
-
-  Widget _noteBox({
-    required IconData icon,
-    required Color color,
-    required Color bg,
-    required String text,
-  }) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(color: color, fontSize: 12.5, height: 1.4),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
-    final bool rejected = pet.status == PostStatus.rejected;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: _cardDecoration(),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                _petThumb(pet.coverPhoto),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        pet.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: kNavy,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                        ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: _cardDecoration(),
+          child: Row(
+            children: [
+              _petThumb(pet.coverPhoto),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      pet.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: kNavy,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
                       ),
-                      Text(
-                        '${pet.animalType}  ·  ${pet.summary}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style:
-                        const TextStyle(color: kHintGray, fontSize: 13),
-                      ),
-                      Text(
-                        pet.location,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style:
-                        const TextStyle(color: kHintGray, fontSize: 13),
-                      ),
+                    ),
+                    Text(
+                      '${pet.animalType}  ·  ${pet.summary}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: kHintGray, fontSize: 13),
+                    ),
+                    Text(
+                      pet.location,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: kHintGray, fontSize: 13),
+                    ),
+                    const SizedBox(height: 6),
+                    StatusChip(
+                      label: pet.status.label,
+                      color: pet.status == PostStatus.approved
+                          ? const Color(0xFF4CAF6E)
+                          : pet.status == PostStatus.rejected
+                          ? const Color(0xFFE04F4F)
+                          : const Color(0xFFE0A800),
+                      fontSize: 11,
+                    ),
+                    if (waitingCount > 0) ...[
                       const SizedBox(height: 6),
                       StatusChip(
-                        label: pet.status.label,
-                        color: pet.status == PostStatus.approved
-                            ? const Color(0xFF4CAF6E)
-                            : pet.status == PostStatus.rejected
-                            ? const Color(0xFFE04F4F)
-                            : const Color(0xFFE0A800),
-                        fontSize: 11,
+                        label: waitingCount == 1
+                            ? '1 awaiting your decision'
+                            : '$waitingCount awaiting your decision',
+                        color: kBlue,
+                        outlined: true,
                       ),
-                      if (waitingCount > 0) ...[
-                        const SizedBox(height: 6),
-                        StatusChip(
-                          label: waitingCount == 1
-                              ? '1 awaiting your decision'
-                              : '$waitingCount awaiting your decision',
-                          color: kBlue,
-                          outlined: true,
-                        ),
-                      ],
                     ],
-                  ),
+                  ],
                 ),
-              ],
-            ),
-            _reviewNote(),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onEdit,
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    label: Text(rejected ? 'Resubmit' : 'Edit'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: kNavy,
-                      side: const BorderSide(color: kNavy),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onRemove,
-                    icon: const Icon(Icons.delete_outline, size: 18),
-                    label: const Text('Remove'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+              ),
+              Icon(Icons.chevron_right, color: kHintGray),
+            ],
+          ),
         ),
       ),
     );
@@ -548,7 +371,7 @@ class _RequestCard extends StatelessWidget {
                       application.fullName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: kNavy,
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
@@ -558,12 +381,12 @@ class _RequestCard extends StatelessWidget {
                       'For ${application.petName}  ·  ${application.dateText}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: kHintGray, fontSize: 13),
+                      style: TextStyle(color: kHintGray, fontSize: 13),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: kHintGray),
+              Icon(Icons.chevron_right, color: kHintGray),
             ],
           ),
         ),

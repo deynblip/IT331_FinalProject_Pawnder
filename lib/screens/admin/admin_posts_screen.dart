@@ -135,14 +135,14 @@ class _RejectPostDialogState extends State<_RejectPostDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
         'Reject ${widget.petName}?',
-        style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+        style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
       ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'The post stays hidden and the poster is told why. '
                   'Choose at least one reason.',
               style: TextStyle(color: kHintGray, fontSize: 13),
@@ -243,10 +243,10 @@ class AdminPostsScreen extends StatefulWidget {
 
 class _AdminPostsScreenState extends State<AdminPostsScreen> {
   static const List<String> _filters = [
+    'All',
     'Pending',
     'Approved',
     'Rejected',
-    'All',
   ];
 
   // Opens on Pending: that is the review queue.
@@ -302,7 +302,7 @@ class _AdminPostsScreenState extends State<AdminPostsScreen> {
                 children: [
                   const AdminTopBar(),
                   const SizedBox(height: 14),
-                  const Text(
+                  Text(
                     'Animal Listing',
                     style: TextStyle(
                       color: kNavy,
@@ -369,7 +369,7 @@ class _AdminPostsScreenState extends State<AdminPostsScreen> {
                             : _selected == 'Pending'
                             ? 'No posts waiting for review.'
                             : 'No ${_selected.toLowerCase()} posts.',
-                        style: const TextStyle(color: kHintGray),
+                        style: TextStyle(color: kHintGray),
                       ),
                     );
                   }
@@ -460,7 +460,7 @@ class _PostCard extends StatelessWidget {
                             pet.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: kNavy,
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
@@ -473,19 +473,19 @@ class _PostCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       pet.summary,
-                      style: const TextStyle(color: kHintGray, fontSize: 12),
+                      style: TextStyle(color: kHintGray, fontSize: 12),
                     ),
                     Text(
                       'Posted by: ${pet.posterName}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: kHintGray, fontSize: 12),
+                      style: TextStyle(color: kHintGray, fontSize: 12),
                     ),
                     if (pet.postedAt != null)
                       Text(
                         _dateText(pet.postedAt),
                         style:
-                        const TextStyle(color: kHintGray, fontSize: 12),
+                        TextStyle(color: kHintGray, fontSize: 12),
                       ),
                     if (isPending && pet.resubmitted)
                       const Padding(
@@ -537,7 +537,7 @@ class _PostCard extends StatelessWidget {
                       onPressed: onView,
                       style: OutlinedButton.styleFrom(
                         foregroundColor: kNavy,
-                        side: const BorderSide(color: kNavy),
+                        side: BorderSide(color: kNavy),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -602,7 +602,7 @@ class _AdminPostDetailsScreenState extends State<AdminPostDetailsScreen> {
     padding: const EdgeInsets.only(top: 6, bottom: 10),
     child: Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         color: kNavy,
         fontSize: 16,
         fontWeight: FontWeight.w800,
@@ -618,14 +618,14 @@ class _AdminPostDetailsScreenState extends State<AdminPostDetailsScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: kHintGray,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 2),
-          Text(value, style: const TextStyle(color: kNavy, fontSize: 15)),
+          Text(value, style: TextStyle(color: kNavy, fontSize: 15)),
         ],
       ),
     );
@@ -748,7 +748,7 @@ class _AdminPostDetailsScreenState extends State<AdminPostDetailsScreen> {
                   Expanded(
                     child: Text(
                       pet.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: kNavy,
                         fontSize: 24,
                         fontWeight: FontWeight.w800,

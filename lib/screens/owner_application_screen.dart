@@ -38,7 +38,7 @@ class _OwnerApplicationScreenState extends State<OwnerApplicationScreen> {
       builder: (dialogContext) => AlertDialog(
         title: Text(
           'Approve ${_app.fullName}?',
-          style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+          style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
         ),
         content: Text(
           '${_app.petName} will be adopted by this applicant. '
@@ -66,7 +66,7 @@ class _OwnerApplicationScreenState extends State<OwnerApplicationScreen> {
       builder: (dialogContext) => AlertDialog(
         title: Text(
           'Reject ${_app.fullName}?',
-          style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+          style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
         ),
         content: TextField(
           controller: reasonController,
@@ -119,7 +119,7 @@ class _OwnerApplicationScreenState extends State<OwnerApplicationScreen> {
     padding: const EdgeInsets.only(top: 18, bottom: 8),
     child: Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         color: kNavy,
         fontSize: 18,
         fontWeight: FontWeight.w800,
@@ -136,14 +136,14 @@ class _OwnerApplicationScreenState extends State<OwnerApplicationScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: kNavy,
               fontWeight: FontWeight.w700,
               fontSize: 14,
             ),
           ),
           const SizedBox(height: 2),
-          Text(text, style: const TextStyle(color: kNavy, fontSize: 15)),
+          Text(text, style: TextStyle(color: kNavy, fontSize: 15)),
         ],
       ),
     );
@@ -215,7 +215,7 @@ class _OwnerApplicationScreenState extends State<OwnerApplicationScreen> {
             ? 'This application was approved.'
             : 'This application was rejected.'
             '${reason == null ? '' : '\nReason: $reason'}',
-        style: const TextStyle(color: kNavy, fontSize: 14),
+        style: TextStyle(color: kNavy, fontSize: 14),
       ),
     );
   }
@@ -236,7 +236,7 @@ class _OwnerApplicationScreenState extends State<OwnerApplicationScreen> {
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back_ios_new, color: kBlue),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Application',
                       style: TextStyle(
@@ -266,7 +266,7 @@ class _OwnerApplicationScreenState extends State<OwnerApplicationScreen> {
                       const SizedBox(height: 10),
                       Text(
                         '${_app.fullName} wants to adopt ${_app.petName}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: kNavy,
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
@@ -274,7 +274,7 @@ class _OwnerApplicationScreenState extends State<OwnerApplicationScreen> {
                       ),
                       Text(
                         'Applied ${_app.dateText}',
-                        style: const TextStyle(color: kHintGray),
+                        style: TextStyle(color: kHintGray),
                       ),
                       _heading('Applicant'),
                       _row('Full Name', _app.fullName),

@@ -13,7 +13,7 @@ class PetSourceTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rescued = source == PetSource.rescuedStray;
-    final Color fg = rescued ? Colors.white : ReportColors.navy;
+    final Color fg = rescued ? Colors.white : const Color(0xFF3D2C29);
     final Color bg = rescued
         ? ReportColors.green
         : (onPhoto ? Colors.white.withValues(alpha: 0.92) : Colors.white);

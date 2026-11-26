@@ -8,15 +8,21 @@ import 'package:flutter/material.dart';
 class PetPhoto extends StatelessWidget {
   final String path;
   final Widget fallback;
+  final BoxFit fit;
 
-  const PetPhoto({super.key, required this.path, required this.fallback});
+  const PetPhoto({
+    super.key,
+    required this.path,
+    required this.fallback,
+    this.fit = BoxFit.cover,
+  });
 
   @override
   Widget build(BuildContext context) {
     if (path.startsWith('assets/')) {
       return Image.asset(
         path,
-        fit: BoxFit.cover,
+        fit: fit,
         errorBuilder: (_, _, _) => fallback,
       );
     }
@@ -24,7 +30,7 @@ class PetPhoto extends StatelessWidget {
       // Photo from the database (Supabase Storage).
       return Image.network(
         path,
-        fit: BoxFit.cover,
+        fit: fit,
         loadingBuilder: (_, child, progress) =>
         progress == null ? child : fallback,
         errorBuilder: (_, _, _) => fallback,
@@ -34,13 +40,13 @@ class PetPhoto extends StatelessWidget {
       // On web, the picked photo's path is a browser URL, not a real file.
       return Image.network(
         path,
-        fit: BoxFit.cover,
+        fit: fit,
         errorBuilder: (_, _, _) => fallback,
       );
     }
     return Image.file(
       File(path),
-      fit: BoxFit.cover,
+      fit: fit,
       errorBuilder: (_, _, _) => fallback,
     );
   }

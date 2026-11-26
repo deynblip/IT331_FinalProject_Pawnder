@@ -12,16 +12,91 @@ import '../models/content_report.dart';
 import '../widgets/report_content_dialog.dart';
 import '../utils/responsive.dart';
 import '../widgets/pet_contact_buttons.dart';
+import '../services/adoption_service.dart';
+import '../widgets/post_actions.dart';
 
-class AdoptionDetailsScreen extends StatelessWidget {
+class AdoptionDetailsScreen extends StatefulWidget {
   final AdoptionPet pet;
 
-  const AdoptionDetailsScreen({super.key, required this.pet});
+  /// True only when opened from Profile > My Adoption Posts. Then the review
+  /// status and the Edit / Remove buttons are shown (instead of Apply).
+  final bool showOwnerActions;
+
+  const AdoptionDetailsScreen({
+    super.key,
+    required this.pet,
+    this.showOwnerActions = false,
+  });
+
+  @override
+  State<AdoptionDetailsScreen> createState() => _AdoptionDetailsScreenState();
+}
+
+class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
+  /// Always the latest version of the pet (it changes after an edit).
+  AdoptionPet get pet => AdoptionService.byId(widget.pet.id) ?? widget.pet;
+
+  @override
+  void initState() {
+    super.initState();
+    AdoptionService.changes.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    AdoptionService.changes.removeListener(_onChanged);
+    super.dispose();
+  }
+
+  void _onChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _remove(BuildContext context) async {
+    final removed = await removeMyPost(context, pet);
+    if (removed && context.mounted) Navigator.pop(context);
+  }
+
+  Widget _ownerBar(BuildContext context) {
+    final bool rejected = pet.status == PostStatus.rejected;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(context.hPad, 4, context.hPad, 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => editMyPost(context, pet),
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              label: Text(rejected ? 'Resubmit' : 'Edit'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: kBlue,
+                side: const BorderSide(color: kBlue),
+                minimumSize: const Size(0, 48),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _remove(context),
+              icon: const Icon(Icons.delete_outline, size: 18),
+              label: const Text('Remove'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+                side: const BorderSide(color: Colors.red),
+                minimumSize: const Size(0, 48),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _showHealthInfo(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: kSurfaceWhite,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -31,7 +106,7 @@ class AdoptionDetailsScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Health Information',
               style: TextStyle(
                 color: kNavy,
@@ -42,7 +117,7 @@ class AdoptionDetailsScreen extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               pet.healthInfoOrDefault,
-              style: const TextStyle(color: kNavy, fontSize: 16),
+              style: TextStyle(color: kNavy, fontSize: 16),
             ),
           ],
         ),
@@ -84,7 +159,7 @@ class AdoptionDetailsScreen extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: kNavy,
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -118,7 +193,7 @@ class AdoptionDetailsScreen extends StatelessWidget {
                             color: kBlue,
                           ),
                         ),
-                        const Text(
+                        Text(
                           'Details',
                           style: TextStyle(
                             color: kNavy,
@@ -131,7 +206,7 @@ class AdoptionDetailsScreen extends StatelessWidget {
                           const Spacer(),
                           IconButton(
                             tooltip: 'Report this post',
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.flag_outlined,
                               color: ReportColors.grey,
                             ),
@@ -146,6 +221,12 @@ class AdoptionDetailsScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
+
+                    // Owner only: is the post Pending, Approved or Rejected?
+                    if (widget.showOwnerActions) ...[
+                      PostReviewNote(pet: pet),
+                      const SizedBox(height: 12),
+                    ],
 
                     // Photo(s). Dots appear only when there is more than 1 photo.
                     _PetPhotos(photos: pet.photos),
@@ -168,7 +249,7 @@ class AdoptionDetailsScreen extends StatelessWidget {
                               ],
                               Text(
                                 pet.name.toUpperCase(),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: kNavy,
                                   fontSize: 30,
                                   fontWeight: FontWeight.w800,
@@ -177,7 +258,7 @@ class AdoptionDetailsScreen extends StatelessWidget {
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.location_on,
                                     size: 16,
                                     color: ReportColors.grey,
@@ -186,7 +267,7 @@ class AdoptionDetailsScreen extends StatelessWidget {
                                   Expanded(
                                     child: Text(
                                       pet.location,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: ReportColors.grey,
                                         fontSize: 15,
                                       ),
@@ -200,7 +281,7 @@ class AdoptionDetailsScreen extends StatelessWidget {
                         InkWell(
                           borderRadius: BorderRadius.circular(12),
                           onTap: () => _showHealthInfo(context),
-                          child: const Padding(
+                          child: Padding(
                             padding: EdgeInsets.all(6),
                             child: Column(
                               children: [
@@ -234,7 +315,7 @@ class AdoptionDetailsScreen extends StatelessWidget {
                         horizontal: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFE8D6),
+                        color: kPeach,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -253,9 +334,9 @@ class AdoptionDetailsScreen extends StatelessWidget {
                     // Poster + contact icons (disabled until screening is passed)
                     Row(
                       children: [
-                        const CircleAvatar(
+                        CircleAvatar(
                           radius: 26,
-                          backgroundColor: Color(0xFFFFE8D6),
+                          backgroundColor: kPeach,
                           child: Icon(
                             Icons.person,
                             color: ReportColors.grey,
@@ -269,13 +350,13 @@ class AdoptionDetailsScreen extends StatelessWidget {
                             children: [
                               Text(
                                 pet.posterName,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: kNavy,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
-                              const Text(
+                              Text(
                                 'Pet Owner',
                                 style: TextStyle(
                                   color: ReportColors.grey,
@@ -293,7 +374,7 @@ class AdoptionDetailsScreen extends StatelessWidget {
                     // About
                     Text(
                       'ABOUT ${pet.name.toUpperCase()}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: kNavy,
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -303,13 +384,13 @@ class AdoptionDetailsScreen extends StatelessWidget {
                     Text(
                       pet.descriptionOrDefault,
                       textAlign: TextAlign.justify,
-                      style: const TextStyle(color: kNavy, fontSize: 16),
+                      style: TextStyle(color: kNavy, fontSize: 16),
                     ),
                     if (pet.reasonForAdoption.trim().isNotEmpty) ...[
                       const SizedBox(height: 16),
                       Text(
                         pet.source.reasonLabel.toUpperCase(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: kNavy,
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
@@ -319,13 +400,16 @@ class AdoptionDetailsScreen extends StatelessWidget {
                       Text(
                         pet.reasonForAdoption,
                         textAlign: TextAlign.justify,
-                        style: const TextStyle(color: kNavy, fontSize: 16),
+                        style: TextStyle(color: kNavy, fontSize: 16),
                       ),
                     ],
                   ],
                 ),
               ),
             ),
+
+            // Owner opened it from My Adoption Posts: Edit / Remove
+            if (widget.showOwnerActions && pet.isMine) _ownerBar(context),
 
             // Hidden on your own post
             if (!pet.isMine)
@@ -381,10 +465,20 @@ class _PetPhotosState extends State<_PetPhotos> {
     super.dispose();
   }
 
+  /// Full-screen na photos: swipe para sa susunod, pinch para mag-zoom.
+  void _openViewer(int start) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _PetPhotoViewer(photos: widget.photos, initialIndex: start),
+      ),
+    );
+  }
+
   Widget _fallback() {
     return Container(
-      color: const Color(0xFFFFE8D6),
-      child: const Center(
+      color: kPeach,
+      child: Center(
         child: Icon(Icons.pets, size: 48, color: ReportColors.grey),
       ),
     );
@@ -408,7 +502,10 @@ class _PetPhotosState extends State<_PetPhotos> {
                 controller: _controller,
                 itemCount: photos.length,
                 onPageChanged: (i) => setState(() => _index = i),
-                itemBuilder: (_, i) => PetPhoto(path: photos[i], fallback: _fallback()),
+                itemBuilder: (_, i) => GestureDetector(
+                  onTap: () => _openViewer(i),
+                  child: PetPhoto(path: photos[i], fallback: _fallback()),
+                ),
               ),
             if (photos.length > 1)
               Positioned(
@@ -432,6 +529,118 @@ class _PetPhotosState extends State<_PetPhotos> {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Full-screen viewer. Swipe to change photo; pinch to zoom (swiping is
+/// paused while zoomed in so panning the photo doesn't change the page).
+class _PetPhotoViewer extends StatefulWidget {
+  final List<String> photos;
+  final int initialIndex;
+
+  const _PetPhotoViewer({required this.photos, required this.initialIndex});
+
+  @override
+  State<_PetPhotoViewer> createState() => _PetPhotoViewerState();
+}
+
+class _PetPhotoViewerState extends State<_PetPhotoViewer> {
+  late final PageController _controller =
+  PageController(initialPage: widget.initialIndex);
+  late int _index = widget.initialIndex;
+  bool _zoomed = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final photos = widget.photos;
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: photos.length > 1
+            ? Text('${_index + 1} / ${photos.length}',
+            style: const TextStyle(fontSize: 16))
+            : null,
+        centerTitle: true,
+      ),
+      body: PageView.builder(
+        controller: _controller,
+        itemCount: photos.length,
+        physics: _zoomed
+            ? const NeverScrollableScrollPhysics()
+            : const PageScrollPhysics(),
+        onPageChanged: (i) => setState(() {
+          _index = i;
+          _zoomed = false;
+        }),
+        itemBuilder: (_, i) => _ZoomablePhoto(
+          path: photos[i],
+          onZoomChanged: (z) {
+            if (z != _zoomed) setState(() => _zoomed = z);
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _ZoomablePhoto extends StatefulWidget {
+  final String path;
+  final ValueChanged<bool> onZoomChanged;
+
+  const _ZoomablePhoto({required this.path, required this.onZoomChanged});
+
+  @override
+  State<_ZoomablePhoto> createState() => _ZoomablePhotoState();
+}
+
+class _ZoomablePhotoState extends State<_ZoomablePhoto> {
+  final TransformationController _tc = TransformationController();
+  bool _zoomed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tc.addListener(() {
+      final z = _tc.value.getMaxScaleOnAxis() > 1.02;
+      if (z != _zoomed) {
+        setState(() => _zoomed = z);
+        widget.onZoomChanged(z);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tc.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InteractiveViewer(
+      transformationController: _tc,
+      minScale: 1,
+      maxScale: 5,
+      panEnabled: _zoomed,
+      child: SizedBox.expand(
+        child: PetPhoto(
+          path: widget.path,
+          fit: BoxFit.contain,
+          fallback: const Center(
+            child: Icon(Icons.broken_image_outlined,
+                size: 48, color: Colors.white54),
+          ),
         ),
       ),
     );

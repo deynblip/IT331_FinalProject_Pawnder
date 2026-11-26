@@ -82,14 +82,14 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
         code: codeController.text,
       );
     } on AuthFailure catch (e) {
-      if (mounted) showMessage(context, e.message);
+      if (mounted) showAuthMessage(context, e.message);
       return;
     } finally {
       if (mounted) setState(() => _busy = false);
     }
     if (!mounted) return;
 
-    showMessage(
+    showAuthMessage(
       context,
       widget.applying
           ? 'Email verified! Your rescuer application is pending verification.'
@@ -118,10 +118,10 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
     try {
       await AuthService.resendSignupCode(widget.email);
       if (!mounted) return;
-      showMessage(context, 'We sent a new code to ${widget.email}.');
+      showAuthMessage(context, 'We sent a new code to ${widget.email}.');
       setState(_startCooldown);
     } on AuthFailure catch (e) {
-      if (mounted) showMessage(context, e.message);
+      if (mounted) showAuthMessage(context, e.message);
     } finally {
       if (mounted) setState(() => _resending = false);
     }
@@ -137,7 +137,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
         Text(
           'We sent a code to\n${widget.email}\nEnter it below to finish creating your account.',
           textAlign: TextAlign.center,
-          style: const TextStyle(color: kHintGray, fontSize: 13, height: 1.3),
+          style: TextStyle(color: kHintGray, fontSize: 13, height: 1.3),
         ),
         const SizedBox(height: 22),
         Form(
@@ -166,7 +166,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           "Can't find it? Check your Spam folder.",
           textAlign: TextAlign.center,
           style: TextStyle(color: kHintGray, fontSize: 12),

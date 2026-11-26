@@ -42,7 +42,7 @@ class _AuthFieldState extends State<AuthField> {
           child: FieldLabel(
             widget.label,
             required: widget.validator != null,
-            style: const TextStyle(color: kHintGray, fontSize: 12),
+            style: TextStyle(color: kHintGray, fontSize: 12),
           ),
         ),
         const SizedBox(height: 6),
@@ -64,7 +64,7 @@ class _AuthFieldState extends State<AuthField> {
             keyboardType: widget.keyboardType,
             validator: widget.validator,
             onChanged: widget.onChanged,
-            style: const TextStyle(fontSize: 15, color: kNavy),
+            style: TextStyle(fontSize: 15, color: kNavy),
             decoration: InputDecoration(
               border: InputBorder.none,
               errorStyle: const TextStyle(fontSize: 11),
@@ -144,7 +144,7 @@ class AuthLink extends StatelessWidget {
         child: Text(
           text,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: kHintGray, fontSize: 12),
+          style: TextStyle(color: kHintGray, fontSize: 12),
         ),
       ),
     );

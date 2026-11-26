@@ -88,7 +88,7 @@ class _RejectDialogState extends State<_RejectDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
         'Reject ${widget.applicantName}?',
-        style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+        style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
       ),
       content: TextField(
         controller: _reason,
@@ -133,7 +133,7 @@ Future<void> _screen(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Forward to ${app.posterName}?',
-          style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+          style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
         ),
         content: Text(
           '${app.fullName} passed screening. ${app.posterName} will see the '
@@ -273,7 +273,7 @@ class _AdminApplicationsScreenState extends State<AdminApplicationsScreen> {
                 children: [
                   const AdminTopBar(),
                   const SizedBox(height: 14),
-                  const Text(
+                  Text(
                     'Adoption Applications',
                     style: TextStyle(
                       color: kNavy,
@@ -341,7 +341,7 @@ class _AdminApplicationsScreenState extends State<AdminApplicationsScreen> {
                         _selected == 'All'
                             ? 'No adoption applications yet.'
                             : 'No ${_selected.toLowerCase()} applications.',
-                        style: const TextStyle(color: kHintGray),
+                        style: TextStyle(color: kHintGray),
                       ),
                     );
                   }
@@ -423,7 +423,7 @@ class _ApplicationCard extends StatelessWidget {
                             app.petName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: kNavy,
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
@@ -437,17 +437,17 @@ class _ApplicationCard extends StatelessWidget {
                     if (pet != null)
                       Text(
                         pet!.summary,
-                        style: const TextStyle(color: kHintGray, fontSize: 12),
+                        style: TextStyle(color: kHintGray, fontSize: 12),
                       ),
                     Text(
                       'Applicant: ${app.fullName}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: kHintGray, fontSize: 12),
+                      style: TextStyle(color: kHintGray, fontSize: 12),
                     ),
                     Text(
                       'Applied on: ${_dateText(app.createdAt)}',
-                      style: const TextStyle(color: kHintGray, fontSize: 12),
+                      style: TextStyle(color: kHintGray, fontSize: 12),
                     ),
                   ],
                 ),
@@ -480,7 +480,7 @@ class _ApplicationCard extends StatelessWidget {
               onPressed: onView,
               style: OutlinedButton.styleFrom(
                 foregroundColor: kNavy,
-                side: const BorderSide(color: kNavy),
+                side: BorderSide(color: kNavy),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -510,7 +510,7 @@ class AdminApplicationDetailsScreen extends StatelessWidget {
     padding: const EdgeInsets.only(top: 6, bottom: 10),
     child: Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         color: kNavy,
         fontSize: 16,
         fontWeight: FontWeight.w800,
@@ -526,14 +526,14 @@ class AdminApplicationDetailsScreen extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: kHintGray,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 2),
-          Text(value, style: const TextStyle(color: kNavy, fontSize: 15)),
+          Text(value, style: TextStyle(color: kNavy, fontSize: 15)),
         ],
       ),
     );
@@ -625,7 +625,7 @@ class AdminApplicationDetailsScreen extends StatelessWidget {
                       children: [
                         Text(
                           app.petName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: kNavy,
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
@@ -634,13 +634,13 @@ class AdminApplicationDetailsScreen extends StatelessWidget {
                         if (pet != null)
                           Text(
                             '${pet.animalType} · ${pet.summary}',
-                            style: const TextStyle(
+                            style: TextStyle(
                                 color: kHintGray, fontSize: 13),
                           ),
                         Text(
                           'Posted by: ${app.posterName}',
                           style:
-                          const TextStyle(color: kHintGray, fontSize: 13),
+                          TextStyle(color: kHintGray, fontSize: 13),
                         ),
                       ],
                     ),
@@ -682,7 +682,7 @@ class AdminApplicationDetailsScreen extends StatelessWidget {
                         Expanded(
                           child: Text(
                             o.fullName,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 color: kNavy, fontSize: 15),
                           ),
                         ),

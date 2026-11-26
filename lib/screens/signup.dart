@@ -49,11 +49,11 @@ class _SignUpPageState extends State<SignUpPage> {
       barrierDismissible: false,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: kSurfaceWhite,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),
-          title: const Text(
+          title: Text(
             'Terms & Conditions',
             style: TextStyle(
               color: kNavy,
@@ -148,7 +148,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
                   const SizedBox(height: 12),
 
-                  const Text(
+                  Text(
                     'By continuing to use Pawnder, you acknowledge and agree to these Terms & Conditions.',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
@@ -225,7 +225,7 @@ class _SignUpPageState extends State<SignUpPage> {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               color: kNavy,
               fontWeight: FontWeight.w800,
               fontSize: 14,
@@ -268,7 +268,7 @@ class _SignUpPageState extends State<SignUpPage> {
     if (_busy) return;
 
     if (!_agreedToTerms) {
-      showMessage(
+      showAuthMessage(
         context,
         'Please read and agree to the Terms & Conditions.',
       );
@@ -299,7 +299,7 @@ class _SignUpPageState extends State<SignUpPage> {
             : null,
       );
     } on AuthFailure catch (e) {
-      if (mounted) showMessage(context, e.message);
+      if (mounted) showAuthMessage(context, e.message);
       return;
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -321,7 +321,7 @@ class _SignUpPageState extends State<SignUpPage> {
       return;
     }
 
-    showMessage(
+    showAuthMessage(
       context,
       applying
           ? 'Account created! Your rescuer application is pending '

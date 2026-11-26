@@ -64,7 +64,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
       builder: (dialogContext) => AlertDialog(
         title: Text(
           'Withdraw your application for ${a.petName}?',
-          style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+          style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
         ),
         content: const Text(
           'It will no longer be reviewed. You will not be able to apply '
@@ -104,7 +104,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
       top: false,
       child: Container(
         padding: EdgeInsets.fromLTRB(context.hPad, 10, context.hPad, 10),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: kCream,
           border: Border(top: BorderSide(color: kCardBorder)),
         ),
@@ -162,7 +162,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
     padding: const EdgeInsets.only(top: 22, bottom: 8),
     child: Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         color: kNavy,
         fontSize: 18,
         fontWeight: FontWeight.w800,
@@ -177,7 +177,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             color: kNavy,
             fontSize: 14,
             fontWeight: FontWeight.w700,
@@ -186,7 +186,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
         const SizedBox(height: 2),
         Text(
           value.trim().isEmpty ? '—' : value,
-          style: const TextStyle(color: kNavy, fontSize: 15),
+          style: TextStyle(color: kNavy, fontSize: 15),
         ),
       ],
     ),
@@ -210,7 +210,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
             widget.showOwnerActions && (a.canEdit || a.canWithdraw);
 
         final placeholder = Container(
-          color: const Color(0xFFFFE8D6),
+          color: kPeach,
           child: const Center(
             child: Icon(Icons.pets, size: 36, color: Color(0xFF8A746C)),
           ),
@@ -233,7 +233,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
                         icon: const Icon(Icons.arrow_back_ios_new,
                             color: kBlue),
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'Application Details',
                           maxLines: 1,
@@ -280,7 +280,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
                                   children: [
                                     Text(
                                       a.petName,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: kNavy,
                                         fontSize: 22,
                                         fontWeight: FontWeight.w800,
@@ -290,7 +290,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
                                       Text(
                                         '${pet.animalType}  ·  ${pet.summary}',
                                         style:
-                                        const TextStyle(color: kHintGray),
+                                        TextStyle(color: kHintGray),
                                       ),
                                     const SizedBox(height: 8),
                                     StatusChip(
@@ -329,7 +329,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
                                 const SizedBox(height: 6),
                                 Text(
                                   applicationStatusMessage(a),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       color: kNavy, fontSize: 14),
                                 ),
                                 if (a.status == ApplicationStatus.rejected) ...[
@@ -338,7 +338,7 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
                                     (a.rejectionReason ?? '').trim().isEmpty
                                         ? 'No reason was provided.'
                                         : 'Reason: ${a.rejectionReason}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: kNavy,
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,

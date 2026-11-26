@@ -144,7 +144,7 @@ class _ProfilePageState extends State<ProfilePage> {
         shape: BoxShape.circle,
         border: Border.all(color: kNavy, width: 4),
       ),
-      child: const Icon(Icons.person, size: 80, color: kNavy),
+      child: Icon(Icons.person, size: 80, color: kNavy),
     );
 
     return GestureDetector(
@@ -193,7 +193,7 @@ class _ProfilePageState extends State<ProfilePage> {
       decoration: BoxDecoration(
         color: kCardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF5DEC8)),
+        border: Border.all(color: kCardBorder),
         boxShadow: const [
           BoxShadow(
             color: Color(0x14C4531F),
@@ -212,7 +212,7 @@ class _ProfilePageState extends State<ProfilePage> {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: kNavy,
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
@@ -224,7 +224,7 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 8),
           Text(
             message,
-            style: const TextStyle(color: kHintGray, fontSize: 13, height: 1.4),
+            style: TextStyle(color: kHintGray, fontSize: 13, height: 1.4),
           ),
           if (buttonText != null) ...[
             const SizedBox(height: 12),
@@ -267,7 +267,7 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               color: kNavy,
               fontSize: 20,
               fontWeight: FontWeight.w800,
@@ -277,7 +277,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: kHintGray, fontSize: 12),
+            style: TextStyle(color: kHintGray, fontSize: 12),
           ),
         ],
       ),
@@ -298,7 +298,7 @@ class _ProfilePageState extends State<ProfilePage> {
           decoration: BoxDecoration(
             color: kCardColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFF5DEC8)),
+            border: Border.all(color: kCardBorder),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x14C4531F),
@@ -312,7 +312,7 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'My Rescue Record',
                       style: TextStyle(
@@ -452,12 +452,22 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             displayName,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: kNavy,
               fontSize: 26,
               fontWeight: FontWeight.w800,
             ),
           ),
+
+          // Email of the account, under the name
+          if ((AuthService.currentEmail ?? '').isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              AuthService.currentEmail!,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: kHintGray, fontSize: 14),
+            ),
+          ],
 
           const SizedBox(height: 12),
 
@@ -471,7 +481,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
           const SizedBox(height: 28),
 
-          const Align(
+          Align(
             alignment: Alignment.centerLeft,
             child: Padding(
               padding: EdgeInsets.only(left: 6),
@@ -492,7 +502,7 @@ class _ProfilePageState extends State<ProfilePage> {
             decoration: BoxDecoration(
               color: kCardColor,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFF5DEC8)),
+              border: Border.all(color: kCardBorder),
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x14C4531F),
@@ -512,7 +522,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     MaterialPageRoute(builder: (_) => const MyReportsScreen()),
                   ),
                 ),
-                const Divider(height: 1, color: Color(0xFFF5DEC8)),
+                Divider(height: 1, color: kCardBorder),
                 _activityRow(
                   icon: Icons.pets,
                   title: 'Adoption Applications',
@@ -528,7 +538,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     if (mounted) setState(() {}); // refresh the count
                   }),
                 ),
-                const Divider(height: 1, color: Color(0xFFF5DEC8)),
+                Divider(height: 1, color: kCardBorder),
                 _activityRow(
                   icon: Icons.volunteer_activism_outlined,
                   title: 'My Adoption Posts',
@@ -568,7 +578,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   color: kNavy,
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
@@ -577,10 +587,10 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             Text(
               '$count',
-              style: const TextStyle(color: kHintGray, fontSize: 17),
+              style: TextStyle(color: kHintGray, fontSize: 17),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, color: kHintGray),
+            Icon(Icons.chevron_right, color: kHintGray),
           ],
         ),
       ),

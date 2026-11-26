@@ -8,7 +8,11 @@ import '../../services/auth_service.dart';
 import '../../services/content_report_service.dart';
 import '../../services/rescuer_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/push_service.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/theme_controller.dart';
+import '../drawer/about.dart';
+import '../drawer/settings.dart';
 import '../login.dart';
 import 'admin_dashboard.dart';
 import 'admin_posts_screen.dart';
@@ -27,6 +31,7 @@ class AdminLayout extends StatefulWidget {
 }
 
 class _AdminLayoutState extends State<AdminLayout> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
   Timer? _poll;
 
@@ -42,6 +47,10 @@ class _AdminLayoutState extends State<AdminLayout> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      resetToLightMode(); // Admin stays light
+      PushService.openPendingTap();
+    });
     _reload();
     _poll = Timer.periodic(const Duration(seconds: 10), (_) => _reload());
   }
@@ -88,6 +97,127 @@ class _AdminLayoutState extends State<AdminLayout> {
     }
   }
 
+  void _openChangePassword() {
+    _scaffoldKey.currentState?.closeDrawer();
+    final String? email = AuthService.currentEmail;
+    if (email == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ChangePasswordPage(email: email)),
+    );
+  }
+
+  void _openAbout() {
+    _scaffoldKey.currentState?.closeDrawer();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AboutPage()),
+    );
+  }
+
+  Future<void> _logoutFromDrawer() async {
+    _scaffoldKey.currentState?.closeDrawer();
+    await _confirmLogout();
+  }
+
+  Widget _drawer() {
+    final String email = AuthService.currentEmail ?? '';
+    return Drawer(
+      backgroundColor: kCream,
+      child: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(gradient: kSunsetGradient),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.admin_panel_settings,
+                        color: kBlue, size: 32),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    widget.name.isNotEmpty ? widget.name : 'Admin',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Administrator',
+                    style: TextStyle(color: Colors.white, fontSize: 13),
+                  ),
+                  if (email.isNotEmpty)
+                    Text(
+                      email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                      const TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            ListTile(
+              leading: Icon(Icons.lock_outline, color: kNavy),
+              title: Text(
+                'Change Password',
+                style: TextStyle(
+                  color: kNavy,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onTap: _openChangePassword,
+            ),
+            ListTile(
+              leading: Icon(Icons.info_outline, color: kNavy),
+              title: Text(
+                'About Pawnder',
+                style: TextStyle(
+                  color: kNavy,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onTap: _openAbout,
+            ),
+            const Spacer(),
+            Divider(color: kCardBorder),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text(
+                'Log Out',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              onTap: _logoutFromDrawer,
+            ),
+            Padding(
+              padding: EdgeInsets.only(top: 4, bottom: 14),
+              child: Text(
+                'Pawnder · Version 1.0.0',
+                style: TextStyle(color: kHintGray, fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _badged(IconData icon, int count) {
     return Badge(
       isLabelVisible: count > 0,
@@ -99,7 +229,7 @@ class _AdminLayoutState extends State<AdminLayout> {
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
-      AdminDashboard(name: widget.name, onLogout: _confirmLogout),
+      AdminDashboard(name: widget.name),
       const AdminPostsScreen(),
       const AdminApplicationsScreen(),
       const AdminReportedScreen(),
@@ -107,7 +237,9 @@ class _AdminLayoutState extends State<AdminLayout> {
     ];
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: kCream,
+      drawer: _drawer(),
       body: IndexedStack(index: _selectedIndex, children: pages),
       bottomNavigationBar: ListenableBuilder(
         listenable: Listenable.merge([

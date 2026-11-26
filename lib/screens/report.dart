@@ -64,7 +64,7 @@ class _ReportsPageState extends State<ReportsPage> {
           child: Text(
             text,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: kHintGray),
+            style: TextStyle(color: kHintGray),
           ),
         ),
         if (showRetry)
@@ -114,7 +114,7 @@ class _ReportsPageState extends State<ReportsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Reports',
                 style: TextStyle(
                   fontSize: 28,
@@ -143,21 +143,40 @@ class _ReportsPageState extends State<ReportsPage> {
             ],
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            children: _filters.keys.map((f) {
-              final selected = _selected == f;
-              return ChoiceChip(
-                label: Text(f),
-                selected: selected,
-                showCheckmark: false,
-                selectedColor: kBlue,
-                backgroundColor: Colors.white,
-                side: const BorderSide(color: kBlue),
-                labelStyle: TextStyle(color: selected ? Colors.white : kBlue),
-                onSelected: (_) => setState(() => _selected = f),
-              );
-            }).toList(),
+          // All four filters on one line; each chip takes an equal share.
+          Row(
+            children: [
+              for (final f in _filters.keys) ...[
+                if (f != _filters.keys.first) const SizedBox(width: 6),
+                Expanded(
+                  child: ChoiceChip(
+                    label: SizedBox(
+                      width: double.infinity,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          f,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: _selected == f ? Colors.white : kBlue,
+                          ),
+                        ),
+                      ),
+                    ),
+                    selected: _selected == f,
+                    showCheckmark: false,
+                    selectedColor: kBlue,
+                    backgroundColor: kSurfaceWhite,
+                    side: const BorderSide(color: kBlue),
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    labelPadding: EdgeInsets.zero,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    onSelected: (_) => setState(() => _selected = f),
+                  ),
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: 16),
           Expanded(

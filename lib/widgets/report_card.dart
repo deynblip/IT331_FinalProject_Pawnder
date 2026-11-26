@@ -11,35 +11,41 @@ class ReportCard extends StatelessWidget {
   final StrayReport report;
   final VoidCallback onTap;
   final bool showStatus;
+  final bool compact;
 
   const ReportCard({
     super.key,
     required this.report,
     required this.onTap,
     this.showStatus = true,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.only(bottom: compact ? 0 : 14),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(compact ? 8 : 14),
           decoration: BoxDecoration(
             color: kCardColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFF5DEC8)),
+            border: Border.all(color: kCardBorder),
             boxShadow: const [
               BoxShadow(color: Color(0x14C4531F), blurRadius: 10, offset: Offset(0, 3)),
             ],
           ),
           child: Row(
             children: [
-              ReportImage(asset: report.imageAsset, width: 76, height: 76),
-              const SizedBox(width: 14),
+              ReportImage(
+                asset: report.imageAsset,
+                width: compact ? 56 : 76,
+                height: compact ? 56 : 76,
+              ),
+              SizedBox(width: compact ? 10 : 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,7 +75,9 @@ class ReportCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       report.title,
-                      style: const TextStyle(
+                      maxLines: compact ? 1 : null,
+                      overflow: compact ? TextOverflow.ellipsis : null,
+                      style: TextStyle(
                         color: ReportColors.navy,
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
@@ -77,12 +85,12 @@ class ReportCard extends StatelessWidget {
                     ),
                     Text(
                       '${report.distanceText}  ·  ${report.dateText}',
-                      style: const TextStyle(color: ReportColors.grey, fontSize: 13),
+                      style: TextStyle(color: ReportColors.grey, fontSize: 13),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: ReportColors.grey),
+              Icon(Icons.chevron_right, color: ReportColors.grey),
             ],
           ),
         ),

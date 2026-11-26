@@ -20,7 +20,7 @@ class AdoptPage extends StatefulWidget {
 }
 
 class _AdoptPageState extends State<AdoptPage> {
-  static const List<String> _filters = ['Dogs', 'Cats', 'All Pets'];
+  static const List<String> _filters = ['All Pets', 'Dogs', 'Cats'];
   String _selected = 'All Pets';
 
   // Second filter row: where the pet comes from (null = All).
@@ -74,7 +74,7 @@ class _AdoptPageState extends State<AdoptPage> {
         selected: selected,
         showCheckmark: false,
         visualDensity: VisualDensity.compact,
-        selectedColor: kNavy,
+        selectedColor: kNavyFill,
         backgroundColor: kPeach,
         side: BorderSide.none,
         labelStyle: TextStyle(
@@ -124,7 +124,7 @@ class _AdoptPageState extends State<AdoptPage> {
       backgroundColor: kCream,
       floatingActionButton: FloatingActionButton(
         onPressed: _postPet,
-        backgroundColor: kNavy,
+        backgroundColor: kNavyFill,
         foregroundColor: Colors.white,
         child: const Icon(Icons.add, size: 30),
       ),
@@ -133,7 +133,7 @@ class _AdoptPageState extends State<AdoptPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Adopt a Pet',
               style: TextStyle(
                 fontSize: 28,
@@ -151,7 +151,7 @@ class _AdoptPageState extends State<AdoptPage> {
                   selected: selected,
                   showCheckmark: false,
                   selectedColor: kBlue,
-                  backgroundColor: Colors.white,
+                  backgroundColor: kSurfaceWhite,
                   side: const BorderSide(color: kBlue),
                   labelStyle: TextStyle(color: selected ? Colors.white : kBlue),
                   onSelected: (_) => setState(() => _selected = f),
@@ -177,7 +177,7 @@ class _AdoptPageState extends State<AdoptPage> {
             child: items.isEmpty
                 ? ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              children: const [
+              children: [
                 SizedBox(height: 120),
                 Center(
                   child: Text(

@@ -1,6 +1,3 @@
--- Applicants can EDIT or WITHDRAW their own adoption application.
--- Run this ONCE in Supabase > SQL Editor (the whole file). Do not edit 0001 or 0002.
---
 -- Rules:
 --  * Only the applicant can edit or withdraw their application.
 --  * EDIT: only while the application is still pending screening.
@@ -8,7 +5,6 @@
 --  * Approved, rejected or withdrawn applications cannot be changed.
 --  * Withdrawn applications are kept (never deleted).
 
--- New status. (Kept outside the transaction below on purpose.)
 alter type public.application_status add value if not exists 'withdrawn';
 
 begin;

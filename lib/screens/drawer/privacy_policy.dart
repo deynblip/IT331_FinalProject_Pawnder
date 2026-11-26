@@ -10,10 +10,10 @@ class PrivacyPolicyPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: kCream,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: kSurfaceWhite,
         foregroundColor: kNavy,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Privacy Policy',
           style: TextStyle(
             color: kNavy,
@@ -21,12 +21,12 @@ class PrivacyPolicyPage extends StatelessWidget {
           ),
         ),
         centerTitle: true,
-        bottom: const PreferredSize(
+        bottom: PreferredSize(
           preferredSize: Size.fromHeight(1),
           child: Divider(
             height: 1,
             thickness: 1,
-            color: Color(0xFFF0E2D6),
+            color: kCardBorder,
           ),
         ),
       ),
@@ -35,7 +35,7 @@ class PrivacyPolicyPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Last Updated: November 2026',
               style: TextStyle(
                 color: kHintGray,
@@ -46,7 +46,7 @@ class PrivacyPolicyPage extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            const Text(
+            Text(
               'Your Privacy Matters',
               style: TextStyle(
                 color: kNavy,
@@ -206,7 +206,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                 color: kBlue.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
+              child: Text(
                 'By continuing to use Pawnder, you acknowledge that you have '
                     'read and understood this Privacy Policy.',
                 style: TextStyle(
@@ -251,7 +251,7 @@ class PrivacyPolicyPage extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               color: kNavy,
               fontSize: 16,
               fontWeight: FontWeight.w800,

@@ -10,10 +10,10 @@ class HelpSupportPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: kCream,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: kSurfaceWhite,
         foregroundColor: kNavy,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Help & Support',
           style: TextStyle(
             color: kNavy,
@@ -35,7 +35,7 @@ class HelpSupportPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // INTRODUCTION
-            const Text(
+            Text(
               'How can we help you?',
               style: TextStyle(
                 fontSize: 23,
@@ -218,7 +218,7 @@ class HelpSupportPage extends StatelessWidget {
 
             // 4. CONTACT US
             _sectionTitle('4. Contact Us'),
-            const Text(
+            Text(
               "We're here to help!",
               style: TextStyle(
                 fontSize: 18,
@@ -283,7 +283,7 @@ class HelpSupportPage extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 14),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w800,
           color: kNavy,
@@ -326,7 +326,7 @@ class HelpSupportPage extends StatelessWidget {
         collapsedIconColor: kNavy,
         title: Text(
           question,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
             color: kNavy,
@@ -361,7 +361,7 @@ class HelpSupportPage extends StatelessWidget {
             backgroundColor: kBlue.withValues(alpha: 0.12),
             child: Text(
               number,
-              style: const TextStyle(
+              style: TextStyle(
                 color: kNavy,
                 fontWeight: FontWeight.w800,
                 fontSize: 13,
@@ -375,7 +375,7 @@ class HelpSupportPage extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     color: kNavy,
@@ -534,7 +534,7 @@ class HelpSupportPage extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     color: kNavy,

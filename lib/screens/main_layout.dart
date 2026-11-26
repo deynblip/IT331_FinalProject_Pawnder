@@ -10,6 +10,7 @@ import 'report_stray.dart';
 import 'adopt.dart';
 import 'profile.dart';
 import 'login.dart';
+import '../services/push_service.dart';
 import '../services/auth_service.dart';
 import '../services/adoption_service.dart';
 import '../services/application_service.dart';
@@ -50,6 +51,11 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      applySavedMode(); // user side: use the saved dark / light choice
+      PushService.openPendingTap();
+    });
+
     _poll = Timer.periodic(
       const Duration(seconds: 20),
           (_) {

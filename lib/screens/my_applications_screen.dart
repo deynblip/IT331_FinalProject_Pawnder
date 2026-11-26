@@ -64,7 +64,7 @@ class MyApplicationsScreen extends StatelessWidget {
                         icon: const Icon(Icons.arrow_back_ios_new,
                             color: kBlue),
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'My Applications',
                           maxLines: 1,
@@ -85,7 +85,7 @@ class MyApplicationsScreen extends StatelessWidget {
                         items.length == 1
                             ? '1 application submitted'
                             : '${items.length} applications submitted',
-                        style: const TextStyle(color: kHintGray),
+                        style: TextStyle(color: kHintGray),
                       ),
                     ),
                   const SizedBox(height: 12),
@@ -95,10 +95,10 @@ class MyApplicationsScreen extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.pets,
+                          Icon(Icons.pets,
                               size: 48, color: kHintGray),
                           const SizedBox(height: 12),
-                          const Text(
+                          Text(
                             "You haven't submitted any adoption "
                                 'applications yet.',
                             textAlign: TextAlign.center,
@@ -161,7 +161,7 @@ class _ApplicationCard extends StatelessWidget {
     ].join('  ·  ');
 
     final placeholder = Container(
-      color: const Color(0xFFFFE8D6),
+      color: kPeach,
       child: const Center(
         child: Icon(Icons.pets, size: 30, color: Color(0xFF8A746C)),
       ),
@@ -177,7 +177,7 @@ class _ApplicationCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: kCardColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFF5DEC8)),
+            border: Border.all(color: kCardBorder),
             boxShadow: const [
               BoxShadow(
                   color: Color(0x14C4531F), blurRadius: 10, offset: Offset(0, 3)),
@@ -210,7 +210,7 @@ class _ApplicationCard extends StatelessWidget {
                       application.petName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: ReportColors.navy,
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
@@ -220,13 +220,13 @@ class _ApplicationCard extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: ReportColors.grey, fontSize: 13),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: ReportColors.grey),
+              Icon(Icons.chevron_right, color: ReportColors.grey),
             ],
           ),
         ),

@@ -1,4 +1,6 @@
-// Ilagay sa: lib/main.dart  (PALITAN ANG BUONG LAMAN)
+import 'dart:async';
+import 'services/push_service.dart';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -16,16 +18,20 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await loadDarkPref(); // saved dark / light choice
 
-  // Connect to the Pawnder database (Supabase) before the app starts.
+  // Show the app right away; the database connects while the loading screen shows.
+  runApp(PawnderApp(backendReady: _initBackend()));
+  unawaited(PushService.init(navigatorKey));
+}
+
+Future<void> _initBackend() async {
   await Supabase.initialize(
     url: SupabaseConfig.url,
     publishableKey: SupabaseConfig.publishableKey,
   );
 
   _listenForEndedSession();
-
-  runApp(const PawnderApp());
 }
 
 /// If the server ends the session while the app is open (expired, or the
@@ -53,14 +59,33 @@ void _listenForEndedSession() {
   });
 }
 
+ThemeMode _shownMode = ThemeMode.light;
+
+/// Colors come from getters in app_colors.dart, so after the theme flips we
+/// mark every screen dirty once and each one re-reads its colors.
+void _rebuildAllScreens() {
+  void mark(Element e) {
+    e.markNeedsBuild();
+    e.visitChildren(mark);
+  }
+
+  (navigatorKey.currentContext as Element?)?.visitChildren(mark);
+}
+
 class PawnderApp extends StatelessWidget {
-  const PawnderApp({super.key});
+  final Future<void>? backendReady;
+
+  const PawnderApp({super.key, this.backendReady});
 
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeModeNotifier,
       builder: (context, mode, _) {
+        if (mode != _shownMode) {
+          _shownMode = mode;
+          WidgetsBinding.instance.addPostFrameCallback((_) => _rebuildAllScreens());
+        }
         return MaterialApp(
           navigatorKey: navigatorKey,
           debugShowCheckedModeBanner: false,
@@ -81,7 +106,7 @@ class PawnderApp extends StatelessWidget {
             scaffoldBackgroundColor: kDarkBg,
           ),
           builder: (context, child) => _ResponsiveFrame(child: child!),
-          home: const StartupPage(),
+          home: StartupPage(backendReady: backendReady),
         );
       },
     );

@@ -5,13 +5,12 @@ import '../services/report_service.dart';
 import '../services/response_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/report_style.dart';
-import '../widgets/report_image.dart';
+import '../widgets/photo_gallery.dart';
 import '../widgets/status_chip.dart';
 import '../widgets/rescuer_badge.dart';
 import '../models/content_report.dart';
 import '../widgets/report_content_dialog.dart';
 import '../utils/responsive.dart';
-import 'edit_report_screen.dart';
 import 'edit_report_screen.dart';
 
 class ReportDetailsScreen extends StatefulWidget {
@@ -104,7 +103,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(title,
-            style: const TextStyle(color: ReportColors.navy, fontWeight: FontWeight.w800)),
+            style: TextStyle(color: ReportColors.navy, fontWeight: FontWeight.w800)),
         content: Text(message),
         actions: [
           TextButton(
@@ -187,7 +186,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     if (_isVerified) {
       final picked = await showModalBottomSheet<RescueOutcome>(
         context: context,
-        backgroundColor: Colors.white,
+        backgroundColor: kSurfaceWhite,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
@@ -198,7 +197,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('How did this end?',
+                Text('How did this end?',
                     style: TextStyle(
                         color: ReportColors.navy, fontSize: 20, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
@@ -249,7 +248,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: lostPetColor.withValues(alpha: 0.4)),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.pets, color: lostPetColor),
@@ -285,6 +284,91 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     );
   }
 
+  Widget _sightingRow(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: ReportColors.grey),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: ReportColors.grey,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  color: ReportColors.navy,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _sightingCard() {
+    final Color accent = urgencyColor(_report.urgency);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: kCardColor,
+          border: Border.all(color: kCardBorder),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(width: 6, color: accent),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _sightingRow(
+                          Icons.location_on, 'LOCATION', _report.location),
+                      Padding(
+                        padding: EdgeInsets.symmetric(vertical: 10),
+                        child: Divider(height: 1, color: kCardBorder),
+                      ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _sightingRow(
+                                Icons.pets, 'ANIMAL', _report.animalType),
+                          ),
+                          Expanded(
+                            child: _sightingRow(Icons.near_me_outlined,
+                                'DISTANCE', _report.distanceText),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _field(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -292,9 +376,9 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style: const TextStyle(color: ReportColors.navy, fontSize: 18, fontWeight: FontWeight.w700)),
+              style: TextStyle(color: ReportColors.navy, fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 2),
-          Text(value, style: const TextStyle(color: ReportColors.navy, fontSize: 16)),
+          Text(value, style: TextStyle(color: ReportColors.navy, fontSize: 16)),
         ],
       ),
     );
@@ -308,7 +392,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: ReportColors.navy,
+          backgroundColor: kNavyFill,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
         ),
@@ -326,7 +410,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           foregroundColor: ReportColors.navy,
-          side: const BorderSide(color: ReportColors.navy),
+          side: BorderSide(color: ReportColors.navy),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
         ),
         child: Text(text, style: const TextStyle(fontSize: 15)),
@@ -368,7 +452,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                 const SizedBox(height: 2),
                 Text(
                   record,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: ReportColors.grey,
                     fontSize: 12,
                   ),
@@ -400,7 +484,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
           ),
           const SizedBox(width: 8),
           Text(_busyText,
-              style: const TextStyle(color: ReportColors.grey, fontSize: 13)),
+              style: TextStyle(color: ReportColors.grey, fontSize: 13)),
         ],
       ),
     );
@@ -421,7 +505,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
               children: [
                 Text(_loadError!,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: ReportColors.grey)),
+                    style: TextStyle(color: ReportColors.grey)),
                 TextButton(
                   onPressed: _refresh,
                   child: const Text('Try again'),
@@ -441,7 +525,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
           children: [
             const StatusChip(label: 'Needs Rescue', color: ReportColors.red, outlined: true, fontSize: 16),
             const SizedBox(height: 8),
-            const Text('The animal still needs assistance',
+            Text('The animal still needs assistance',
                 style: TextStyle(color: ReportColors.navy, fontSize: 15)),
             const SizedBox(height: 12),
             _primaryButton("I'm on my way!", _onMyWay),
@@ -463,14 +547,14 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
         content = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const StatusChip(label: 'Rescue in Progress', color: ReportColors.navy, outlined: true, fontSize: 16),
+            StatusChip(label: 'Rescue in Progress', color: ReportColors.navy, outlined: true, fontSize: 16),
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.groups, color: ReportColors.navy),
+                Icon(Icons.groups, color: ReportColors.navy),
                 const SizedBox(width: 8),
                 Text('$count responding',
-                    style: const TextStyle(color: ReportColors.navy, fontSize: 15)),
+                    style: TextStyle(color: ReportColors.navy, fontSize: 15)),
               ],
             ),
             if (responders.any((r) => r.checkedIn)) ...[
@@ -514,7 +598,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                 const SizedBox(height: 6),
                 Text(
                   'You must be within ${ResponseService.checkInRadiusMeters.round()} m of the animal.',
-                  style: const TextStyle(color: ReportColors.grey, fontSize: 12),
+                  style: TextStyle(color: ReportColors.grey, fontSize: 12),
                 ),
                 const SizedBox(height: 10),
               ],
@@ -528,7 +612,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
               ),
               if (!me.checkedIn && !me.isVerified && !_report.isMine) ...[
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Check in at the location before you can mark this as rescued.',
                   style: TextStyle(color: ReportColors.grey, fontSize: 12),
                 ),
@@ -538,7 +622,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                 alignment: Alignment.center,
                 child: TextButton(
                   onPressed: _busy ? null : _withdraw,
-                  child: const Text("Cancel · I can't make it",
+                  child: Text("Cancel · I can't make it",
                       style: TextStyle(color: ReportColors.grey)),
                 ),
               ),
@@ -556,12 +640,12 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
               children: [
                 const Icon(Icons.check_circle, color: ReportColors.green, size: 28),
                 const SizedBox(height: 8),
-                const Text('Animal Successfully Rescued',
+                Text('Animal Successfully Rescued',
                     style: TextStyle(color: ReportColors.navy, fontSize: 18)),
                 const SizedBox(height: 4),
                 if (closure != null) ...[
                   Text(closure.outcome.label,
-                      style: const TextStyle(color: ReportColors.grey, fontSize: 13)),
+                      style: TextStyle(color: ReportColors.grey, fontSize: 13)),
                   if (closure.organization != null) ...[
                     const SizedBox(height: 8),
                     RescuerBadge(organization: closure.organization!),
@@ -587,7 +671,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
       decoration: BoxDecoration(
         color: kCardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF5DEC8)),
+        border: Border.all(color: kCardBorder),
         boxShadow: const [BoxShadow(color: Color(0x14C4531F), blurRadius: 10, offset: Offset(0, 3))],
       ),
       child: child,
@@ -642,33 +726,6 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     }
   }
 
-  /// Full-screen na photo; puwedeng i-pinch para mag-zoom.
-  void _openPhoto() {
-    final String? src = _report.imageAsset;
-    if (src == null || src.isEmpty) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-          ),
-          body: Center(
-            child: InteractiveViewer(
-              minScale: 1,
-              maxScale: 5,
-              child: src.startsWith('http')
-                  ? Image.network(src, fit: BoxFit.contain)
-                  : Image.asset(src, fit: BoxFit.contain),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget? _ownerBar() {
     if (!widget.showOwnerActions || !ReportService.canChange(_report)) {
       return null;
@@ -677,9 +734,9 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
       top: false,
       child: Container(
         padding: EdgeInsets.fromLTRB(context.hPad, 10, context.hPad, 12),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: kCream,
-          border: Border(top: BorderSide(color: Color(0xFFF5DEC8))),
+          border: Border(top: BorderSide(color: kCardBorder)),
         ),
         child: Row(
           children: [
@@ -734,14 +791,14 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(Icons.arrow_back_ios_new, color: ReportColors.blue),
                     ),
-                    const Text('Reports',
+                    Text('Reports',
                         style: TextStyle(color: ReportColors.navy, fontSize: 28, fontWeight: FontWeight.w800)),
                     // Report button (not shown on your own report)
                     if (!_report.isMine) ...[
                       const Spacer(),
                       IconButton(
                         tooltip: 'Report this post',
-                        icon: const Icon(Icons.flag_outlined, color: ReportColors.grey),
+                        icon: Icon(Icons.flag_outlined, color: ReportColors.grey),
                         onPressed: () => showReportContentDialog(
                           context,
                           target: ReportTarget.strayReport,
@@ -753,47 +810,53 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
+
+                // Photo(s): swipe if more than one, tap to enlarge.
+                // The urgency sits on the photo so it is seen first.
+                PhotoGallery(
+                  photos: _report.allPhotos,
+                  height: 280,
+                  overlay: StatusChip(
+                    label: _report.urgency.label,
+                    color: urgencyColor(_report.urgency),
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Title + when it was reported
+                Text(
+                  _report.title,
+                  style: TextStyle(
+                    color: ReportColors.navy,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GestureDetector(
-                      onTap: _openPhoto,
-                      child: ReportImage(
-                          asset: _report.imageAsset, width: 150, height: 150),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          StatusChip(
-                            label: _report.urgency.label,
-                            color: urgencyColor(_report.urgency),
-                            fontSize: 18,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(_report.title,
-                              style: const TextStyle(
-                                  color: ReportColors.navy, fontSize: 22, fontWeight: FontWeight.w800)),
-                          const SizedBox(height: 6),
-                          Text(_report.distanceText,
-                              style: const TextStyle(color: ReportColors.grey, fontSize: 15)),
-                          Text(_report.dateText,
-                              style: const TextStyle(color: ReportColors.grey, fontSize: 15)),
-                        ],
-                      ),
+                    Icon(Icons.schedule,
+                        size: 16, color: ReportColors.grey),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Reported ${_report.dateText}',
+                      style: TextStyle(
+                          color: ReportColors.grey, fontSize: 15),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                _field('Animal Type', _report.animalType),
-                _field('Urgency Level', _report.urgency.label),
-                _field('Location', _report.location),
+                const SizedBox(height: 16),
+
+                // Sighting details. The stripe takes the urgency color, so
+                // this does not look like an adoption page.
+                _sightingCard(),
+                const SizedBox(height: 14),
                 Center(
                   child: OutlinedButton.icon(
                     onPressed: _openDirections,
-                    icon: const Icon(Icons.navigation, color: ReportColors.navy),
-                    label: const Column(
+                    icon: Icon(Icons.navigation, color: ReportColors.navy),
+                    label: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text('Get Directions', style: TextStyle(color: ReportColors.navy, fontSize: 17)),
@@ -802,7 +865,7 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                     ),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 56),
-                      side: const BorderSide(color: Color(0xFFF5DEC8)),
+                      side: BorderSide(color: kCardBorder),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     ),
                   ),

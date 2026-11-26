@@ -124,7 +124,7 @@ Future<void> _removeContent(BuildContext context, ContentReport r) async {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
         'Remove ${r.targetTitle}?',
-        style: const TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+        style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
       ),
       content: Text(
         'This permanently removes the ${r.target.label.toLowerCase()} '
@@ -242,7 +242,7 @@ class _AdminReportedScreenState extends State<AdminReportedScreen> {
                 children: [
                   const AdminTopBar(),
                   const SizedBox(height: 14),
-                  const Text(
+                  Text(
                     'Reported Content',
                     style: TextStyle(
                       color: kNavy,
@@ -313,7 +313,7 @@ class _AdminReportedScreenState extends State<AdminReportedScreen> {
                         _selected == 'All'
                             ? 'No reported content.'
                             : 'No ${_selected.toLowerCase()} reports.',
-                        style: const TextStyle(color: kHintGray),
+                        style: TextStyle(color: kHintGray),
                       ),
                     );
                   }
@@ -395,7 +395,7 @@ class _ReportCard extends StatelessWidget {
                             report.targetTitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: kNavy,
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
@@ -410,17 +410,17 @@ class _ReportCard extends StatelessWidget {
                       '${report.target.label} · ${report.reason.label}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: kHintGray, fontSize: 12),
+                      style: TextStyle(color: kHintGray, fontSize: 12),
                     ),
                     Text(
                       'Reported by: ${report.reportedBy}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: kHintGray, fontSize: 12),
+                      style: TextStyle(color: kHintGray, fontSize: 12),
                     ),
                     Text(
                       _dateText(report.createdAt),
-                      style: const TextStyle(color: kHintGray, fontSize: 12),
+                      style: TextStyle(color: kHintGray, fontSize: 12),
                     ),
                   ],
                 ),
@@ -453,7 +453,7 @@ class _ReportCard extends StatelessWidget {
               onPressed: onView,
               style: OutlinedButton.styleFrom(
                 foregroundColor: kNavy,
-                side: const BorderSide(color: kNavy),
+                side: BorderSide(color: kNavy),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -481,7 +481,7 @@ class AdminReportDetailsScreen extends StatelessWidget {
     padding: const EdgeInsets.only(top: 6, bottom: 10),
     child: Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         color: kNavy,
         fontSize: 16,
         fontWeight: FontWeight.w800,
@@ -497,14 +497,14 @@ class AdminReportDetailsScreen extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: kHintGray,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 2),
-          Text(value, style: const TextStyle(color: kNavy, fontSize: 15)),
+          Text(value, style: TextStyle(color: kNavy, fontSize: 15)),
         ],
       ),
     );
@@ -563,7 +563,7 @@ class AdminReportDetailsScreen extends StatelessWidget {
                   Expanded(
                     child: Text(
                       report.targetTitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: kNavy,
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
@@ -592,7 +592,7 @@ class AdminReportDetailsScreen extends StatelessWidget {
               const Divider(height: 28),
               _section('Reported Content'),
               if (!content.exists)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(bottom: 12),
                   child: Text(
                     'This content is no longer available (already removed '
@@ -618,7 +618,7 @@ class AdminReportDetailsScreen extends StatelessWidget {
                         onPressed: () => _dismiss(context, report),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: kNavy,
-                          side: const BorderSide(color: kNavy),
+                          side: BorderSide(color: kNavy),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),

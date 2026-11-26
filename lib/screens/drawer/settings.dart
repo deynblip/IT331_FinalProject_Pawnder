@@ -137,8 +137,7 @@ class _SettingsPageState extends State<SettingsPage> {
               subtitle: 'Use a darker theme for the app',
               value: _isDark,
               onChanged: (value) {
-                themeModeNotifier.value =
-                value ? ThemeMode.dark : ThemeMode.light;
+                setDarkMode(value); // applies and saves the choice
                 setState(() {});
               },
             ),

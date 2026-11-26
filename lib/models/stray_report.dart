@@ -66,6 +66,10 @@ class StrayReport {
   /// (sample data). Null = no photo. ReportImage handles both.
   final String? imageAsset;
 
+  /// All photos of the report (links from the database), first = cover.
+  /// Use [allPhotos] when showing them.
+  final List<String> photos;
+
   /// Distance from the user's phone. Null = location unknown.
   final double? distanceKm;
 
@@ -99,6 +103,7 @@ class StrayReport {
     required this.lng,
     this.description = '',
     this.imageAsset,
+    this.photos = const [],
     this.distanceKm,
     this.responders = 0,
     this.isMine = false,
@@ -112,7 +117,7 @@ class StrayReport {
   factory StrayReport.fromRow(
       Map<String, dynamic> row, {
         required String? currentUserId,
-        String? photoUrl,
+        List<String> photoUrls = const [],
         int responders = 0,
         double? distanceKm,
       }) {
@@ -128,7 +133,8 @@ class StrayReport {
       status: RescueStatus.fromDb(row['rescue_status'] as String?),
       location: (row['address'] as String?) ?? '',
       description: (row['description'] as String?) ?? '',
-      imageAsset: photoUrl,
+      imageAsset: photoUrls.isEmpty ? null : photoUrls.first,
+      photos: photoUrls,
       distanceKm: distanceKm,
       date: DateTime.parse(row['created_at'] as String).toLocal(),
       lat: (row['latitude'] as num).toDouble(),
@@ -167,6 +173,11 @@ class StrayReport {
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
+  /// Every photo to show (falls back to the single cover photo).
+  List<String> get allPhotos => photos.isNotEmpty
+      ? photos
+      : ((imageAsset ?? '').isNotEmpty ? [imageAsset!] : const []);
+
   String get descriptionOrDefault =>
       description.trim().isEmpty ? 'No details provided.' : description;
 
@@ -184,6 +195,7 @@ class StrayReport {
       location: location,
       description: description,
       imageAsset: imageAsset,
+      photos: photos,
       distanceKm: distanceKm ?? this.distanceKm,
       date: date,
       lat: lat,

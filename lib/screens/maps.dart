@@ -33,10 +33,10 @@ class _MapsPageState extends State<MapsPage> {
 
   // null = All
   static const Map<String, int?> _radii = {
+    'All': null,
     '5 km': 5,
     '10 km': 10,
     '20 km': 20,
-    'All': null,
   };
   String _selectedRadius = 'All';
   String? _selectedId;
@@ -66,6 +66,18 @@ class _MapsPageState extends State<MapsPage> {
     _map.move(me, 13);
   }
 
+  /// Round button: moves the map to the phone's location.
+  /// If the location is not known yet, asks for it first (like the banner).
+  Future<void> _goToMe() async {
+    if (_me == null) {
+      await ReportService.fixLocation();
+    }
+    final me = _me;
+    if (me != null && _mapReady) {
+      _map.move(me, 14);
+    }
+  }
+
   /// Distance comes from the phone's GPS. If the location is unknown,
   /// the km filters can't be used, so all reports are shown.
   List<StrayReport> get _visible {
@@ -77,8 +89,9 @@ class _MapsPageState extends State<MapsPage> {
         .where((r) => r.distanceKm != null && r.distanceKm! <= radius)
         .toList();
     if (_me != null) {
-      list.sort((a, b) => (a.distanceKm ?? double.infinity)
-          .compareTo(b.distanceKm ?? double.infinity));
+      list.sort((a, b) =>
+          (a.distanceKm ?? double.infinity)
+              .compareTo(b.distanceKm ?? double.infinity));
     }
     return list;
   }
@@ -88,6 +101,9 @@ class _MapsPageState extends State<MapsPage> {
     for (final r in visible) {
       if (r.id == _selectedId) return r;
     }
+    // Without the phone's location there is no "nearest" report:
+    // wait until the user taps a pin.
+    if (_me == null) return null;
     return visible.first; // the nearest one by default
   }
 
@@ -114,10 +130,9 @@ class _MapsPageState extends State<MapsPage> {
             _selectedId = null;
           }),
           child: Container(
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(vertical: 10),
+            alignment: Alignment.center,padding: const EdgeInsets.symmetric(vertical: 7),
             decoration: BoxDecoration(
-              color: selected ? kBlue : Colors.white,
+              color: selected ? kBlue : kSurfaceWhite,
               border: Border.all(color: selected ? kBlue : kNavy, width: 1.5),
               borderRadius: BorderRadius.circular(30),
             ),
@@ -125,7 +140,7 @@ class _MapsPageState extends State<MapsPage> {
               label,
               style: TextStyle(
                 color: selected ? Colors.white : kNavy,
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -191,101 +206,141 @@ class _MapsPageState extends State<MapsPage> {
     final me = _me;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(left: 4),
             child: Text(
               'Map',
               style: TextStyle(
-                fontSize: 28,
+                fontSize: 24,
                 fontWeight: FontWeight.w800,
                 color: kNavy,
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Row(children: _radii.keys.map(_chip).toList()),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           const LocationBanner(),
-          const SizedBox(height: 4),
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
-              child: FlutterMap(
-                mapController: _map,
-                options: MapOptions(
-                  initialCenter: me ?? _defaultCenter,
-                  initialZoom: 13,
-                  minZoom: 3,
-                  maxZoom: 19,
-                  onMapReady: () {
-                    _mapReady = true;
-                    _centerOnMe();
-                  },
-                ),
+              child: Stack(
                 children: [
-                  TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.example.paw_kie',
+                  Positioned.fill(
+                    child: FlutterMap(
+                      mapController: _map,
+                      options: MapOptions(
+                        initialCenter: me ?? _defaultCenter,
+                        initialZoom: 13,
+                        minZoom: 3,
+                        maxZoom: 19,
+                        onTap: (_, _) => setState(() => _selectedId = null),
+                        onMapReady: () {
+                          _mapReady = true;
+                          _centerOnMe();
+                        },
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          userAgentPackageName: 'com.example.paw_kie',
+                        ),
+                        MarkerLayer(
+                          markers: [
+                            if (me != null) _meMarker(me),
+                            ...visible
+                                .map((r) => _marker(r, r.id == current?.id)),
+                          ],
+                        ),
+                        const SimpleAttributionWidget(
+                          source: Text('OpenStreetMap contributors'),
+                          alignment: Alignment.topLeft,
+                        ),
+                      ],
+                    ),
                   ),
-                  MarkerLayer(
-                    markers: [
-                      if (me != null) _meMarker(me),
-                      ...visible.map((r) => _marker(r, r.id == current?.id)),
-                    ],
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: Material(
+                      color: Colors.white,
+                      elevation: 3,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: _goToMe,
+                        child: const Padding(
+                          padding: EdgeInsets.all(10),
+                          child: Icon(Icons.my_location,
+                              color: kBlue, size: 22),
+                        ),
+                      ),
+                    ),
                   ),
-                  const SimpleAttributionWidget(
-                    source: Text('OpenStreetMap contributors'),
+                  Positioned(
+                    left: 10,
+                    right: 10,
+                    bottom: 10,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (current != null)
+                          ReportCard(
+                            report: current,
+                            showStatus: false,
+                            compact: true,
+                            onTap: () => _openDetails(current),
+                          )
+                        else if (visible.isEmpty)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: kCardColor,
+                              border: Border.all(color: kCardBorder),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              !ReportService.isLoaded
+                                  ? (ReportService.loadError ??
+                                  'Loading reports...')
+                                  : 'No reports in this range.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: kHintGray),
+                            ),
+                          ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 42,
+                          child: ElevatedButton.icon(
+                            onPressed: widget.onViewAllReports,
+                            icon: const Icon(Icons.format_list_bulleted,
+                                size: 20),
+                            label: const Text(
+                              'View All Reports',
+                              style: TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.w700),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kBlue,
+                              foregroundColor: Colors.white,
+                              elevation: 3,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          if (current != null)
-            ReportCard(
-              report: current,
-              showStatus: false,
-              onTap: () => _openDetails(current),
-            )
-          else
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: kCardColor,
-                border: Border.all(color: kCardBorder),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                !ReportService.isLoaded
-                    ? (ReportService.loadError ?? 'Loading reports...')
-                    : 'No reports in this range.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: kHintGray),
-              ),
-            ),
-          if (current == null) const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton.icon(
-              onPressed: widget.onViewAllReports,
-              icon: const Icon(Icons.format_list_bulleted, size: 20),
-              label: const Text(
-                'View All Reports',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kBlue,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
               ),
             ),
           ),

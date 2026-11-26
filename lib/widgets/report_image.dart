@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import '../utils/app_colors.dart';
 
-/// Photo of a stray report.
-/// [asset] can be a web link (photo uploaded to the database)
 
 class ReportImage extends StatelessWidget {
   final String? asset;
@@ -15,7 +14,7 @@ class ReportImage extends StatelessWidget {
     final fallback = Container(
       width: width,
       height: height,
-      color: const Color(0xFFFFE8D6),
+      color: kPeach,
       child: const Icon(Icons.pets, color: Color(0xFF8A746C)),
     );
 

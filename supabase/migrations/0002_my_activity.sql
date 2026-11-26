@@ -1,7 +1,3 @@
--- File: supabase/migrations/0002_my_activity.sql  (NEW FILE)
--- Batch 3.2: reporters can edit or remove their OWN stray reports.
--- Run this ONCE in Supabase > SQL Editor. (Do not edit 0001.)
---
 -- Rules:
 --  * Only the reporter can edit / remove the report.
 --  * Not allowed when the report is already Rescued (it is part of the rescue record).

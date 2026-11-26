@@ -32,7 +32,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
           child: Text(
             text,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: kHintGray),
+            style: TextStyle(color: kHintGray),
           ),
         ),
       ],
@@ -93,7 +93,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back_ios_new, color: kBlue),
                   ),
-                  const Text(
+                  Text(
                     'My Reports',
                     style: TextStyle(
                       fontSize: 26,
