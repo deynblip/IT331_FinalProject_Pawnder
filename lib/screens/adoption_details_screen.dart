@@ -12,11 +12,86 @@ import '../models/content_report.dart';
 import '../widgets/report_content_dialog.dart';
 import '../utils/responsive.dart';
 import '../widgets/pet_contact_buttons.dart';
+import '../services/adoption_service.dart';
+import '../widgets/post_actions.dart';
 
-class AdoptionDetailsScreen extends StatelessWidget {
+class AdoptionDetailsScreen extends StatefulWidget {
   final AdoptionPet pet;
 
-  const AdoptionDetailsScreen({super.key, required this.pet});
+  /// True only when opened from Profile > My Adoption Posts. Then the review
+  /// status and the Edit / Remove buttons are shown (instead of Apply).
+  final bool showOwnerActions;
+
+  const AdoptionDetailsScreen({
+    super.key,
+    required this.pet,
+    this.showOwnerActions = false,
+  });
+
+  @override
+  State<AdoptionDetailsScreen> createState() => _AdoptionDetailsScreenState();
+}
+
+class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
+  /// Always the latest version of the pet (it changes after an edit).
+  AdoptionPet get pet => AdoptionService.byId(widget.pet.id) ?? widget.pet;
+
+  @override
+  void initState() {
+    super.initState();
+    AdoptionService.changes.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    AdoptionService.changes.removeListener(_onChanged);
+    super.dispose();
+  }
+
+  void _onChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _remove(BuildContext context) async {
+    final removed = await removeMyPost(context, pet);
+    if (removed && context.mounted) Navigator.pop(context);
+  }
+
+  Widget _ownerBar(BuildContext context) {
+    final bool rejected = pet.status == PostStatus.rejected;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(context.hPad, 4, context.hPad, 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => editMyPost(context, pet),
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              label: Text(rejected ? 'Resubmit' : 'Edit'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: kBlue,
+                side: const BorderSide(color: kBlue),
+                minimumSize: const Size(0, 48),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _remove(context),
+              icon: const Icon(Icons.delete_outline, size: 18),
+              label: const Text('Remove'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+                side: const BorderSide(color: Colors.red),
+                minimumSize: const Size(0, 48),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _showHealthInfo(BuildContext context) {
     showModalBottomSheet<void>(
@@ -146,6 +221,12 @@ class AdoptionDetailsScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
+
+                    // Owner only: is the post Pending, Approved or Rejected?
+                    if (widget.showOwnerActions) ...[
+                      PostReviewNote(pet: pet),
+                      const SizedBox(height: 12),
+                    ],
 
                     // Photo(s). Dots appear only when there is more than 1 photo.
                     _PetPhotos(photos: pet.photos),
@@ -327,6 +408,9 @@ class AdoptionDetailsScreen extends StatelessWidget {
               ),
             ),
 
+            // Owner opened it from My Adoption Posts: Edit / Remove
+            if (widget.showOwnerActions && pet.isMine) _ownerBar(context),
+
             // Hidden on your own post
             if (!pet.isMine)
               Padding(
@@ -381,6 +465,16 @@ class _PetPhotosState extends State<_PetPhotos> {
     super.dispose();
   }
 
+  /// Full-screen na photos: swipe para sa susunod, pinch para mag-zoom.
+  void _openViewer(int start) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _PetPhotoViewer(photos: widget.photos, initialIndex: start),
+      ),
+    );
+  }
+
   Widget _fallback() {
     return Container(
       color: const Color(0xFFFFE8D6),
@@ -408,7 +502,10 @@ class _PetPhotosState extends State<_PetPhotos> {
                 controller: _controller,
                 itemCount: photos.length,
                 onPageChanged: (i) => setState(() => _index = i),
-                itemBuilder: (_, i) => PetPhoto(path: photos[i], fallback: _fallback()),
+                itemBuilder: (_, i) => GestureDetector(
+                  onTap: () => _openViewer(i),
+                  child: PetPhoto(path: photos[i], fallback: _fallback()),
+                ),
               ),
             if (photos.length > 1)
               Positioned(
@@ -432,6 +529,118 @@ class _PetPhotosState extends State<_PetPhotos> {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Full-screen viewer. Swipe to change photo; pinch to zoom (swiping is
+/// paused while zoomed in so panning the photo doesn't change the page).
+class _PetPhotoViewer extends StatefulWidget {
+  final List<String> photos;
+  final int initialIndex;
+
+  const _PetPhotoViewer({required this.photos, required this.initialIndex});
+
+  @override
+  State<_PetPhotoViewer> createState() => _PetPhotoViewerState();
+}
+
+class _PetPhotoViewerState extends State<_PetPhotoViewer> {
+  late final PageController _controller =
+  PageController(initialPage: widget.initialIndex);
+  late int _index = widget.initialIndex;
+  bool _zoomed = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final photos = widget.photos;
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: photos.length > 1
+            ? Text('${_index + 1} / ${photos.length}',
+            style: const TextStyle(fontSize: 16))
+            : null,
+        centerTitle: true,
+      ),
+      body: PageView.builder(
+        controller: _controller,
+        itemCount: photos.length,
+        physics: _zoomed
+            ? const NeverScrollableScrollPhysics()
+            : const PageScrollPhysics(),
+        onPageChanged: (i) => setState(() {
+          _index = i;
+          _zoomed = false;
+        }),
+        itemBuilder: (_, i) => _ZoomablePhoto(
+          path: photos[i],
+          onZoomChanged: (z) {
+            if (z != _zoomed) setState(() => _zoomed = z);
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _ZoomablePhoto extends StatefulWidget {
+  final String path;
+  final ValueChanged<bool> onZoomChanged;
+
+  const _ZoomablePhoto({required this.path, required this.onZoomChanged});
+
+  @override
+  State<_ZoomablePhoto> createState() => _ZoomablePhotoState();
+}
+
+class _ZoomablePhotoState extends State<_ZoomablePhoto> {
+  final TransformationController _tc = TransformationController();
+  bool _zoomed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tc.addListener(() {
+      final z = _tc.value.getMaxScaleOnAxis() > 1.02;
+      if (z != _zoomed) {
+        setState(() => _zoomed = z);
+        widget.onZoomChanged(z);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tc.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InteractiveViewer(
+      transformationController: _tc,
+      minScale: 1,
+      maxScale: 5,
+      panEnabled: _zoomed,
+      child: SizedBox.expand(
+        child: PetPhoto(
+          path: widget.path,
+          fit: BoxFit.contain,
+          fallback: const Center(
+            child: Icon(Icons.broken_image_outlined,
+                size: 48, color: Colors.white54),
+          ),
         ),
       ),
     );
