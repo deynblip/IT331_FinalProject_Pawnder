@@ -11,23 +11,25 @@ class ReportCard extends StatelessWidget {
   final StrayReport report;
   final VoidCallback onTap;
   final bool showStatus;
+  final bool compact;
 
   const ReportCard({
     super.key,
     required this.report,
     required this.onTap,
     this.showStatus = true,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.only(bottom: compact ? 0 : 14),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(compact ? 8 : 14),
           decoration: BoxDecoration(
             color: kCardColor,
             borderRadius: BorderRadius.circular(20),
@@ -38,8 +40,12 @@ class ReportCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              ReportImage(asset: report.imageAsset, width: 76, height: 76),
-              const SizedBox(width: 14),
+              ReportImage(
+                asset: report.imageAsset,
+                width: compact ? 56 : 76,
+                height: compact ? 56 : 76,
+              ),
+              SizedBox(width: compact ? 10 : 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,6 +75,8 @@ class ReportCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       report.title,
+                      maxLines: compact ? 1 : null,
+                      overflow: compact ? TextOverflow.ellipsis : null,
                       style: const TextStyle(
                         color: ReportColors.navy,
                         fontSize: 17,
