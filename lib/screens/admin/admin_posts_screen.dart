@@ -243,10 +243,10 @@ class AdminPostsScreen extends StatefulWidget {
 
 class _AdminPostsScreenState extends State<AdminPostsScreen> {
   static const List<String> _filters = [
+    'All',
     'Pending',
     'Approved',
     'Rejected',
-    'All',
   ];
 
   // Opens on Pending: that is the review queue.

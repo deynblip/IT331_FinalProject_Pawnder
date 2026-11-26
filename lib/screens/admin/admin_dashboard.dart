@@ -11,13 +11,8 @@ import '../../widgets/paw_banner.dart';
 
 class AdminDashboard extends StatelessWidget {
   final String name;
-  final VoidCallback onLogout;
 
-  const AdminDashboard({
-    super.key,
-    required this.name,
-    required this.onLogout,
-  });
+  const AdminDashboard({super.key, required this.name});
 
   // Two stat cards side by side. IntrinsicHeight keeps both cards the same
   // height, even with bigger system text.
@@ -47,8 +42,8 @@ class AdminDashboard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // LOGO + ACTIONS
-              AdminTopBar(onLogout: onLogout),
+              // MENU + LOGO + BELL
+              const AdminTopBar(),
               const SizedBox(height: 16),
 
               // WELCOME TEXT (with paw watermark)
