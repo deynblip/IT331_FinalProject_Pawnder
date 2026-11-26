@@ -20,7 +20,7 @@ class AdoptPage extends StatefulWidget {
 }
 
 class _AdoptPageState extends State<AdoptPage> {
-  static const List<String> _filters = ['Dogs', 'Cats', 'All Pets'];
+  static const List<String> _filters = ['All Pets', 'Dogs', 'Cats'];
   String _selected = 'All Pets';
 
   // Second filter row: where the pet comes from (null = All).

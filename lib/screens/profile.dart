@@ -459,6 +459,16 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
 
+          // Email of the account, under the name
+          if ((AuthService.currentEmail ?? '').isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              AuthService.currentEmail!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: kHintGray, fontSize: 14),
+            ),
+          ],
+
           const SizedBox(height: 12),
 
           // Verified Rescuer badge, or the apply / pending / rejected card
