@@ -10,15 +10,11 @@ import '../utils/report_style.dart';
 import '../utils/responsive.dart';
 import '../utils/validators.dart';
 import '../widgets/field_label.dart';
-import '../widgets/report_image.dart';
+import '../widgets/adopt_pet_photo.dart';
 
 // ===============================
-// EDIT REPORT (Profile > My Reports > Edit)
+// EDIT REPORT
 // ===============================
-// The reporter can change the animal type, urgency, description, photo and
-// the "possibly a lost pet" tag. The location pin can't be changed.
-// Not allowed once someone is responding or the animal is rescued (the
-// database checks this too).
 
 class EditReportScreen extends StatefulWidget {
   final StrayReport report;
@@ -38,8 +34,9 @@ class _EditReportScreenState extends State<EditReportScreen> {
   late Urgency _urgency;
   late bool _lostPet;
 
-  File? _newPhoto;
-  bool _removePhoto = false;
+  // Existing photos the user keeps (links) and newly picked ones (files).
+  late final List<String> _kept = List.of(widget.report.allPhotos);
+  final List<File> _new = [];
   bool _busy = false;
 
   @override
@@ -68,17 +65,21 @@ class _EditReportScreenState extends State<EditReportScreen> {
         maxWidth: 1600,
       );
       if (picked != null && mounted) {
-        setState(() {
-          _newPhoto = File(picked.path);
-          _removePhoto = false;
-        });
+        setState(() => _new.add(File(picked.path)));
       }
     } catch (_) {
       if (mounted) showMessage(context, 'Could not open the camera or gallery.');
     }
   }
 
+  int get _count => _kept.length + _new.length;
+
   void _showPhotoOptions() {
+    if (_count >= ReportService.maxPhotos) {
+      showMessage(
+          context, 'You can add up to ${ReportService.maxPhotos} photos.');
+      return;
+    }
     showModalBottomSheet<void>(
       context: context,
       builder: (sheetContext) => SafeArea(
@@ -106,25 +107,60 @@ class _EditReportScreenState extends State<EditReportScreen> {
     );
   }
 
-  bool get _hasPhoto =>
-      _newPhoto != null ||
-          (!_removePhoto && (widget.report.imageAsset ?? '').isNotEmpty);
+  Widget _thumb({required Widget image, required VoidCallback onRemove}) {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: SizedBox(width: 96, height: 96, child: image),
+        ),
+        Positioned(
+          top: 3,
+          right: 3,
+          child: GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, size: 14, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
-  Widget _photoPreview() {
-    const double size = 140;
-    if (_newPhoto != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Image.file(_newPhoto!,
-            width: size, height: size, fit: BoxFit.cover),
-      );
-    }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: ReportImage(
-        asset: _removePhoto ? null : widget.report.imageAsset,
-        width: size,
-        height: size,
+  Widget _photoStrip() {
+    final fallback = Container(
+      color: kPeach,
+      child: const Icon(Icons.pets, color: kHintGray),
+    );
+    final List<Widget> items = [
+      for (int i = 0; i < _kept.length; i++)
+        _thumb(
+          image: PetPhoto(path: _kept[i], fallback: fallback),
+          onRemove: () => setState(() => _kept.removeAt(i)),
+        ),
+      for (int i = 0; i < _new.length; i++)
+        _thumb(
+          image: Image.file(_new[i], fit: BoxFit.cover),
+          onRemove: () => setState(() => _new.removeAt(i)),
+        ),
+    ];
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: SizedBox(
+        height: 96,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: items.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
+          itemBuilder: (_, i) => items[i],
+        ),
       ),
     );
   }
@@ -141,8 +177,8 @@ class _EditReportScreenState extends State<EditReportScreen> {
         urgency: _urgency,
         description: _description.text,
         possiblyLostPet: _lostPet,
-        newPhoto: _newPhoto,
-        removePhoto: _removePhoto,
+        keptPhotos: _kept,
+        newPhotos: _new,
       );
     } on ReportFailure catch (e) {
       if (mounted) showMessage(context, e.message);
@@ -215,39 +251,14 @@ class _EditReportScreenState extends State<EditReportScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Photo
-              const FieldLabel('Photo'),
+              // Photos
+              FieldLabel('Photos ($_count/${ReportService.maxPhotos})'),
               const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  _photoPreview(),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        OutlinedButton.icon(
-                          onPressed: _showPhotoOptions,
-                          icon: const Icon(Icons.photo_camera_outlined,
-                              size: 18),
-                          label: Text(_hasPhoto ? 'Change photo' : 'Add photo'),
-                        ),
-                        if (_hasPhoto)
-                          TextButton(
-                            onPressed: () => setState(() {
-                              _newPhoto = null;
-                              _removePhoto = true;
-                            }),
-                            child: const Text(
-                              'Remove photo',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
+              _photoStrip(),
+              OutlinedButton.icon(
+                onPressed: _showPhotoOptions,
+                icon: const Icon(Icons.photo_camera_outlined, size: 18),
+                label: Text(_count == 0 ? 'Add photo' : 'Add another photo'),
               ),
               const SizedBox(height: 20),
 

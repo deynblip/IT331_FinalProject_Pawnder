@@ -5,13 +5,12 @@ import '../services/report_service.dart';
 import '../services/response_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/report_style.dart';
-import '../widgets/report_image.dart';
+import '../widgets/photo_gallery.dart';
 import '../widgets/status_chip.dart';
 import '../widgets/rescuer_badge.dart';
 import '../models/content_report.dart';
 import '../widgets/report_content_dialog.dart';
 import '../utils/responsive.dart';
-import 'edit_report_screen.dart';
 import 'edit_report_screen.dart';
 
 class ReportDetailsScreen extends StatefulWidget {
@@ -281,6 +280,91 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _sightingRow(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: ReportColors.grey),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  color: ReportColors.grey,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: ReportColors.navy,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _sightingCard() {
+    final Color accent = urgencyColor(_report.urgency);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: kCardColor,
+          border: Border.all(color: kCardBorder),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(width: 6, color: accent),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _sightingRow(
+                          Icons.location_on, 'LOCATION', _report.location),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 10),
+                        child: Divider(height: 1, color: kCardBorder),
+                      ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _sightingRow(
+                                Icons.pets, 'ANIMAL', _report.animalType),
+                          ),
+                          Expanded(
+                            child: _sightingRow(Icons.near_me_outlined,
+                                'DISTANCE', _report.distanceText),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -642,33 +726,6 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     }
   }
 
-  /// Full-screen na photo; puwedeng i-pinch para mag-zoom.
-  void _openPhoto() {
-    final String? src = _report.imageAsset;
-    if (src == null || src.isEmpty) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-          ),
-          body: Center(
-            child: InteractiveViewer(
-              minScale: 1,
-              maxScale: 5,
-              child: src.startsWith('http')
-                  ? Image.network(src, fit: BoxFit.contain)
-                  : Image.asset(src, fit: BoxFit.contain),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget? _ownerBar() {
     if (!widget.showOwnerActions || !ReportService.canChange(_report)) {
       return null;
@@ -753,42 +810,48 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
+
+                // Photo(s): swipe if more than one, tap to enlarge.
+                // The urgency sits on the photo so it is seen first.
+                PhotoGallery(
+                  photos: _report.allPhotos,
+                  height: 280,
+                  overlay: StatusChip(
+                    label: _report.urgency.label,
+                    color: urgencyColor(_report.urgency),
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Title + when it was reported
+                Text(
+                  _report.title,
+                  style: const TextStyle(
+                    color: ReportColors.navy,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GestureDetector(
-                      onTap: _openPhoto,
-                      child: ReportImage(
-                          asset: _report.imageAsset, width: 150, height: 150),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          StatusChip(
-                            label: _report.urgency.label,
-                            color: urgencyColor(_report.urgency),
-                            fontSize: 18,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(_report.title,
-                              style: const TextStyle(
-                                  color: ReportColors.navy, fontSize: 22, fontWeight: FontWeight.w800)),
-                          const SizedBox(height: 6),
-                          Text(_report.distanceText,
-                              style: const TextStyle(color: ReportColors.grey, fontSize: 15)),
-                          Text(_report.dateText,
-                              style: const TextStyle(color: ReportColors.grey, fontSize: 15)),
-                        ],
-                      ),
+                    const Icon(Icons.schedule,
+                        size: 16, color: ReportColors.grey),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Reported ${_report.dateText}',
+                      style: const TextStyle(
+                          color: ReportColors.grey, fontSize: 15),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                _field('Animal Type', _report.animalType),
-                _field('Urgency Level', _report.urgency.label),
-                _field('Location', _report.location),
+                const SizedBox(height: 16),
+
+                // Sighting details. The stripe takes the urgency color, so
+                // this does not look like an adoption page.
+                _sightingCard(),
+                const SizedBox(height: 14),
                 Center(
                   child: OutlinedButton.icon(
                     onPressed: _openDirections,

@@ -32,6 +32,9 @@ class ReportService {
 
   static const String _bucket = 'report-photos';
 
+  /// Most photos one report can have (the database allows up to 5).
+  static const int maxPhotos = 3;
+
   static List<StrayReport> _reports = [];
   static bool _loaded = false;
   static Future<void>? _loading;
@@ -171,14 +174,14 @@ class ReportService {
 
   static StrayReport _fromRow(Map<String, dynamic> row, int responders) {
     final List<dynamic> paths = (row['photo_paths'] as List<dynamic>?) ?? [];
-    final String? photoUrl = paths.isEmpty
-        ? null
-        : _db.storage.from(_bucket).getPublicUrl(paths.first as String);
+    final List<String> photoUrls = paths
+        .map((p) => _db.storage.from(_bucket).getPublicUrl(p as String))
+        .toList();
 
     return StrayReport.fromRow(
       row,
       currentUserId: AuthService.currentUserId,
-      photoUrl: photoUrl,
+      photoUrls: photoUrls,
       responders: responders,
       distanceKm: _distanceKm(
         (row['latitude'] as num).toDouble(),
@@ -247,27 +250,28 @@ class ReportService {
     }
   }
 
-  /// Called by the banner button: asks for permission (shows the pop-up),
-  /// or opens the phone's settings when the app can't ask anymore.
   static Future<void> fixLocation() async {
-    if (locationProblem == 'off') {
-      await Geolocator.openLocationSettings();
-    } else if (locationProblem == 'forever') {
+    if (locationProblem == 'forever') {
       await Geolocator.openAppSettings();
-    } else {
-      await refreshLocation(userTapped: true);
+      return;
     }
+    if (await Geolocator.checkPermission() == LocationPermission.denied) {
+      await Geolocator.requestPermission();
+    }
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      await Geolocator.openLocationSettings();
+      return;
+    }
+    await refreshLocation(userTapped: true);
   }
 
   // ---------------------------------------------------------------- Report a Stray
 
-  /// Uploads the photo (if any) and saves the report.
-  /// Throws [ReportFailure] with a message for the user.
   static Future<void> submit({
     required String animalType,
     required Urgency urgency,
     required String description,
-    required File? photo,
+    List<File> photos = const [],
     required double latitude,
     required double longitude,
     required String address,
@@ -282,37 +286,19 @@ class ReportService {
       '${latitude.toStringAsFixed(5)}, ${longitude.toStringAsFixed(5)}';
     }
 
-    // 1. Upload the photo to report-photos/<user id>/<time>.<ext>
-    String? photoPath;
-    if (photo != null) {
-      try {
-        final Uint8List bytes = await photo.readAsBytes();
-        if (bytes.length > 5 * 1024 * 1024) {
-          throw const ReportFailure(
-              'The photo is too large. Please choose a photo under 5 MB.');
-        }
-        final String ext = _extensionOf(photo.path);
-        photoPath = '$userId/${DateTime.now().millisecondsSinceEpoch}.$ext';
-        await _db.storage.from(_bucket).uploadBinary(
-          photoPath,
-          bytes,
-          fileOptions: FileOptions(contentType: _mimeOf(ext)),
-        );
-      } on ReportFailure {
-        rethrow;
-      } catch (e) {
-        throw ReportFailure(friendlyDbError(e,
-            fallback: 'Could not upload the photo. Please try again.'));
-      }
+    if (photos.length > maxPhotos) {
+      throw const ReportFailure('You can add up to $maxPhotos photos.');
     }
 
-    // 2. Save the report (the database checks the values).
+    final List<String> uploaded = [];
+    await _uploadPhotos(photos, userId, uploaded);
+
     try {
       await _db.rpc('create_stray_report', params: {
         'p_animal_type': animalType,
         'p_urgency': urgency.dbValue,
         'p_description': description.trim(),
-        'p_photo_paths': photoPath == null ? <String>[] : [photoPath],
+        'p_photo_paths': uploaded,
         'p_latitude': latitude,
         'p_longitude': longitude,
         'p_address': cleanAddress.length > 300
@@ -321,12 +307,8 @@ class ReportService {
         'p_possibly_lost_pet': possiblyLostPet,
       });
     } catch (e) {
-      // Don't leave an unused photo in Storage.
-      if (photoPath != null) {
-        try {
-          await _db.storage.from(_bucket).remove([photoPath]);
-        } catch (_) {}
-      }
+      // Don't leave unused photos in Storage.
+      await _removeFromStorage(uploaded);
       throw ReportFailure(friendlyDbError(e,
           fallback: 'Could not submit the report. Please try again.'));
     }
@@ -336,15 +318,11 @@ class ReportService {
   }
 // ---------------------------------------------------------------- Edit / Remove my report
 
-  /// Can the logged-in user edit or remove this report right now?
-  /// (The database checks this too.)
   static bool canChange(StrayReport r) =>
       r.isMine &&
           r.status == RescueStatus.needsRescue &&
           r.responders == 0;
 
-  /// A short note for the user when they can't change their report because
-  /// someone is responding. Null when there is nothing to say.
   static String? lockedNote(StrayReport r) {
     if (!r.isMine || r.status == RescueStatus.rescued) return null;
     if (canChange(r)) return null;
@@ -352,49 +330,31 @@ class ReportService {
         'report right now.';
   }
 
-  /// Saves the changes to the user's own report. The location can't change.
-  /// [newPhoto] replaces the photo; [removePhoto] deletes it.
-  /// Throws [ReportFailure] with a message for the user.
   static Future<void> updateMine({
     required StrayReport report,
     required String animalType,
     required Urgency urgency,
     required String description,
     required bool possiblyLostPet,
-    File? newPhoto,
-    bool removePhoto = false,
+    required List<String> keptPhotos,
+    List<File> newPhotos = const [],
   }) async {
     final String? userId = AuthService.currentUserId;
     if (userId == null) throw const ReportFailure('Please log in first.');
 
-    final String? oldPath = _pathFromUrl(report.imageAsset);
-    String? newPath;
-    List<String> paths = oldPath == null ? <String>[] : [oldPath];
-
-    if (newPhoto != null) {
-      try {
-        final Uint8List bytes = await newPhoto.readAsBytes();
-        if (bytes.length > 5 * 1024 * 1024) {
-          throw const ReportFailure(
-              'The photo is too large. Please choose a photo under 5 MB.');
-        }
-        final String ext = _extensionOf(newPhoto.path);
-        newPath = '$userId/${DateTime.now().millisecondsSinceEpoch}.$ext';
-        await _db.storage.from(_bucket).uploadBinary(
-          newPath,
-          bytes,
-          fileOptions: FileOptions(contentType: _mimeOf(ext)),
-        );
-        paths = [newPath];
-      } on ReportFailure {
-        rethrow;
-      } catch (e) {
-        throw ReportFailure(friendlyDbError(e,
-            fallback: 'Could not upload the photo. Please try again.'));
-      }
-    } else if (removePhoto) {
-      paths = <String>[];
+    if (keptPhotos.length + newPhotos.length > maxPhotos) {
+      throw const ReportFailure('You can add up to $maxPhotos photos.');
     }
+
+    final List<String> oldPaths = report.allPhotos
+        .map(_pathFromUrl)
+        .whereType<String>()
+        .toList();
+    final List<String> keptPaths =
+    keptPhotos.map(_pathFromUrl).whereType<String>().toList();
+
+    final List<String> uploaded = [];
+    await _uploadPhotos(newPhotos, userId, uploaded);
 
     try {
       await _db.rpc('update_my_report', params: {
@@ -402,33 +362,60 @@ class ReportService {
         'p_animal_type': animalType,
         'p_urgency': urgency.dbValue,
         'p_description': description.trim(),
-        'p_photo_paths': paths,
+        'p_photo_paths': [...keptPaths, ...uploaded],
         'p_possibly_lost_pet': possiblyLostPet,
       });
     } catch (e) {
-      // Don't leave an unused new photo in Storage.
-      if (newPath != null) {
-        try {
-          await _db.storage.from(_bucket).remove([newPath]);
-        } catch (_) {}
-      }
+      await _removeFromStorage(uploaded);
       unawaited(refreshOne(report.id).catchError((_) => null));
       throw ReportFailure(friendlyDbError(e,
           fallback: 'Could not save your changes. Please try again.'));
     }
 
-    // The old photo is not needed anymore.
-    if (oldPath != null && (newPath != null || removePhoto)) {
-      try {
-        await _db.storage.from(_bucket).remove([oldPath]);
-      } catch (_) {}
-    }
+    await _removeFromStorage(
+        oldPaths.where((p) => !keptPaths.contains(p)).toList());
 
     await refreshOne(report.id);
   }
 
-  /// Removes (hides) the user's own report. The database keeps the record.
-  /// Throws [ReportFailure] with a message for the user.
+  static Future<void> _uploadPhotos(
+      List<File> files, String userId, List<String> uploaded) async {
+    final int stamp = DateTime.now().millisecondsSinceEpoch;
+    try {
+      for (int i = 0; i < files.length; i++) {
+        final Uint8List bytes = await files[i].readAsBytes();
+        if (bytes.length > 5 * 1024 * 1024) {
+          throw const ReportFailure(
+              'A photo is too large. Please choose photos under 5 MB each.');
+        }
+        final String ext = _extensionOf(files[i].path);
+        final String path = '$userId/${stamp}_$i.$ext';
+        await _db.storage.from(_bucket).uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(contentType: _mimeOf(ext)),
+        );
+        uploaded.add(path);
+      }
+    } on ReportFailure {
+      await _removeFromStorage(uploaded);
+      uploaded.clear();
+      rethrow;
+    } catch (e) {
+      await _removeFromStorage(uploaded);
+      uploaded.clear();
+      throw ReportFailure(friendlyDbError(e,
+          fallback: 'Could not upload the photos. Please try again.'));
+    }
+  }
+
+  static Future<void> _removeFromStorage(List<String> paths) async {
+    if (paths.isEmpty) return;
+    try {
+      await _db.storage.from(_bucket).remove(paths);
+    } catch (_) {}
+  }
+
   static Future<void> removeMine(String reportId) async {
     try {
       await _db.rpc('remove_my_report', params: {'p_id': reportId});
@@ -441,7 +428,6 @@ class ReportService {
     _notify();
   }
 
-  /// The storage path inside the bucket, taken from a photo web link.
   static String? _pathFromUrl(String? url) {
     if (url == null || !url.startsWith('http')) return null;
     final String marker = '/$_bucket/';

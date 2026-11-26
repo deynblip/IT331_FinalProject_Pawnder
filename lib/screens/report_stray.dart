@@ -47,7 +47,7 @@ extension _UrgencyX on Urgency {
 
 /// Values the user fills in on the form.
 class _Draft {
-  File? photo;
+  final List<File> photos = [];
   String animalType = 'Dog';
   Urgency? urgency;
   String description = '';
@@ -215,7 +215,7 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
         maxWidth: 1600,
       );
       if (picked != null && mounted) {
-        setState(() => _draft.photo = File(picked.path));
+        setState(() => _draft.photos.add(File(picked.path)));
       }
     } catch (_) {
       _snack('Could not open the camera or gallery.');
@@ -223,6 +223,10 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
   }
 
   void _showPhotoOptions() {
+    if (_draft.photos.length >= ReportService.maxPhotos) {
+      _snack('You can add up to ${ReportService.maxPhotos} photos.');
+      return;
+    }
     showModalBottomSheet<void>(
       context: context,
       builder: (sheetContext) => SafeArea(
@@ -244,15 +248,6 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
                 _pick(ImageSource.gallery);
               },
             ),
-            if (_draft.photo != null)
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text('Remove photo'),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  setState(() => _draft.photo = null);
-                },
-              ),
           ],
         ),
       ),
@@ -331,7 +326,7 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
         animalType: d.animalType,
         urgency: d.urgency!,
         description: d.description.trim(),
-        photo: d.photo,
+        photos: d.photos,
         latitude: d.location!.latitude,
         longitude: d.location!.longitude,
         address: d.address,
@@ -415,6 +410,7 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
                     const RequiredNote(),
                     const SizedBox(height: 12),
                     _photoCard(),
+                    _photoThumbs(),
                     const SizedBox(height: 20),
                     const _SectionTitle('Animal Type', required: true),
                     const SizedBox(height: 8),
@@ -484,31 +480,72 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
   }
 
   Widget _photoCard() {
-    final photo = _draft.photo;
+    final int count = _draft.photos.length;
     return InkWell(
       onTap: _showPhotoOptions,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        height: 140,
+        height: count == 0 ? 140 : 84,
         width: double.infinity,
         decoration: _cardDecoration(),
-        clipBehavior: Clip.antiAlias,
-        child: photo != null
-            ? Image.file(photo, fit: BoxFit.cover)
-            : const Column(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.photo_camera, size: 44, color: kBlue),
-            SizedBox(height: 6),
+            Icon(Icons.photo_camera,
+                size: count == 0 ? 44 : 30, color: kBlue),
+            const SizedBox(height: 4),
             Text(
-              'Add a photo',
-              style: TextStyle(fontWeight: FontWeight.w800, color: kNavy),
+              count == 0 ? 'Add photos' : 'Add another photo',
+              style: const TextStyle(
+                  fontWeight: FontWeight.w800, color: kNavy),
             ),
             Text(
-              'Take a photo or choose from gallery',
-              style: TextStyle(fontSize: 12, color: kHintGray),
+              'Take a photo or choose from gallery '
+                  '($count/${ReportService.maxPhotos})',
+              style: const TextStyle(fontSize: 12, color: kHintGray),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _photoThumbs() {
+    final photos = _draft.photos;
+    if (photos.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: SizedBox(
+        height: 84,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: photos.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
+          itemBuilder: (_, i) => Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.file(photos[i],
+                    width: 84, height: 84, fit: BoxFit.cover),
+              ),
+              Positioned(
+                top: 2,
+                right: 2,
+                child: GestureDetector(
+                  onTap: () => setState(() => photos.removeAt(i)),
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: const BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                    ),
+                    child:
+                    const Icon(Icons.close, size: 14, color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
