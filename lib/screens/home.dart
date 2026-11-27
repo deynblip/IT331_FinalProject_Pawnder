@@ -45,11 +45,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // The 2 nearest reports that are not rescued yet.
+  // The 2 nearest reports of OTHER users that are not rescued yet.
   // If the phone's location is unknown, the 2 newest are shown instead.
   List<StrayReport> get _nearby {
     final list = ReportService.all
-        .where((r) => r.status != RescueStatus.rescued)
+        .where((r) => r.status != RescueStatus.rescued && !r.isMine)
         .toList()
       ..sort((a, b) {
         final byDistance = (a.distanceKm ?? double.infinity)

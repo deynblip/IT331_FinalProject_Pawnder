@@ -80,8 +80,12 @@ class _MapsPageState extends State<MapsPage> {
 
   /// Distance comes from the phone's GPS. If the location is unknown,
   /// the km filters can't be used, so all reports are shown.
+  /// Rescued animals are not on the map (they stay in My Reports and
+  /// My Responses).
   List<StrayReport> get _visible {
-    final reports = ReportService.all;
+    final reports = ReportService.all
+        .where((r) => r.status != RescueStatus.rescued)
+        .toList();
     final radius = _radii[_selectedRadius];
     final list = (radius == null || _me == null)
         ? List.of(reports)

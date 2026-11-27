@@ -96,7 +96,7 @@ Pawnder keeps reports, locations, rescue status, and adoption screening together
 ### Adoption
 - **Adoption Bulletin** with Dogs / Cats / All Pets and Rescued Stray / Rehoming filters (rescued strays are listed first)
 - **Post a Pet** for adoption, reviewed by the admin before it is published
-- **Edit an approved post up to 3 times** without another admin review
+- **Edit an approved post up to 2 times** without another admin review
 - **Adoption Application** with a valid-ID agreement for the in-person meet-up
 - The poster makes the **final decision** on applications that the admin forwards
 
@@ -148,7 +148,7 @@ Every responder has a track record. A rescue only counts when the responder chec
 ### Adoption flow
 1. A user posts a pet → **Pending** (not shown in the Adoption Bulletin yet).
 2. The admin **approves** it (published) or **rejects** it with a reason. The poster can edit a rejected post and resubmit it.
-3. An approved post can be edited **up to 3 times** and stays published.
+3. An approved post can be edited **up to 2 times** and stays published.
 4. A user applies → the admin **screens** the application and **forwards** it to the poster or rejects it.
 5. The poster sees the applicant's contact details and makes the **final decision**. The ID is checked in person, never uploaded.
 
@@ -213,7 +213,8 @@ This is only needed to run Pawnder on a **new** Supabase project. The team's pro
    | `0003_my_applications.sql` | Edit and withdraw your own applications |
    | `0004_device_tokens.sql` | Phone tokens for push notifications |
    | `0005_device_tokens_service_role.sql` | Access for the push Edge Function |
-   | `0006_report_contact_and_post_edits.sql` | Reporter contact details and the 3-edit limit for approved posts |
+   | `0006_report_contact_and_post_edits.sql` | Reporter contact details and the edit limit for approved posts |
+   | `0007_post_edit_limit_two.sql` | Lowers the edit limit for approved posts to 2 |
 
 3. **Authentication**: turn on *Confirm email*, set the email OTP length to **8**, and set up SMTP (the team uses Gmail SMTP).
 4. Create the admin: sign up in the app, then run `supabase/scripts/make_admin.sql` (change the email first).

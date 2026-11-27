@@ -22,7 +22,7 @@ Future<void> editMyPost(BuildContext context, AdoptionPet pet) async {
           style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
         ),
         content: const Text(
-          'You have used all ${AdoptionPet.maxEdits} edits for this post. '
+          'You have used all your edits for this post. '
               'If something is wrong, you can remove the post and create a '
               'new one.',
         ),

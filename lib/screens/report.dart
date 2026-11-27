@@ -35,10 +35,14 @@ class _ReportsPageState extends State<ReportsPage> {
     ReportService.ensureLoaded();
   }
 
+  /// Animals that still need help. Rescued ones are hidden here (they stay
+  /// in My Reports and My Responses).
   List<StrayReport> _visible(List<StrayReport> reports) {
     final urgency = _filters[_selected];
-    if (urgency == null) return reports;
-    return reports.where((r) => r.urgency == urgency).toList();
+    return reports
+        .where((r) => r.status != RescueStatus.rescued)
+        .where((r) => urgency == null || r.urgency == urgency)
+        .toList();
   }
 
   void _openDetails(StrayReport report) {

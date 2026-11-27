@@ -70,10 +70,19 @@ class _PickedLocation {
 
 /// Readable address for [pos], e.g. "P. Burgos St, Poblacion, Batangas City".
 ///
-/// The geocoding package only works on Android and iOS, so on the web (and
-/// whenever it fails) the address is looked up with OpenStreetMap's free
-/// Nominatim service. If both fail, the coordinates are shown instead.
+/// OpenStreetMap's free Nominatim service is tried first on every platform,
+/// because it usually knows the barangay. The phone's geocoder is only a
+/// fallback (it often returns a Plus Code like "3JPC+PQ8" instead of the
+/// barangay). If both fail, the coordinates are shown instead. Only the
+/// text changes: the pin itself (latitude/longitude) is always exact.
 Future<String> _addressFor(LatLng pos) async {
+  try {
+    final address = await _nominatimAddress(pos);
+    if (address.isNotEmpty) return address;
+  } catch (_) {
+    // Try the phone's geocoder below.
+  }
+
   if (!kIsWeb) {
     try {
       final marks =
@@ -81,20 +90,15 @@ Future<String> _addressFor(LatLng pos) async {
       if (marks.isNotEmpty) {
         final p = marks.first;
         final address = _joinParts(
-          [p.street, p.subLocality, p.locality, p.administrativeArea],
+          [p.street, p.subLocality, p.locality, p.administrativeArea]
+              .map((part) => _isPlusCode(part) ? null : part)
+              .toList(),
         );
         if (address.isNotEmpty) return address;
       }
     } catch (_) {
-      // Try Nominatim below.
+      // Fall back to the coordinates.
     }
-  }
-
-  try {
-    final address = await _nominatimAddress(pos);
-    if (address.isNotEmpty) return address;
-  } catch (_) {
-    // Fall back to the coordinates.
   }
 
   return '${pos.latitude.toStringAsFixed(5)}, '
@@ -139,6 +143,13 @@ Future<String> _nominatimAddress(LatLng pos) async {
     pick(['city', 'town', 'municipality']),
     pick(['state', 'province', 'region']),
   ]);
+}
+
+/// True for Plus Codes such as "3JPC+PQ8" (not a real street name).
+bool _isPlusCode(String? text) {
+  if (text == null) return false;
+  return RegExp(r'^[23456789CFGHJMPQRVWX]{2,8}\+[23456789CFGHJMPQRVWX]{0,3}$')
+      .hasMatch(text.trim().split(' ').first.toUpperCase());
 }
 
 /// Joins the non-empty parts with commas, without repeats.
