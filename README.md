@@ -12,13 +12,13 @@ The name combines **"paw"** (animals) and **"finder"** (the act of finding): hel
 ## 📑 Table of Contents
 
 - [Team](#-team)
+- [Getting Started](#-getting-started)
 - [Problem](#-problem)
 - [Objectives](#-objectives)
 - [Target Users](#-target-users)
 - [Features](#-features)
 - [How It Works](#-how-it-works)
 - [Tech Stack](#-tech-stack)
-- [Getting Started](#-getting-started)
 - [Backend Setup (Supabase and Firebase)](#-backend-setup-supabase-and-firebase)
 - [Project Structure](#-project-structure)
 - [Privacy and Security](#-privacy-and-security)
@@ -37,6 +37,55 @@ The name combines **"paw"** (animals) and **"finder"** (the act of finding): hel
 - Cura, Dane Mercy J.
 
 **Course Facilitator:** Mr. Maurice Oliver Dela Cruz
+
+---
+
+## 🚀 Getting Started
+
+There are two ways to run Pawnder.
+
+### Option 1: Install the APK (easiest)
+
+For testers and anyone who only wants to use the app. No coding tools are needed.
+
+1. On an Android phone, download the APK: **[Download Pawnder APK](https://drive.google.com/drive/folders/1h2XuqgSnpk5BAWhn8-PzIENGx4df4o5q?usp=sharing)**
+2. Open the downloaded file and allow **Install unknown apps** when asked.
+3. If Google Play Protect shows a warning, tap **More details → Install anyway**. This appears because the app is not from the Play Store.
+4. Open Pawnder and allow **notifications** and **location**.
+
+> If an older Pawnder build is installed and the new one fails to install ("App not installed"), uninstall the old one first.
+
+### Option 2: Run from the source code
+
+For developers who want to run or change the code.
+
+**Requirements**
+- Flutter SDK (Dart SDK `^3.13.4`)
+- Android Studio with an Android emulator or a physical Android device
+- Internet connection (all data is stored online in Supabase)
+
+```bash
+git clone https://github.com/deynblip/IT331_FinalProject_Pawnder.git
+cd IT331_FinalProject_Pawnder
+flutter pub get
+flutter run
+```
+
+To build your own APK: `flutter build apk --release` (the file is saved in `build/app/outputs/flutter-apk/app-release.apk`).
+
+The app is already connected to the team's Supabase project (`lib/services/supabase_config.dart` holds the project URL and the public key, which are safe to share).
+
+### Accounts
+
+| Role | How to get one |
+|---|---|
+| Community Member | Sign up in the app as a **Community Member** (an 8-digit code is sent by email) |
+| Verified Rescuer | Sign up as a **Professional Rescuer** (or apply later from Profile) with your organization details. Rescue permissions unlock after the admin approves the application. Until then, the account works as a regular user. |
+| Admin | Created by the team only. Ask the team for the demo admin login. |
+
+> Admin accounts cannot be created from the app. They are assigned in the Supabase dashboard with `supabase/scripts/make_admin.sql`.
+
+> **Note:** the Android application ID is `com.pawnder.app`.
 
 ---
 
@@ -86,9 +135,10 @@ Pawnder keeps reports, locations, rescue status, and adoption screening together
 
 ### Reporting and rescue
 - **Report a Stray**: up to **3 photos**, animal type, urgency (*Urgent*, *Needs Help*, *Sighted*), condition and behavior, a *"Has a collar / looks like someone's pet"* checkbox, a pinned location (*Use my location* or *Pin on map*), and the reporter's **name, phone number, and email**
-- **Home**: quick *Report a Stray* button, nearby reports, and safety reminders
-- **Map**: color-coded pins, distance filters (*All*, 5, 10, 20 km), a *My Location* button, and a floating preview card
-- **Reports Bulletin** with urgency filters, and **Report Details** with a photo gallery, distance, *Get Directions* (Google Maps), and **Contact the Reporter** (call or email)
+- **Home**: quick *Report a Stray* button, nearby reports from other users that still need help, and safety reminders
+- **Map**: color-coded pins of animals that still need help, distance filters (*All*, 5, 10, 20 km), a *My Location* button, and a floating preview card
+- **Reports Bulletin** with urgency filters, and **Report Details** with a photo gallery, date and time, distance, *Get Directions* (Google Maps), and **Contact the Reporter** (call or email)
+- **Rescued animals** leave the Map and Reports Bulletin and stay in *My Reports* and *My Responses*
 - **Rescue response**: *I'm on my way!*, *I've arrived · Check in* (within 200 m), *Cancel*, *Take over*, and *Mark as Rescued*
 - **Responder track record and trust levels** (New Helper, Active Helper, Trusted Helper)
 - **Verified Rescuer** applications and badge
@@ -128,7 +178,7 @@ Pawnder keeps reports, locations, rescue status, and adoption screening together
 1. A user reports an animal. The report shows as **Needs Rescue** on Home, the Map, and the Reports Bulletin.
 2. Another user taps **I'm on my way!** The report becomes **Rescue in Progress**, and the reporter is notified. The reporter cannot respond to their own report.
 3. At the location, the responder taps **I've arrived · Check in**. This only works within **200 m** of the pinned location.
-4. A checked-in responder, a Verified Rescuer, or the reporter taps **Mark as Rescued**. The report becomes **Rescued**.
+4. A checked-in responder, a Verified Rescuer, or the reporter taps **Mark as Rescued**. The report becomes **Rescued** and leaves the Map and the Reports Bulletin.
 5. If every responder cancels, the report goes back to **Needs Rescue**. If there are no updates for **24 hours**, a Verified Rescuer can **take over** the report.
 
 ### Trust levels
@@ -166,35 +216,6 @@ Every responder has a track record. A rescue only counts when the responder chec
 | Device features | `image_picker` (camera and gallery), `url_launcher` and `android_intent_plus` (maps, calls, and email) |
 | Saved settings | `shared_preferences` (dark mode) |
 | Tools | Android Studio, Git and GitHub, Canva (UI design) |
-
----
-
-## 🚀 Getting Started
-
-### Requirements
-- Flutter SDK (Dart SDK `^3.13.4`)
-- Android Studio with an Android emulator or a physical Android device (Android is the main platform)
-- Internet connection (all data is stored online in Supabase)
-
-### Run the app
-```bash
-git clone https://github.com/deynblip/IT331_FinalProject_Pawnder.git
-cd IT331_FinalProject_Pawnder
-flutter pub get
-flutter run
-```
-
-The app is already connected to the team's Supabase project (`lib/services/supabase_config.dart` holds the project URL and the public key, which are safe to share).
-
-### Accounts
-| Role | How to get one |
-|---|---|
-| Regular user | Sign up in the app (an 8-digit code is sent by email) |
-| Admin | Created by the team only. Ask the team for the demo admin login. |
-
-> Admin accounts cannot be created from the app. They are assigned in the Supabase dashboard with `supabase/scripts/make_admin.sql`.
-
-> **Note:** the Android application ID is `com.pawnder.app`. If an older build of the app is installed, uninstall it first.
 
 ---
 
@@ -275,6 +296,8 @@ android/app/google-services.json   # Firebase config for push notifications
 - **Updates are not instant:** lists refresh every 10–20 seconds and with pull-to-refresh (not real-time).
 - **Dark mode** is for the user side only. The admin side, Login, and Welcome screens stay light.
 - **Older reports** made before contact details were added have no *Contact the Reporter* card.
+- **Address text** comes from OpenStreetMap (or the phone's geocoder) and may be incomplete in some areas, such as a missing barangay. The pinned location itself is exact.
+- **No payments or vet services:** the app does not handle donations, adoption fees, animal delivery, or veterinary and shelter services.
 - **Free services:** OpenStreetMap Nominatim allows about 1 request per second; Gmail SMTP limits how many emails can be sent; the free Supabase project pauses after a week without use.
 - **Partner organization:** [Strays Worth Saving](https://swsph.org/) is a proposed partner only and has not been contacted.
 - **Rescuer verification depends on the admin**, so approval is not instant.
