@@ -11,11 +11,10 @@ The name combines **"paw"** (animals) and **"finder"** (the act of finding): hel
 
 ## 📑 Table of Contents
 
-- [Team](#-team)
-- [Getting Started](#-getting-started)
 - [Problem](#-problem)
 - [Objectives](#-objectives)
 - [Target Users](#-target-users)
+- [Getting Started](#-getting-started)
 - [Features](#-features)
 - [How It Works](#-how-it-works)
 - [Tech Stack](#-tech-stack)
@@ -24,19 +23,43 @@ The name combines **"paw"** (animals) and **"finder"** (the act of finding): hel
 - [Privacy and Security](#-privacy-and-security)
 - [Known Limitations](#-known-limitations)
 - [Future Enhancements](#-future-enhancements)
+- [Team](#-team)
 - [References](#-references)
 
 ---
 
-## 👥 Team
+## ❓ Problem
 
-**Group 2**
+Stray animals are a large concern in the Philippines. A Mars Petcare Pet Homelessness Project report placed the number of stray cats and dogs in the country at **13.11 million** (Interaksyon, 2024). Information about animals in need is still shared mostly through social media posts and separate online communities. This causes:
 
-- Aniñon, Shanea May B.
-- Banaag, Ace Angela P.
-- Cura, Dane Mercy J.
+- **Scattered animal reports** across different platforms
+- **Unclear animal locations**, so helpers cannot find the animal
+- **No rescue updates**: people don't know if someone is already responding or if the animal was rescued
+- **Scattered and unsafe adoption**: listings are hard to find, and scammers or people posing as adopters can take advantage (Philippine Daily Inquirer, 2022; Cebu Daily News, 2025)
 
-**Course Facilitator:** Mr. Maurice Oliver Dela Cruz
+Pawnder keeps reports, locations, rescue status, and adoption screening together in one app.
+
+---
+
+## 🎯 Objectives
+
+1. Allow users to report an animal in need with photos, type, urgency level, description, pinned map location, and contact details.
+2. Display reported animals on an interactive map and in a Reports Bulletin so users can easily locate nearby cases.
+3. Enable users to respond to reports and track each animal's rescue status from **Needs Rescue** to **Rescued**, with a location-based check-in.
+4. Provide an Adoption Bulletin where pets can be posted and browsed, supported by administrator review of posts, screening of applications, and a final decision by the original poster.
+5. Provide an administrator dashboard for reviewing adoption posts, applications, reported content, and Verified Rescuer applications.
+
+---
+
+## 🧑‍🤝‍🧑 Target Users
+
+| User | Description |
+|---|---|
+| **Community members** | Report stray animals and help in rescue situations |
+| **Pet owners and rescuers** | Post animals for adoption to find them new homes |
+| **Potential adopters** | Browse available pets and submit adoption applications |
+| **Verified Rescuers** | Members of rescue organizations, verified by the admin, with extra rescue permissions |
+| **Administrators** | Review adoption posts, screen applications, review reported content, and approve Verified Rescuers |
 
 ---
 
@@ -86,41 +109,6 @@ The app is already connected to the team's Supabase project (`lib/services/supab
 > Admin accounts cannot be created from the app. They are assigned in the Supabase dashboard with `supabase/scripts/make_admin.sql`.
 
 > **Note:** the Android application ID is `com.pawnder.app`.
-
----
-
-## ❓ Problem
-
-Stray animals are a large concern in the Philippines. A Mars Petcare Pet Homelessness Project report placed the number of stray cats and dogs in the country at **13.11 million** (Interaksyon, 2024). Information about animals in need is still shared mostly through social media posts and separate online communities. This causes:
-
-- **Scattered animal reports** across different platforms
-- **Unclear animal locations**, so helpers cannot find the animal
-- **No rescue updates**: people don't know if someone is already responding or if the animal was rescued
-- **Scattered and unsafe adoption**: listings are hard to find, and scammers or people posing as adopters can take advantage (Philippine Daily Inquirer, 2022; Cebu Daily News, 2025)
-
-Pawnder keeps reports, locations, rescue status, and adoption screening together in one app.
-
----
-
-## 🎯 Objectives
-
-1. Allow users to report an animal in need with photos, type, urgency level, description, pinned map location, and contact details.
-2. Display reported animals on an interactive map and in a Reports Bulletin so users can easily locate nearby cases.
-3. Enable users to respond to reports and track each animal's rescue status from **Needs Rescue** to **Rescued**, with a location-based check-in.
-4. Provide an Adoption Bulletin where pets can be posted and browsed, supported by administrator review of posts, screening of applications, and a final decision by the original poster.
-5. Provide an administrator dashboard for reviewing adoption posts, applications, reported content, and Verified Rescuer applications.
-
----
-
-## 🧑‍🤝‍🧑 Target Users
-
-| User | Description |
-|---|---|
-| **Community members** | Report stray animals and help in rescue situations |
-| **Pet owners and rescuers** | Post animals for adoption to find them new homes |
-| **Potential adopters** | Browse available pets and submit adoption applications |
-| **Verified Rescuers** | Members of rescue organizations, verified by the admin, with extra rescue permissions |
-| **Administrators** | Review adoption posts, screen applications, review reported content, and approve Verified Rescuers |
 
 ---
 
@@ -314,6 +302,18 @@ android/app/google-services.json   # Firebase config for push notifications
 - **Nearby alerts** for new urgent reports
 - **Optional ID verification** with a *Verified* badge, stored securely and visible only to admins
 - **Dark mode** for the admin side
+
+---
+
+## 👥 Team
+
+**Group 2**
+
+- Aniñon, Shanea May B.
+- Banaag, Ace Angela P.
+- Cura, Dane Mercy J.
+
+**Course Facilitator:** Mr. Maurice Oliver Dela Cruz
 
 ---
 
