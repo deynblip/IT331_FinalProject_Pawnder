@@ -4,6 +4,7 @@ import '../services/report_service.dart';
 import '../models/rescuer_application.dart';
 import '../utils/app_colors.dart';
 import 'my_reports_screen.dart';
+import 'my_responses_screen.dart';
 import '../services/adoption_service.dart';
 import '../services/application_service.dart';
 import '../services/rescuer_service.dart';
@@ -28,28 +29,34 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-
   @override
   void initState() {
     super.initState();
     // My Reports count and Rescue Record come from the database.
     ReportService.ensureLoaded();
+    ReportService.loadMyResponses(); // My Responses count
     ResponseService.loadMe();
     RescuerService.loadMine(); // Pending / Verified / Not approved status
     ReportService.changes.addListener(_redraw);
-    ResponseService.changes.addListener(_redraw);
+    ResponseService.changes.addListener(_onResponsesChanged);
   }
 
   @override
   void dispose() {
     ReportService.changes.removeListener(_redraw);
-    ResponseService.changes.removeListener(_redraw);
+    ResponseService.changes.removeListener(_onResponsesChanged);
     super.dispose();
   }
 
   // Redraws the page when reports or the Rescue Record change.
   void _redraw() {
     if (mounted) setState(() {});
+  }
+
+  // After responding, checking in or withdrawing: refresh My Responses too.
+  void _onResponsesChanged() {
+    ReportService.loadMyResponses();
+    _redraw();
   }
 
   // Profile photo (saved in the database). Tap to change or remove it.
@@ -328,6 +335,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final reportsCount = ReportService.mine.length;
+    final responsesCount = ReportService.respondedByMe.length;
     final applicationsCount = ApplicationService.forCurrentUser().length;
     final postsCount = AdoptionService.mine.length;
     final displayName =
@@ -412,6 +420,17 @@ class _ProfilePageState extends State<ProfilePage> {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const MyReportsScreen()),
+                  ),
+                ),
+                Divider(height: 1, color: kCardBorder),
+                _activityRow(
+                  icon: Icons.directions_run,
+                  title: 'My Responses',
+                  count: responsesCount,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const MyResponsesScreen()),
                   ),
                 ),
                 Divider(height: 1, color: kCardBorder),
