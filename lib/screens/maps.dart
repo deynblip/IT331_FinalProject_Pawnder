@@ -1,6 +1,3 @@
-// File: lib/screens/maps.dart
-// (Batch 3: stray reports + rescue responses, Supabase)
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';

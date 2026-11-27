@@ -5,6 +5,7 @@ import '../../models/adoption_pet.dart';
 import '../../services/adoption_service.dart';
 import '../../services/application_service.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/date_format.dart';
 import '../../widgets/adopt_pet_photo.dart';
 import '../../utils/responsive.dart';
 import '../../widgets/admin_top_bar.dart';
@@ -44,13 +45,7 @@ Color _statusFg(AdoptionApplication a) => switch (a.status) {
 const Color _kRejectPink = Color(0xFFFF9F9F);
 const Color _kRejectText = Color(0xFF7A1F1F);
 
-String _dateText(DateTime d) {
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-  return '${months[d.month - 1]} ${d.day}, ${d.year}';
-}
+String _dateText(DateTime d) => formatDate(d);
 
 Widget _photo(String? path, {double iconSize = 30}) {
   final fallback = Container(
@@ -323,18 +318,18 @@ class _AdminApplicationsScreenState extends State<AdminApplicationsScreen> {
               // Rebuilds when an application OR a pet post changes.
               child: RefreshingBuilder(
                 listenable: Listenable.merge([
-                ApplicationService.changes,
-                AdoptionService.changes,
+                  ApplicationService.changes,
+                  AdoptionService.changes,
                 ]),
-                  onRefresh: () async {
-                    await Future.wait([
-                      ApplicationService.refresh(),
-                      AdoptionService.load(),
-                    ]);
-                  },
-                  builder: (context, _) {
-                    final apps = ApplicationService.all.where(_matches).toList()
-                      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                onRefresh: () async {
+                  await Future.wait([
+                    ApplicationService.refresh(),
+                    AdoptionService.load(),
+                  ]);
+                },
+                builder: (context, _) {
+                  final apps = ApplicationService.all.where(_matches).toList()
+                    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
                   if (apps.isEmpty) {
                     return Center(
                       child: Text(

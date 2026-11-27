@@ -4,17 +4,12 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/rescuer_application.dart';
 import '../../services/rescuer_service.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/date_format.dart';
 import '../../utils/responsive.dart';
 import '../../widgets/admin_top_bar.dart';
 import '../../widgets/refreshing_builder.dart';
 
-String _dateText(DateTime d) {
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-  return '${months[d.month - 1]} ${d.day}, ${d.year}';
-}
+String _dateText(DateTime d) => formatDate(d);
 
 Color _statusBg(RescuerStatus s) => switch (s) {
   RescuerStatus.pending => const Color(0xFFFFF3B0),

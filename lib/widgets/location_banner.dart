@@ -1,5 +1,3 @@
-// File: lib/widgets/location_banner.dart  (NEW FILE)
-
 import 'package:flutter/material.dart';
 
 import '../services/report_service.dart';

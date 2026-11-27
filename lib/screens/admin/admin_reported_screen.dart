@@ -6,6 +6,7 @@ import '../../models/stray_report.dart';
 import '../../services/adoption_service.dart';
 import '../../services/content_report_service.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/date_format.dart';
 import '../../widgets/adopt_pet_photo.dart';
 import '../../utils/responsive.dart';
 import '../../widgets/admin_top_bar.dart';
@@ -28,13 +29,7 @@ Color _statusFg(ReportStatus s) => switch (s) {
 const Color _kRejectPink = Color(0xFFFF9F9F);
 const Color _kRejectText = Color(0xFF7A1F1F);
 
-String _dateText(DateTime d) {
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-  return '${months[d.month - 1]} ${d.day}, ${d.year}';
-}
+String _dateText(DateTime d) => formatDate(d);
 
 Widget _photo(String? path, {double iconSize = 30}) {
   final fallback = Container(
@@ -85,7 +80,7 @@ _Content _contentOf(ContentReport r) {
       if (stray == null) return const _Content(exists: false);
       return _Content(
         exists: true,
-        photo: stray.imageAsset,
+        photo: stray.coverPhoto,
         subtitle: '${stray.urgency.label} · ${stray.status.label}',
         rows: [
           ('Animal Type', stray.animalType),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/adoption_pet.dart';
 import '../../services/adoption_service.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/date_format.dart';
 import '../../widgets/adopt_pet_photo.dart';
 import '../../utils/responsive.dart';
 import '../../widgets/admin_top_bar.dart';
@@ -25,14 +26,7 @@ Color _statusFg(PostStatus s) => switch (s) {
 const Color _kRejectPink = Color(0xFFFF9F9F);
 const Color _kRejectText = Color(0xFF7A1F1F);
 
-String _dateText(DateTime? d) {
-  if (d == null) return '';
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-  return '${months[d.month - 1]} ${d.day}, ${d.year}';
-}
+String _dateText(DateTime? d) => d == null ? '' : formatDate(d);
 
 /// Common rejection reasons the admin can tick.
 const List<String> _kRejectReasons = [

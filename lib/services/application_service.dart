@@ -1,5 +1,5 @@
 // ===================================
-// ADOPTION APPLICATIONS (Supabase)  -  Batch 5B
+// ADOPTION APPLICATIONS (Supabase)
 // ===================================
 // An applicant sends an application. An ADMIN screens it (forward or reject).
 // The PET OWNER makes the final decision. The applicant can edit it while it

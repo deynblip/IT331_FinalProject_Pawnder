@@ -1,5 +1,5 @@
 // ===================================
-// ADOPTION POSTS (Supabase)  -  Batch 5A
+// ADOPTION POSTS (Supabase)
 // ===================================
 // Pre-approval: every new post starts as PENDING and only shows on the Adopt
 // board after an ADMIN approves it. An approved post stays approved when

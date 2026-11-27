@@ -62,9 +62,8 @@ class StrayReport {
   final String location; // readable address
   final String description;
 
-  /// The photo: a web link (reports from the database) or an asset path
-  /// (sample data). Null = no photo. ReportImage handles both.
-  final String? imageAsset;
+  /// Cover photo (web link of the first photo). Null = no photo.
+  final String? coverPhoto;
 
   /// All photos of the report (links from the database), first = cover.
   /// Use [allPhotos] when showing them.
@@ -108,7 +107,7 @@ class StrayReport {
     required this.lat,
     required this.lng,
     this.description = '',
-    this.imageAsset,
+    this.coverPhoto,
     this.photos = const [],
     this.distanceKm,
     this.responders = 0,
@@ -142,7 +141,7 @@ class StrayReport {
       status: RescueStatus.fromDb(row['rescue_status'] as String?),
       location: (row['address'] as String?) ?? '',
       description: (row['description'] as String?) ?? '',
-      imageAsset: photoUrls.isEmpty ? null : photoUrls.first,
+      coverPhoto: photoUrls.isEmpty ? null : photoUrls.first,
       photos: photoUrls,
       distanceKm: distanceKm,
       date: DateTime.parse(row['created_at'] as String).toLocal(),
@@ -192,7 +191,7 @@ class StrayReport {
   /// Every photo to show (falls back to the single cover photo).
   List<String> get allPhotos => photos.isNotEmpty
       ? photos
-      : ((imageAsset ?? '').isNotEmpty ? [imageAsset!] : const []);
+      : ((coverPhoto ?? '').isNotEmpty ? [coverPhoto!] : const []);
 
   String get descriptionOrDefault =>
       description.trim().isEmpty ? 'No details provided.' : description;
@@ -210,7 +209,7 @@ class StrayReport {
       status: status ?? this.status,
       location: location,
       description: description,
-      imageAsset: imageAsset,
+      coverPhoto: coverPhoto,
       photos: photos,
       distanceKm: distanceKm ?? this.distanceKm,
       date: date,
