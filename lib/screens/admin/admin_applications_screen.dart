@@ -554,11 +554,16 @@ class AdminApplicationDetailsScreen extends StatelessWidget {
             backgroundColor: bg,
             foregroundColor: fg,
             elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-          child: Text(text, style: const TextStyle(fontWeight: FontWeight.w700)),
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w700, height: 1.15),
+          ),
         ),
       ),
     );

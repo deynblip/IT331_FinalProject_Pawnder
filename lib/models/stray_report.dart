@@ -91,6 +91,12 @@ class StrayReport {
   final String? outcome; // e.g. 'rescued_on_site' (database value)
   final String? closedBy; // user id of the person who marked it rescued
 
+  /// Reporter's contact details (so the owner of a lost pet can reach
+  /// them). Empty on older reports.
+  final String contactName;
+  final String contactPhone;
+  final String contactEmail;
+
   const StrayReport({
     required this.id,
     required this.title,
@@ -111,6 +117,9 @@ class StrayReport {
     this.reporterId,
     this.outcome,
     this.closedBy,
+    this.contactName = '',
+    this.contactPhone = '',
+    this.contactEmail = '',
   });
 
   /// Builds a report from a `stray_reports` row.
@@ -145,8 +154,15 @@ class StrayReport {
       reporterId: reporterId,
       outcome: row['outcome'] as String?,
       closedBy: row['closed_by'] as String?,
+      contactName: (row['contact_name'] as String?) ?? '',
+      contactPhone: (row['contact_phone'] as String?) ?? '',
+      contactEmail: (row['contact_email'] as String?) ?? '',
     );
   }
+
+  /// True when the report has the reporter's contact details.
+  bool get hasContact =>
+      contactName.isNotEmpty || contactPhone.isNotEmpty || contactEmail.isNotEmpty;
 
   /// Title shown on cards, e.g. "Stray Dog" or "Possibly Lost Cat".
   static String titleFor(String animalType, bool possiblyLostPet) {
@@ -206,6 +222,9 @@ class StrayReport {
       reporterId: reporterId,
       outcome: outcome,
       closedBy: closedBy,
+      contactName: contactName,
+      contactPhone: contactPhone,
+      contactEmail: contactEmail,
     );
   }
 }

@@ -53,6 +53,24 @@ String? validateContactNumber(String? value) {
   return null;
 }
 
+/// Mobile number for contact details, e.g. 0993 456 7891 or +63 993 456 7891.
+String? validateMobileNumber(String? value) {
+  final digits = (value ?? '').replaceAll(RegExp(r'[\s\-]'), '');
+  if (digits.isEmpty) return 'Please enter a phone number';
+  if (!RegExp(r'^(09|\+639)\d{9}$').hasMatch(digits)) {
+    return 'Enter a valid mobile number, e.g. 0993 456 7891';
+  }
+  return null;
+}
+
+/// Email for contact details.
+String? validateContactEmail(String? value) {
+  final v = (value ?? '').trim();
+  if (v.isEmpty) return 'Please enter an email address';
+  if (!emailRegex.hasMatch(v)) return 'Please enter a valid email address';
+  return null;
+}
+
 String? validateOfficialPage(String? value) {
   final v = value?.trim() ?? '';
   if (v.isEmpty) return 'Please enter the official page or website';

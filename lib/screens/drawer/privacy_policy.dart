@@ -194,7 +194,7 @@ class PrivacyPolicyPage extends StatelessWidget {
               '11. Contact Us',
               'For questions or requests about your personal information, '
                   'you may contact the Pawnder development team at '
-                  'pawnder.support@example.com.',
+                  'pawnder.appv1@gmail.com.',
             ),
 
             const SizedBox(height: 12),
@@ -277,7 +277,7 @@ class PrivacyPolicyPage extends StatelessWidget {
     return Text(
       text,
       style: TextStyle(
-        color: Colors.grey.shade700,
+        color: kHintGray,
         fontSize: 13,
         height: 1.6,
       ),

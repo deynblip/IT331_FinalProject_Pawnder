@@ -1,5 +1,3 @@
-// File: lib/services/report_service.dart
-// (includes the Batch 4 reset() edits, so replace the WHOLE file)
 import 'dart:async';
 import 'dart:io';
 
@@ -61,6 +59,7 @@ class ReportService {
   static void reset() {
     _generation++;
     _reports = [];
+    _myResponses = {};
     _loaded = false;
     _loading = null;
     loadError = null;
@@ -77,6 +76,59 @@ class ReportService {
       _reports.where((r) => r.isMine).toList();
 
   static bool get isLoaded => _loaded;
+
+  // ---------------------------------------------------------------- My responses
+
+  /// Report id -> my latest response there ('active', 'finished' or
+  /// 'cancelled'), for every report I responded to ("I'm on my way!").
+  /// Newest first.
+  static Map<String, String> _myResponses = {};
+
+  /// My response on a report, or null if I never responded there.
+  static String? myResponseState(String reportId) => _myResponses[reportId];
+
+  /// Reports I responded to (not my own reports). Active ones first, then
+  /// the newest.
+  static List<StrayReport> get respondedByMe {
+    final List<StrayReport> list = [];
+    for (final String id in _myResponses.keys) {
+      for (final StrayReport r in _reports) {
+        if (r.id == id && !r.isMine) list.add(r);
+      }
+    }
+    final List<StrayReport> active =
+    list.where((r) => _myResponses[r.id] == 'active').toList();
+    final List<StrayReport> past =
+    list.where((r) => _myResponses[r.id] != 'active').toList();
+    return [...active, ...past];
+  }
+
+  /// Loads the reports I responded to. Safe to call often.
+  static Future<void> loadMyResponses() async {
+    final String? uid = AuthService.currentUserId;
+    if (uid == null) return;
+    final int gen = _generation;
+    try {
+      final List<Map<String, dynamic>> rows = await _db
+          .from('rescue_responses')
+          .select('report_id, state, joined_at')
+          .eq('responder_id', uid)
+          .order('joined_at', ascending: false);
+      if (gen != _generation) return; // account changed while loading
+
+      // Newest response per report; an active one always wins.
+      final Map<String, String> map = {};
+      for (final row in rows) {
+        final String id = row['report_id'] as String;
+        final String state = (row['state'] as String?) ?? 'finished';
+        if (!map.containsKey(id) || state == 'active') map[id] = state;
+      }
+      _myResponses = map;
+      _notify();
+    } catch (e) {
+      debugPrint('Load my responses error: $e');
+    }
+  }
   static bool get isLoading => _loading != null;
 
   static StrayReport? byId(String id) {
@@ -276,6 +328,9 @@ class ReportService {
     required double longitude,
     required String address,
     bool possiblyLostPet = false,
+    required String contactName,
+    required String contactPhone,
+    required String contactEmail,
   }) async {
     final String? userId = AuthService.currentUserId;
     if (userId == null) throw const ReportFailure('Please log in first.');
@@ -305,6 +360,9 @@ class ReportService {
             ? cleanAddress.substring(0, 300)
             : cleanAddress,
         'p_possibly_lost_pet': possiblyLostPet,
+        'p_contact_name': contactName.trim(),
+        'p_contact_phone': contactPhone.trim(),
+        'p_contact_email': contactEmail.trim(),
       });
     } catch (e) {
       // Don't leave unused photos in Storage.
@@ -338,6 +396,9 @@ class ReportService {
     required bool possiblyLostPet,
     required List<String> keptPhotos,
     List<File> newPhotos = const [],
+    required String contactName,
+    required String contactPhone,
+    required String contactEmail,
   }) async {
     final String? userId = AuthService.currentUserId;
     if (userId == null) throw const ReportFailure('Please log in first.');
@@ -364,6 +425,9 @@ class ReportService {
         'p_description': description.trim(),
         'p_photo_paths': [...keptPaths, ...uploaded],
         'p_possibly_lost_pet': possiblyLostPet,
+        'p_contact_name': contactName.trim(),
+        'p_contact_phone': contactPhone.trim(),
+        'p_contact_email': contactEmail.trim(),
       });
     } catch (e) {
       await _removeFromStorage(uploaded);

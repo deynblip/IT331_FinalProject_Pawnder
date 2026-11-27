@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/stray_report.dart';
 import '../services/report_service.dart';
@@ -528,11 +529,10 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
             Text('The animal still needs assistance',
                 style: TextStyle(color: ReportColors.navy, fontSize: 15)),
             const SizedBox(height: 12),
-            _primaryButton("I'm on my way!", _onMyWay),
-            if (_report.isMine) ...[
-              const SizedBox(height: 10),
-              _secondaryButton('Mark as Rescued', _markRescued),
-            ],
+            if (_report.isMine)
+              _primaryButton('Mark as Rescued', _markRescued)
+            else
+              _primaryButton("I'm on my way!", _onMyWay),
             _busyLine(),
           ],
         );
@@ -583,14 +583,14 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
             const SizedBox(height: 12),
 
             if (me == null) ...[
-              _primaryButton("I'm on my way!", _onMyWay),
-              if (_isVerified && inactive) ...[
-                const SizedBox(height: 10),
-                _secondaryButton('Take over this report', _takeOver),
-              ],
-              if (_report.isMine) ...[
-                const SizedBox(height: 10),
-                _secondaryButton('Mark as Rescued', _markRescued),
+              if (_report.isMine)
+                _primaryButton('Mark as Rescued', _markRescued)
+              else ...[
+                _primaryButton("I'm on my way!", _onMyWay),
+                if (_isVerified && inactive) ...[
+                  const SizedBox(height: 10),
+                  _secondaryButton('Take over this report', _takeOver),
+                ],
               ],
             ] else ...[
               if (!me.checkedIn) ...[
@@ -662,6 +662,130 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
     }
 
     return _cardBox(content);
+  }
+
+  // ---------------------------------------------------------------- Contact
+
+  /// Calls / emails the reporter. If no app can open it, the number or
+  /// email is copied instead.
+  Future<void> _contactReporter(Uri uri, String copyText, String what) async {
+    bool ok = false;
+    try {
+      ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      ok = false;
+    }
+    if (ok || !mounted) return;
+    await Clipboard.setData(ClipboardData(text: copyText));
+    if (mounted) _snack('$what copied: $copyText');
+  }
+
+  Widget _contactRow(
+      IconData icon, String label, String value, VoidCallback? onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: ReportColors.grey),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: ReportColors.grey,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      color: ReportColors.navy,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (onTap != null)
+              Icon(Icons.chevron_right, color: ReportColors.grey),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Reporter's name, phone and email, so the owner of a lost pet (or a
+  /// rescuer) can reach them. Not tappable on your own report.
+  Widget _contactCard() {
+    final r = _report;
+    final bool mine = r.isMine;
+    final String phoneDigits = r.contactPhone.replaceAll(RegExp(r'[\s\-()]'), '');
+
+    return _cardBox(
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            mine ? 'Your Contact Details' : 'Contact the Reporter',
+            style: TextStyle(
+              color: ReportColors.navy,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            mine
+                ? 'Other users can see these on your report.'
+                : 'Is this your pet, or do you need more details? Reach the '
+                'person who reported it.',
+            style: TextStyle(color: ReportColors.grey, fontSize: 13),
+          ),
+          const SizedBox(height: 6),
+          if (r.contactName.isNotEmpty)
+            _contactRow(Icons.person_outline, 'NAME', r.contactName, null),
+          if (r.contactPhone.isNotEmpty)
+            _contactRow(
+              Icons.phone_outlined,
+              'PHONE',
+              r.contactPhone,
+              mine
+                  ? null
+                  : () => _contactReporter(
+                Uri(scheme: 'tel', path: phoneDigits),
+                r.contactPhone,
+                'Number',
+              ),
+            ),
+          if (r.contactEmail.isNotEmpty)
+            _contactRow(
+              Icons.email_outlined,
+              'EMAIL',
+              r.contactEmail,
+              mine
+                  ? null
+                  : () => _contactReporter(
+                Uri(
+                  scheme: 'mailto',
+                  path: r.contactEmail,
+                  query: 'subject=About%20your%20Pawnder%20report',
+                ),
+                r.contactEmail,
+                'Email',
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _cardBox(Widget child) {
@@ -874,6 +998,10 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                 if (_report.possiblyLostPet) _lostPetNotice(),
                 _field('Condition and Behavior', _report.descriptionOrDefault),
                 const SizedBox(height: 4),
+                if (_report.hasContact) ...[
+                  _contactCard(),
+                  const SizedBox(height: 14),
+                ],
                 _statusCard(),
               ],
             ),

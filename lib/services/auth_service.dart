@@ -65,6 +65,18 @@ class AuthService {
 
   static bool get isCurrentRestricted => _isRestricted;
 
+  // Profile photo (`avatars` bucket). Null = no photo yet.
+  static String? _avatarPath;
+
+  /// Web link of the profile photo. Drawers and Profile listen to this.
+  static final ValueNotifier<String?> avatarUrl = ValueNotifier<String?>(null);
+
+  static void _setAvatar(String? path) {
+    _avatarPath = path;
+    avatarUrl.value =
+    path == null ? null : _db.storage.from('avatars').getPublicUrl(path);
+  }
+
   /// Number of registered regular users (admin dashboard).
   static int get userCount => _userCount;
 
@@ -134,6 +146,7 @@ class AuthService {
     _isRestricted = false;
     _userCount = 0;
     _sessionActive = false;
+    _setAvatar(null);
     ReportService.reset();
     ResponseService.reset();
     AdoptionService.reset();
@@ -276,14 +289,91 @@ class AuthService {
   static Future<void> _fetchProfile() async {
     final Map<String, dynamic> row = await _db
         .from('profiles')
-        .select('full_name, role, is_restricted')
+        .select('full_name, role, is_restricted, avatar_path')
         .eq('id', currentUserId!)
         .single();
 
     _name = row['full_name'] as String?;
     _isAdmin = row['role'] == 'admin';
     _isRestricted = row['is_restricted'] == true;
+    _setAvatar(row['avatar_path'] as String?);
     if (_isAdmin) await refreshUserCount();
+  }
+
+  /// Uploads a new profile photo and saves it to the profile. The old
+  /// photo is deleted. A new file name each time avoids old cached images.
+  static Future<void> saveAvatar(Uint8List bytes, String fileName) async {
+    final String? uid = currentUserId;
+    if (uid == null || currentName.trim().isEmpty) {
+      throw const AuthFailure('Please log in again.');
+    }
+    if (bytes.length > 5 * 1024 * 1024) {
+      throw const AuthFailure(
+          'The photo is too large. Please choose one under 5 MB.');
+    }
+
+    const Map<String, String> types = {
+      'jpg': 'image/jpeg',
+      'png': 'image/png',
+      'webp': 'image/webp',
+      'heic': 'image/heic',
+    };
+    String ext = fileName.contains('.')
+        ? fileName.split('.').last.toLowerCase()
+        : 'jpg';
+    if (ext == 'jpeg') ext = 'jpg';
+    if (!types.containsKey(ext)) ext = 'jpg';
+
+    final String path = '$uid/${DateTime.now().millisecondsSinceEpoch}.$ext';
+    final String? oldPath = _avatarPath;
+
+    try {
+      await _db.storage.from('avatars').uploadBinary(
+        path,
+        bytes,
+        fileOptions: FileOptions(contentType: types[ext]),
+      );
+      await _db.rpc('update_my_profile', params: {
+        'p_full_name': currentName,
+        'p_avatar_path': path,
+      });
+    } catch (e) {
+      debugPrint('Save avatar error: $e');
+      try {
+        await _db.storage.from('avatars').remove([path]);
+      } catch (_) {}
+      throw AuthFailure(_isNetworkError(e)
+          ? _noInternet
+          : 'Could not save the photo. Please try again.');
+    }
+
+    _setAvatar(path);
+    if (oldPath != null) {
+      try {
+        await _db.storage.from('avatars').remove([oldPath]);
+      } catch (_) {}
+    }
+  }
+
+  /// Removes the profile photo (back to the default icon).
+  static Future<void> removeAvatar() async {
+    final String? oldPath = _avatarPath;
+    if (oldPath == null || currentName.trim().isEmpty) return;
+    try {
+      await _db.rpc('update_my_profile', params: {
+        'p_full_name': currentName,
+        'p_avatar_path': null,
+      });
+    } catch (e) {
+      debugPrint('Remove avatar error: $e');
+      throw AuthFailure(_isNetworkError(e)
+          ? _noInternet
+          : 'Could not remove the photo. Please try again.');
+    }
+    _setAvatar(null);
+    try {
+      await _db.storage.from('avatars').remove([oldPath]);
+    } catch (_) {}
   }
 
   /// Used by Log In: logs out and shows a message if it fails.

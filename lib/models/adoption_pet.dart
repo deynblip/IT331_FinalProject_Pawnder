@@ -72,6 +72,15 @@ class AdoptionPet {
   /// Rescued Stray (shown first on the board) or Owned Pet (Rehoming).
   final PetSource source;
 
+  /// How many times the owner edited this post while it was approved.
+  final int editCount;
+
+  /// An approved post can be edited this many times without admin review.
+  static const int maxEdits = 3;
+
+  /// Edits left on an approved post.
+  int get editsLeft => (maxEdits - editCount).clamp(0, maxEdits);
+
   const AdoptionPet({
     required this.id,
     required this.name,
@@ -96,6 +105,7 @@ class AdoptionPet {
     this.resubmitted = false,
     this.ownerEmail,
     this.source = PetSource.rescuedStray,
+    this.editCount = 0,
   });
 
   /// Example: "1 year · Male"
@@ -165,6 +175,7 @@ class AdoptionPet {
               : this.resubmitted),
       ownerEmail: ownerEmail,
       source: source ?? this.source,
+      editCount: editCount,
     );
   }
 }

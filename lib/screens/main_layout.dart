@@ -23,6 +23,7 @@ import 'drawer/settings.dart';
 import 'drawer/help_support.dart';
 import 'drawer/terms_conditions.dart';
 import 'drawer/privacy_policy.dart';
+import '../widgets/profile_avatar.dart';
 
 class MainLayout extends StatefulWidget {
   final String name;
@@ -298,10 +299,10 @@ class _MainLayoutState extends State<MainLayout> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const CircleAvatar(
-                        radius: 28,
-                        backgroundColor: Colors.white,
-                        child: Icon(Icons.person, color: kBlue, size: 32),
+                      const ProfileAvatar(
+                        size: 56,
+                        background: Colors.white,
+                        iconColor: kBlue,
                       ),
                       const SizedBox(height: 12),
                       Text(

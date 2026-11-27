@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/theme_controller.dart';
 import '../../utils/responsive.dart';
 
 class HelpSupportPage extends StatelessWidget {
@@ -24,7 +25,7 @@ class HelpSupportPage extends StatelessWidget {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(
-            color: Colors.grey.shade200,
+            color: kCardBorder,
             height: 1,
           ),
         ),
@@ -48,7 +49,7 @@ class HelpSupportPage extends StatelessWidget {
               'Find answers to common questions and learn how to use Pawnder.',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade600,
+                color: kHintGray,
                 height: 1.5,
               ),
             ),
@@ -98,11 +99,11 @@ class HelpSupportPage extends StatelessWidget {
 
             // 2. REPORTING GUIDELINES
             _sectionTitle('2. Reporting Guidelines'),
-            const Text(
+            Text(
               'Before submitting a report, please follow these guidelines:',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.black87,
+                color: kNavy,
                 height: 1.5,
               ),
             ),
@@ -149,11 +150,11 @@ class HelpSupportPage extends StatelessWidget {
 
             // 3. ADOPTION ASSISTANCE
             _sectionTitle('3. Adoption Assistance'),
-            const Text(
+            Text(
               'Interested in adopting a pet? Here are some things to know.',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.black87,
+                color: kNavy,
                 height: 1.5,
               ),
             ),
@@ -232,7 +233,7 @@ class HelpSupportPage extends StatelessWidget {
                   'Pawnder, you can reach our team through the following channels.',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade700,
+                color: kHintGray,
                 height: 1.5,
               ),
             ),
@@ -243,7 +244,7 @@ class HelpSupportPage extends StatelessWidget {
               Icons.email_outlined,
               'Email Support',
               'For inquiries and assistance',
-              'Your official email address',
+              'pawnder.appv1@gmail.com',
             ),
             _contactItem(
               Icons.feedback_outlined,
@@ -265,7 +266,7 @@ class HelpSupportPage extends StatelessWidget {
                 'Pawnder • Every Paw Deserves Help',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade500,
+                  color: kHintGray,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -312,9 +313,9 @@ class HelpSupportPage extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: kCardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: kCardBorder),
       ),
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(
@@ -339,7 +340,7 @@ class HelpSupportPage extends StatelessWidget {
               answer,
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey.shade700,
+                color: kHintGray,
                 height: 1.5,
               ),
             ),
@@ -386,7 +387,7 @@ class HelpSupportPage extends StatelessWidget {
                   description,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.shade700,
+                    color: kHintGray,
                     height: 1.5,
                   ),
                 ),
@@ -419,7 +420,7 @@ class HelpSupportPage extends StatelessWidget {
               text,
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey.shade700,
+                color: kHintGray,
                 height: 1.5,
               ),
             ),
@@ -450,7 +451,7 @@ class HelpSupportPage extends StatelessWidget {
               text,
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey.shade700,
+                color: kHintGray,
                 height: 1.5,
               ),
             ),
@@ -461,32 +462,39 @@ class HelpSupportPage extends StatelessWidget {
   }
 
   // REMINDER CARD
+  // Soft yellow in light mode; warm dark card in dark mode.
   Widget _reminderCard(String title, String message) {
+    final Color bg = isDarkMode ? kPeach : const Color(0xFFFFF8E7);
+    final Color border = isDarkMode ? kCardBorder : const Color(0xFFF3E2B7);
+    final Color iconColor = isDarkMode ? kOrangeSoft : const Color(0xFF9A6B16);
+    final Color titleColor = isDarkMode ? kNavy : const Color(0xFF805A13);
+    final Color textColor = isDarkMode ? kHintGray : const Color(0xFF765D32);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E7),
+        color: bg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFF3E2B7)),
+        border: Border.all(color: border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.info_outline,
-                color: Color(0xFF9A6B16),
+                color: iconColor,
                 size: 19,
               ),
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF805A13),
+                  color: titleColor,
                 ),
               ),
             ],
@@ -494,9 +502,9 @@ class HelpSupportPage extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             message,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: Color(0xFF765D32),
+              color: textColor,
               height: 1.5,
             ),
           ),
@@ -516,9 +524,9 @@ class HelpSupportPage extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: kCardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: kCardBorder),
       ),
       child: Row(
         children: [
@@ -545,7 +553,7 @@ class HelpSupportPage extends StatelessWidget {
                   description,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: kHintGray,
                   ),
                 ),
                 if (detail != null) ...[

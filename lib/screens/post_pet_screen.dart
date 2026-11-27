@@ -155,9 +155,19 @@ class _PostPetScreenState extends State<PostPetScreen> {
     if (!_validateAll()) return;
 
     final editing = widget.isEditing;
-    final reviewNote = editing
-        ? 'Your post will be reviewed by the admin again.'
-        : 'Your post will be sent to the admin for approval.';
+    final PostStatus? status = widget.pet?.status;
+    final String reviewNote;
+    if (!editing) {
+      reviewNote = 'Your post will be sent to the admin for approval.';
+    } else if (status == PostStatus.approved) {
+      final int leftAfter = widget.pet!.editsLeft - 1;
+      reviewNote = 'Your post stays live. Edits left after saving: '
+          '$leftAfter of ${AdoptionPet.maxEdits}.';
+    } else if (status == PostStatus.pending) {
+      reviewNote = 'Your post is still waiting for admin review.';
+    } else {
+      reviewNote = 'Your post will be reviewed by the admin again.';
+    }
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -303,8 +313,11 @@ class _PostPetScreenState extends State<PostPetScreen> {
             editing == null
                 ? '${_name.text.trim()} was sent to the admin for approval. '
                 'It will appear on the Adopt board once approved.'
+                : editing.status == PostStatus.approved
+                ? 'Your post for ${_name.text.trim()} was updated and is '
+                'still live in the Adoption Bulletin.'
                 : 'Your post for ${_name.text.trim()} was updated and will '
-                'be reviewed by the admin again.',
+                'be reviewed by the admin.',
           ),
           actions: [
             TextButton(

@@ -9,10 +9,36 @@ import '../utils/app_colors.dart';
 // MY ADOPTION POST
 // ===============================
 
-/// Opens the edit form. Editing an approved post sends it back to Pending,
-/// so the owner is warned first.
+/// Opens the edit form. An approved post can be edited up to
+/// [AdoptionPet.maxEdits] times (it stays live), so the owner is told how
+/// many edits are left first.
 Future<void> editMyPost(BuildContext context, AdoptionPet pet) async {
+  if (pet.status == PostStatus.approved && pet.editsLeft == 0) {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          'No edits left',
+          style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+        ),
+        content: const Text(
+          'You have used all ${AdoptionPet.maxEdits} edits for this post. '
+              'If something is wrong, you can remove the post and create a '
+              'new one.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+
   if (pet.status == PostStatus.approved) {
+    final int left = pet.editsLeft;
     final go = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -20,10 +46,10 @@ Future<void> editMyPost(BuildContext context, AdoptionPet pet) async {
           'Edit approved post?',
           style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
         ),
-        content: const Text(
-          'Saving changes sends this post back to Pending. It will be '
-              'hidden from the Adoption Bulletin until the admin approves '
-              'it again.',
+        content: Text(
+          'Your post stays live in the Adoption Bulletin. You can edit an '
+              'approved post up to ${AdoptionPet.maxEdits} times.\n\n'
+              'Edits left: $left',
         ),
         actions: [
           TextButton(
@@ -130,7 +156,8 @@ class PostReviewNote extends StatelessWidget {
         icon = Icons.check_circle_outline;
         color = const Color(0xFF1F5E10);
         bg = const Color(0xFFE6F6DE);
-        text = 'Approved. This post is live in the Adoption Bulletin.';
+        text = 'Approved. This post is live in the Adoption Bulletin. '
+            'Edits left: ${pet.editsLeft} of ${AdoptionPet.maxEdits}.';
     }
 
     return Container(
