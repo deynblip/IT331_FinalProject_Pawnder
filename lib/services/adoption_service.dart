@@ -1,11 +1,3 @@
-// ===================================
-// ADOPTION POSTS (Supabase)  -  Batch 5A
-// ===================================
-// Pre-approval: every new post starts as PENDING and only shows on the Adopt
-// board after an ADMIN approves it. An edited post goes back to PENDING.
-// The screens still read the lists below (approved, mine, all...). The data
-// is loaded from the database; listen to [changes] to refresh a screen.
-
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -165,6 +157,7 @@ class AdoptionService {
       source: row['source'] == 'rehoming'
           ? PetSource.rehoming
           : PetSource.rescuedStray,
+      editCount: (row['edit_count'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -272,8 +265,9 @@ class AdoptionService {
     await load();
   }
 
-  /// OWNER ONLY: edit one of your own posts. ANY edit sends the post back to
-  /// PENDING (hidden from the Adoption Bulletin) so the admin re-checks it.
+  /// OWNER ONLY: edit one of your own posts. An APPROVED post stays approved
+  /// (up to [AdoptionPet.maxEdits] edits); a rejected post goes back to
+  /// PENDING for another review; a pending post stays pending.
   /// [photos] can mix existing photo links (kept) and newly picked photos
   /// (uploaded here).
   static Future<void> update(

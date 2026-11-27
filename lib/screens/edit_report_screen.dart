@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../models/stray_report.dart';
+import '../services/auth_service.dart';
 import '../services/report_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/report_style.dart';
@@ -34,6 +35,12 @@ class _EditReportScreenState extends State<EditReportScreen> {
   late Urgency _urgency;
   late bool _lostPet;
 
+  // Reporter's contact details (older reports may have none yet).
+  late final TextEditingController _contactName;
+  late final TextEditingController _contactPhone;
+  late final TextEditingController _contactEmail;
+  final GlobalKey<FormState> _contactFormKey = GlobalKey<FormState>();
+
   // Existing photos the user keeps (links) and newly picked ones (files).
   late final List<String> _kept = List.of(widget.report.allPhotos);
   final List<File> _new = [];
@@ -47,11 +54,21 @@ class _EditReportScreenState extends State<EditReportScreen> {
     _animal = _animals.contains(r.animalType) ? r.animalType : 'Other';
     _urgency = r.urgency;
     _lostPet = r.possiblyLostPet;
+    _contactName = TextEditingController(
+        text: r.contactName.isNotEmpty ? r.contactName : AuthService.currentName);
+    _contactPhone = TextEditingController(text: r.contactPhone);
+    _contactEmail = TextEditingController(
+        text: r.contactEmail.isNotEmpty
+            ? r.contactEmail
+            : (AuthService.currentEmail ?? ''));
   }
 
   @override
   void dispose() {
     _description.dispose();
+    _contactName.dispose();
+    _contactPhone.dispose();
+    _contactEmail.dispose();
     super.dispose();
   }
 
@@ -169,6 +186,10 @@ class _EditReportScreenState extends State<EditReportScreen> {
 
   Future<void> _save() async {
     if (_busy) return;
+    if (!(_contactFormKey.currentState?.validate() ?? false)) {
+      showMessage(context, 'Please complete your contact information.');
+      return;
+    }
     setState(() => _busy = true);
     try {
       await ReportService.updateMine(
@@ -179,6 +200,9 @@ class _EditReportScreenState extends State<EditReportScreen> {
         possiblyLostPet: _lostPet,
         keptPhotos: _kept,
         newPhotos: _new,
+        contactName: _contactName.text,
+        contactPhone: _contactPhone.text,
+        contactEmail: _contactEmail.text,
       );
     } on ReportFailure catch (e) {
       if (mounted) showMessage(context, e.message);
@@ -189,6 +213,75 @@ class _EditReportScreenState extends State<EditReportScreen> {
     if (!mounted) return;
     showMessage(context, 'Report updated.');
     Navigator.pop(context, true);
+  }
+
+  // ---------------------------------------------------------------- Contact
+
+  InputDecoration _contactDecoration(String hint, IconData icon) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(color: kHintGray),
+      prefixIcon: Icon(icon, color: kHintGray, size: 20),
+      filled: true,
+      fillColor: kCardColor,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: kCardBorder),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: kCardBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: kBlue),
+      ),
+    );
+  }
+
+  Widget _contactLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6, top: 4),
+      child: FieldLabel(text, required: true),
+    );
+  }
+
+  /// Name, phone and email of the reporter. Shown on the report so the
+  /// owner of a lost pet (or a rescuer) can reach them.
+  Widget _contactFields() {
+    return Form(
+      key: _contactFormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _contactLabel('Contact Person'),
+          TextFormField(
+            controller: _contactName,
+            textCapitalization: TextCapitalization.words,
+            decoration: _contactDecoration('Your full name', Icons.person_outline),
+            validator: (v) => (v ?? '').trim().isEmpty
+                ? 'Please enter the contact person'
+                : null,
+          ),
+          const SizedBox(height: 12),
+          _contactLabel('Phone Number'),
+          TextFormField(
+            controller: _contactPhone,
+            keyboardType: TextInputType.phone,
+            decoration: _contactDecoration('e.g. 0993 456 7891', Icons.phone_outlined),
+            validator: validateMobileNumber,
+          ),
+          const SizedBox(height: 12),
+          _contactLabel('Email Address'),
+          TextFormField(
+            controller: _contactEmail,
+            keyboardType: TextInputType.emailAddress,
+            decoration: _contactDecoration('Your email address', Icons.email_outlined),
+            validator: validateContactEmail,
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _chips<T>({
@@ -313,7 +406,7 @@ class _EditReportScreenState extends State<EditReportScreen> {
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 value: _lostPet,
-                activeColor: kBlue,
+                activeThumbColor: kBlue,
                 title: Text(
                   'This may be a lost pet',
                   style: TextStyle(
@@ -324,6 +417,18 @@ class _EditReportScreenState extends State<EditReportScreen> {
                 onChanged: (v) => setState(() => _lostPet = v),
               ),
               const SizedBox(height: 12),
+
+              // Contact details
+              const FieldLabel('Contact Information', required: true),
+              const SizedBox(height: 2),
+              Text(
+                'Shown on your report so rescuers or the owner of a lost pet '
+                    'can reach you.',
+                style: TextStyle(fontSize: 12, color: kHintGray),
+              ),
+              const SizedBox(height: 10),
+              _contactFields(),
+              const SizedBox(height: 20),
 
               // Location (read-only)
               const FieldLabel('Location'),

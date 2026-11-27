@@ -67,7 +67,13 @@ class _AdoptionDetailsScreenState extends State<AdoptionDetailsScreen> {
             child: OutlinedButton.icon(
               onPressed: () => editMyPost(context, pet),
               icon: const Icon(Icons.edit_outlined, size: 18),
-              label: Text(rejected ? 'Resubmit' : 'Edit'),
+              label: Text(
+                rejected
+                    ? 'Resubmit'
+                    : pet.status == PostStatus.approved
+                    ? 'Edit (${pet.editsLeft} left)'
+                    : 'Edit',
+              ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: kBlue,
                 side: const BorderSide(color: kBlue),

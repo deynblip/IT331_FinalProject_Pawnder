@@ -1,5 +1,3 @@
-// File: lib/services/report_service.dart
-// (includes the Batch 4 reset() edits, so replace the WHOLE file)
 import 'dart:async';
 import 'dart:io';
 
@@ -276,6 +274,9 @@ class ReportService {
     required double longitude,
     required String address,
     bool possiblyLostPet = false,
+    required String contactName,
+    required String contactPhone,
+    required String contactEmail,
   }) async {
     final String? userId = AuthService.currentUserId;
     if (userId == null) throw const ReportFailure('Please log in first.');
@@ -305,6 +306,9 @@ class ReportService {
             ? cleanAddress.substring(0, 300)
             : cleanAddress,
         'p_possibly_lost_pet': possiblyLostPet,
+        'p_contact_name': contactName.trim(),
+        'p_contact_phone': contactPhone.trim(),
+        'p_contact_email': contactEmail.trim(),
       });
     } catch (e) {
       // Don't leave unused photos in Storage.
@@ -338,6 +342,9 @@ class ReportService {
     required bool possiblyLostPet,
     required List<String> keptPhotos,
     List<File> newPhotos = const [],
+    required String contactName,
+    required String contactPhone,
+    required String contactEmail,
   }) async {
     final String? userId = AuthService.currentUserId;
     if (userId == null) throw const ReportFailure('Please log in first.');
@@ -364,6 +371,9 @@ class ReportService {
         'p_description': description.trim(),
         'p_photo_paths': [...keptPaths, ...uploaded],
         'p_possibly_lost_pet': possiblyLostPet,
+        'p_contact_name': contactName.trim(),
+        'p_contact_phone': contactPhone.trim(),
+        'p_contact_email': contactEmail.trim(),
       });
     } catch (e) {
       await _removeFromStorage(uploaded);

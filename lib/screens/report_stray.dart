@@ -10,9 +10,11 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../services/auth_service.dart';
 import '../services/report_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/responsive.dart';
+import '../utils/validators.dart' show validateMobileNumber, validateContactEmail;
 import '../widgets/field_label.dart';
 
 const Color _kUrgent = Color(0xFFE04F4F);
@@ -185,9 +187,18 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
   final ImagePicker _picker = ImagePicker();
   final TextEditingController _desc = TextEditingController();
 
+  // Contact details, filled in from the account (the user can change them).
+  final TextEditingController _contactName =
+  TextEditingController(text: AuthService.currentName);
+  final TextEditingController _contactPhone = TextEditingController();
+  final TextEditingController _contactEmail =
+  TextEditingController(text: AuthService.currentEmail ?? '');
+  final GlobalKey<FormState> _contactFormKey = GlobalKey<FormState>();
+
   // Used to scroll to a section that still needs an answer.
   final GlobalKey _urgencyKey = GlobalKey();
   final GlobalKey _locationKey = GlobalKey();
+  final GlobalKey _contactKey = GlobalKey();
 
   bool _submitting = false;
   bool _locating = false;
@@ -196,6 +207,9 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
   @override
   void dispose() {
     _desc.dispose();
+    _contactName.dispose();
+    _contactPhone.dispose();
+    _contactEmail.dispose();
     super.dispose();
   }
 
@@ -320,6 +334,13 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
       return;
     }
 
+    // Required: contact details.
+    if (!(_contactFormKey.currentState?.validate() ?? false)) {
+      _scrollTo(_contactKey);
+      _snack('Please complete your contact information.');
+      return;
+    }
+
     setState(() => _submitting = true);
     try {
       await ReportService.submit(
@@ -331,6 +352,9 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
         longitude: d.location!.longitude,
         address: d.address,
         possiblyLostPet: d.possiblyLostPet,
+        contactName: _contactName.text,
+        contactPhone: _contactPhone.text,
+        contactEmail: _contactEmail.text,
       );
       if (!mounted) return;
 
@@ -438,6 +462,16 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
                     _descriptionField(),
                     const SizedBox(height: 8),
                     _lostPetCheckbox(),
+                    const SizedBox(height: 20),
+                    _SectionTitle('Contact Information', key: _contactKey, required: true),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Shown on your report so rescuers or the owner of a lost '
+                          'pet can reach you.',
+                      style: TextStyle(fontSize: 12, color: kHintGray),
+                    ),
+                    const SizedBox(height: 10),
+                    _contactFields(),
                   ],
                 ),
               ),
@@ -787,6 +821,75 @@ class _ReportStrayPageState extends State<ReportStrayPage> {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: kBlue),
         ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------- Contact
+
+  InputDecoration _contactDecoration(String hint, IconData icon) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(color: kHintGray),
+      prefixIcon: Icon(icon, color: kHintGray, size: 20),
+      filled: true,
+      fillColor: kSurfaceWhite,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: kBlue),
+      ),
+    );
+  }
+
+  Widget _contactLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6, top: 4),
+      child: FieldLabel(text, required: true),
+    );
+  }
+
+  /// Name, phone and email of the reporter. Shown on the report so the
+  /// owner of a lost pet (or a rescuer) can reach them.
+  Widget _contactFields() {
+    return Form(
+      key: _contactFormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _contactLabel('Contact Person'),
+          TextFormField(
+            controller: _contactName,
+            textCapitalization: TextCapitalization.words,
+            decoration: _contactDecoration('Your full name', Icons.person_outline),
+            validator: (v) => (v ?? '').trim().isEmpty
+                ? 'Please enter the contact person'
+                : null,
+          ),
+          const SizedBox(height: 12),
+          _contactLabel('Phone Number'),
+          TextFormField(
+            controller: _contactPhone,
+            keyboardType: TextInputType.phone,
+            decoration: _contactDecoration('e.g. 0993 456 7891', Icons.phone_outlined),
+            validator: validateMobileNumber,
+          ),
+          const SizedBox(height: 12),
+          _contactLabel('Email Address'),
+          TextFormField(
+            controller: _contactEmail,
+            keyboardType: TextInputType.emailAddress,
+            decoration: _contactDecoration('Your email address', Icons.email_outlined),
+            validator: validateContactEmail,
+          ),
+        ],
       ),
     );
   }
