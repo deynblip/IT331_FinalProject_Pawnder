@@ -84,7 +84,7 @@ class ReportCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${report.distanceText}  ·  ${report.dateText}',
+                      '${report.distanceText}  ·  ${report.dateTimeText}',
                       style: TextStyle(color: ReportColors.grey, fontSize: 13),
                     ),
                   ],

@@ -1,3 +1,5 @@
+import '../utils/date_format.dart';
+
 enum Urgency {
   urgent('urgent'),
   needsHelp('needs_help'),
@@ -180,13 +182,11 @@ class StrayReport {
         : '$text km';
   }
 
-  String get dateText {
-    const months = [
-      'January', 'February', 'March', 'April', 'May', 'June', 'July',
-      'August', 'September', 'October', 'November', 'December'
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
-  }
+  /// e.g. "Nov 27, 2026".
+  String get dateText => formatDate(date);
+
+  /// e.g. "Nov 27, 2026, 8:05 PM".
+  String get dateTimeText => formatDateTime(date);
 
   /// Every photo to show (falls back to the single cover photo).
   List<String> get allPhotos => photos.isNotEmpty
