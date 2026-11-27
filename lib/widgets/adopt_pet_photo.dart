@@ -3,8 +3,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
-/// Shows a pet photo. Sample pets use asset images ("assets/..."). Newly
-/// posted pets use a picked photo: a file on Android, a blob URL on web.
+/// Shows a pet photo: a web link from the database, or a photo picked while
+/// posting (a file on Android, a blob URL on web). Asset paths
+/// ("assets/...") also work.
 class PetPhoto extends StatelessWidget {
   final String path;
   final Widget fallback;

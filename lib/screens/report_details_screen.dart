@@ -963,10 +963,12 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
                     Icon(Icons.schedule,
                         size: 16, color: ReportColors.grey),
                     const SizedBox(width: 4),
-                    Text(
-                      'Reported ${_report.dateText}',
-                      style: TextStyle(
-                          color: ReportColors.grey, fontSize: 15),
+                    Flexible(
+                      child: Text(
+                        'Reported ${_report.dateTimeText}',
+                        style: TextStyle(
+                            color: ReportColors.grey, fontSize: 15),
+                      ),
                     ),
                   ],
                 ),

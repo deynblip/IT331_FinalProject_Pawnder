@@ -41,7 +41,7 @@ class ReportCard extends StatelessWidget {
           child: Row(
             children: [
               ReportImage(
-                asset: report.imageAsset,
+                asset: report.coverPhoto,
                 width: compact ? 56 : 76,
                 height: compact ? 56 : 76,
               ),
@@ -84,7 +84,7 @@ class ReportCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${report.distanceText}  ·  ${report.dateText}',
+                      '${report.distanceText}  ·  ${report.dateTimeText}',
                       style: TextStyle(color: ReportColors.grey, fontSize: 13),
                     ),
                   ],

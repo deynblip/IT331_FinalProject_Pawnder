@@ -1,3 +1,12 @@
+// ===================================
+// ADOPTION POSTS (Supabase)
+// ===================================
+// Pre-approval: every new post starts as PENDING and only shows on the Adopt
+// board after an ADMIN approves it. An approved post stays approved when
+// edited (up to 2 times); a rejected post goes back to PENDING.
+// The screens still read the lists below (approved, mine, all...). The data
+// is loaded from the database; listen to [changes] to refresh a screen.
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';

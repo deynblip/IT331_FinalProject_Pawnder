@@ -12,7 +12,7 @@ import 'auth_service.dart';
 import 'notification_service.dart';
 
 // ===================================
-// PUSH NOTIFICATIONS (FCM)  -  Batch 8A
+// PUSH NOTIFICATIONS (FCM)
 // ===================================
 // The DATABASE still creates the notifications. This service only:
 //  1. gets this phone's FCM token and saves it for the logged-in user
@@ -22,7 +22,7 @@ import 'notification_service.dart';
 //  3. opens the Notifications screen when the user taps a push or the banner.
 // When the app is in the background or closed, Android shows the push in
 // the tray / as a pop-up by itself (channel "pawnder_high", see
-// MainActivity.kt). The push itself is sent by the Edge Function (Batch 8B).
+// MainActivity.kt). The push itself is sent by the `send-push` Edge Function.
 // If Firebase fails to start (no Google Play services), the app still works.
 
 class PushService {
@@ -66,6 +66,9 @@ class PushService {
       final RemoteMessage? first = await fm.getInitialMessage();
       if (first != null) _pendingOpen = true;
 
+      // Still works in firebase_messaging 17; the new register() API is not
+      // used yet because this flow is already tested on real phones.
+      // ignore: deprecated_member_use
       fm.onTokenRefresh.listen((String t) {
         _token = t;
         if (AuthService.sessionActive && NotificationService.pushEnabled) {
@@ -92,6 +95,7 @@ class PushService {
       final NotificationSettings s = await fm.requestPermission();
       if (s.authorizationStatus == AuthorizationStatus.denied) return;
 
+      // ignore: deprecated_member_use
       final String? t = await fm.getToken();
       if (t == null) return;
       _token = t;
@@ -126,6 +130,7 @@ class PushService {
             debugPrint('Could not remove the device token: $e');
           }
         }
+        // ignore: deprecated_member_use
         await FirebaseMessaging.instance.deleteToken();
       }).timeout(const Duration(seconds: 5));
     } catch (e) {

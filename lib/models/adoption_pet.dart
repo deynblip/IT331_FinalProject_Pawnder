@@ -76,7 +76,7 @@ class AdoptionPet {
   final int editCount;
 
   /// An approved post can be edited this many times without admin review.
-  static const int maxEdits = 3;
+  static const int maxEdits = 2;
 
   /// Edits left on an approved post.
   int get editsLeft => (maxEdits - editCount).clamp(0, maxEdits);

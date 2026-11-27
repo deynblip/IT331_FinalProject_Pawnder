@@ -1,15 +1,3 @@
--- 0006: report contact details and adoption post edit limit (Batch 9)
---
---  * Stray reports: the reporter's name, contact number and email, so the
---    owner of a lost pet can contact them. Required for new reports and
---    edits. Older reports have none (null).
---  * Adoption posts: editing an APPROVED post keeps it approved (no admin
---    re-review), up to 3 times. A pending post stays pending; a rejected
---    post goes back to pending (resubmit). Only edits of approved posts
---    are counted.
---
--- Run once in the SQL Editor.
-
 begin;
 
 -- ---------------------------------------------------------------- Stray reports
