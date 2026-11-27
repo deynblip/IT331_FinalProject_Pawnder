@@ -44,163 +44,192 @@ class _SignUpPageState extends State<SignUpPage> {
 
   // SHOW TERMS AND CONDITIONS POPUP
   Future<void> _showTermsDialog() async {
+    // "I Agree" unlocks only after the user scrolls to the end of the terms.
+    bool reachedEnd = _agreedToTerms;
+
     final bool? accepted = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: kSurfaceWhite,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          title: Text(
-            'Terms & Conditions',
-            style: TextStyle(
-              color: kNavy,
-              fontWeight: FontWeight.w800,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          bool checkEnd(ScrollMetrics m) {
+            if (!reachedEnd && m.extentAfter <= 24) {
+              setDialogState(() => reachedEnd = true);
+            }
+            return false;
+          }
+
+          return AlertDialog(
+            backgroundColor: kSurfaceWhite,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
             ),
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            height: 400,
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Last Updated: November 2026',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                    ),
-                  ),
+            title: Text(
+              'Terms & Conditions',
+              style: TextStyle(color: kNavy, fontWeight: FontWeight.w800),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: double.maxFinite,
+                  height: 400,
+                  child: NotificationListener<Notification>(
+                    onNotification: (n) {
+                      if (n is ScrollNotification) return checkEnd(n.metrics);
+                      if (n is ScrollMetricsNotification)
+                        return checkEnd(n.metrics);
+                      return false;
+                    },
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Last Updated: November 2026',
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
 
-                  const SizedBox(height: 12),
+                          const SizedBox(height: 12),
 
-                  const Text(
-                    'Welcome to Pawnder! By accessing or using the application, you agree to follow these Terms & Conditions. Please read them carefully before using the application.',
-                    style: TextStyle(fontSize: 13),
-                  ),
+                          const Text(
+                            'Welcome to Pawnder! By accessing or using the application, you agree to follow these Terms & Conditions. Please read them carefully before using the application.',
+                            style: TextStyle(fontSize: 13),
+                          ),
 
-                  _termsSection(
-                    '1. Acceptance of Terms',
-                    'By creating an account or using Pawnder, users acknowledge that they have read and agreed to these Terms & Conditions.',
-                  ),
+                          _termsSection(
+                            '1. Acceptance of Terms',
+                            'By creating an account or using Pawnder, users acknowledge that they have read and agreed to these Terms & Conditions.',
+                          ),
 
-                  _termsSection(
-                    '2. User Responsibilities',
-                    'Users agree to:',
-                    bullets: [
-                      'Provide accurate and truthful information.',
-                      'Use the application responsibly and respectfully.',
-                      'Avoid submitting false, misleading, or duplicate reports.',
-                      'Respect the privacy and safety of other users.',
-                    ],
-                  ),
+                          _termsSection(
+                            '2. User Responsibilities',
+                            'Users agree to:',
+                            bullets: [
+                              'Provide accurate and truthful information.',
+                              'Use the application responsibly and respectfully.',
+                              'Avoid submitting false, misleading, or duplicate reports.',
+                              'Respect the privacy and safety of other users.',
+                            ],
+                          ),
 
-                  _termsSection(
-                    '3. Stray Animal Reporting',
-                    'Users should:',
-                    bullets: [
-                      'Provide accurate animal descriptions and locations.',
-                      'Submit photos that correspond to the reported animal.',
-                      'Avoid approaching or disturbing unfamiliar animals just to take photos.',
-                      'Understand that submitting a report does not guarantee immediate rescue or assistance.',
-                    ],
-                  ),
+                          _termsSection(
+                            '3. Stray Animal Reporting',
+                            'Users should:',
+                            bullets: [
+                              'Provide accurate animal descriptions and locations.',
+                              'Submit photos that correspond to the reported animal.',
+                              'Avoid approaching or disturbing unfamiliar animals just to take photos.',
+                              'Understand that submitting a report does not guarantee immediate rescue or assistance.',
+                            ],
+                          ),
 
-                  _termsSection(
-                    '4. Location and Map Information',
-                    'Users should provide accurate location information and avoid reporting animals in private or unauthorized locations. Map information may not always reflect the animal’s current location.',
-                  ),
+                          _termsSection(
+                            '4. Location and Map Information',
+                            'Users should provide accurate location information and avoid reporting animals in private or unauthorized locations. Map information may not always reflect the animal’s current location.',
+                          ),
 
-                  _termsSection(
-                    '5. Pet Adoption',
-                    'Users must provide honest information when completing adoption questionnaires. Submitting an application does not guarantee approval. Adoption decisions are subject to review and confirmation by the responsible adoption partner or authorized personnel. Adopters are expected to provide proper care, protection, and a safe environment for their pets.',
-                  ),
+                          _termsSection(
+                            '5. Pet Adoption',
+                            'Users must provide honest information when completing adoption questionnaires. Submitting an application does not guarantee approval. Adoption decisions are subject to review and confirmation by the responsible adoption partner or authorized personnel. Adopters are expected to provide proper care, protection, and a safe environment for their pets.',
+                          ),
 
-                  _termsSection(
-                    '6. Prohibited Activities',
-                    'Users must not:',
-                    bullets: [
-                      'Submit false or misleading information.',
-                      'Upload inappropriate or unrelated images.',
-                      'Harass, threaten, or harm other users or animals.',
-                      'Misuse location information.',
-                      'Use the application for unrelated or unauthorized purposes.',
-                    ],
-                  ),
+                          _termsSection(
+                            '6. Prohibited Activities',
+                            'Users must not:',
+                            bullets: [
+                              'Submit false or misleading information.',
+                              'Upload inappropriate or unrelated images.',
+                              'Harass, threaten, or harm other users or animals.',
+                              'Misuse location information.',
+                              'Use the application for unrelated or unauthorized purposes.',
+                            ],
+                          ),
 
-                  _termsSection(
-                    '7. Accuracy and Availability',
-                    'Pawnder does not guarantee that reports, animal locations, or adoption listings will always be accurate, complete, or updated.',
-                  ),
+                          _termsSection(
+                            '7. Accuracy and Availability',
+                            'Pawnder does not guarantee that reports, animal locations, or adoption listings will always be accurate, complete, or updated.',
+                          ),
 
-                  _termsSection(
-                    '8. Changes to Terms',
-                    'Pawnder may update these Terms & Conditions when necessary. Users are encouraged to review them regularly.',
-                  ),
+                          _termsSection(
+                            '8. Changes to Terms',
+                            'Pawnder may update these Terms & Conditions when necessary. Users are encouraged to review them regularly.',
+                          ),
 
-                  _termsSection(
-                    '9. Contact Us',
-                    'For questions or concerns, users may contact the Pawnder development team through the Contact Us section of the application.',
-                  ),
+                          _termsSection(
+                            '9. Contact Us',
+                            'For questions or concerns, users may contact the Pawnder development team through the Contact Us section of the application.',
+                          ),
 
-                  const SizedBox(height: 12),
+                          const SizedBox(height: 12),
 
-                  Text(
-                    'By continuing to use Pawnder, you acknowledge and agree to these Terms & Conditions.',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: kNavy,
-                      fontSize: 13,
-                    ),
-                  ),
+                          Text(
+                            'By continuing to use Pawnder, you acknowledge and agree to these Terms & Conditions.',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: kNavy,
+                              fontSize: 13,
+                            ),
+                          ),
 
-                  const SizedBox(height: 8),
+                          const SizedBox(height: 8),
 
-                  const Center(
-                    child: Text(
-                      'Pawnder – Every Paw Deserves Help.',
-                      style: TextStyle(
-                        color: kBlue,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12,
+                          const Center(
+                            child: Text(
+                              'Pawnder – Every Paw Deserves Help.',
+                              style: TextStyle(
+                                color: kBlue,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext, false);
-              },
-              child: const Text(
-                'Decline',
-                style: TextStyle(color: Colors.grey),
-              ),
+                ),
+                if (!reachedEnd)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Text(
+                      'Scroll to the bottom to continue.',
+                      style: TextStyle(color: kHintGray, fontSize: 12),
+                    ),
+                  ),
+              ],
             ),
 
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kBlue,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext, false);
+                },
+                child: const Text(
+                  'Decline',
+                  style: TextStyle(color: Colors.grey),
                 ),
               ),
-              onPressed: () {
-                Navigator.pop(dialogContext, true);
-              },
-              child: const Text('I Agree'),
-            ),
-          ],
-        );
-      },
+
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kBlue,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: kHintGray.withValues(alpha: 0.3),
+                  disabledForegroundColor: Colors.white70,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed: reachedEnd
+                    ? () => Navigator.pop(dialogContext, true)
+                    : null,
+                child: const Text('I Agree'),
+              ),
+            ],
+          );
+        },
+      ),
     );
 
     if (!mounted) return;
@@ -214,10 +243,10 @@ class _SignUpPageState extends State<SignUpPage> {
 
   // TERMS SECTION HELPER
   Widget _termsSection(
-      String title,
-      String description, {
-        List<String> bullets = const [],
-      }) {
+    String title,
+    String description, {
+    List<String> bullets = const [],
+  }) {
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: Column(
@@ -234,23 +263,17 @@ class _SignUpPageState extends State<SignUpPage> {
 
           const SizedBox(height: 5),
 
-          Text(
-            description,
-            style: const TextStyle(fontSize: 13),
-          ),
+          Text(description, style: const TextStyle(fontSize: 13)),
 
           ...bullets.map(
-                (item) => Padding(
+            (item) => Padding(
               padding: const EdgeInsets.only(top: 5, left: 8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('•  '),
                   Expanded(
-                    child: Text(
-                      item,
-                      style: const TextStyle(fontSize: 13),
-                    ),
+                    child: Text(item, style: const TextStyle(fontSize: 13)),
                   ),
                 ],
               ),
@@ -290,12 +313,12 @@ class _SignUpPageState extends State<SignUpPage> {
         password: passwordController.text,
         rescuerApplication: applying
             ? {
-          'organization': _rescuer.organization.text.trim(),
-          'role_in_org': _rescuer.roleInOrg.text.trim(),
-          'contact_person': _rescuer.contactPerson.text.trim(),
-          'contact_number': _rescuer.contactNumber.text.trim(),
-          'official_page': _rescuer.officialPage.text.trim(),
-        }
+                'organization': _rescuer.organization.text.trim(),
+                'role_in_org': _rescuer.roleInOrg.text.trim(),
+                'contact_person': _rescuer.contactPerson.text.trim(),
+                'contact_number': _rescuer.contactNumber.text.trim(),
+                'official_page': _rescuer.officialPage.text.trim(),
+              }
             : null,
       );
     } on AuthFailure catch (e) {
@@ -312,10 +335,8 @@ class _SignUpPageState extends State<SignUpPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => VerifyEmailPage(
-            email: email,
-            applying: applying,
-          ),
+          builder: (context) =>
+              VerifyEmailPage(email: email, applying: applying),
         ),
       );
       return;
@@ -325,15 +346,13 @@ class _SignUpPageState extends State<SignUpPage> {
       context,
       applying
           ? 'Account created! Your rescuer application is pending '
-          'verification. Please log in.'
+                'verification. Please log in.'
           : 'Account created! Please log in.',
     );
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) => const LoginPage(),
-      ),
+      MaterialPageRoute(builder: (context) => const LoginPage()),
     );
   }
 
@@ -453,9 +472,7 @@ class _SignUpPageState extends State<SignUpPage> {
           onTap: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
-                builder: (context) => const LoginPage(),
-              ),
+              MaterialPageRoute(builder: (context) => const LoginPage()),
             );
           },
         ),

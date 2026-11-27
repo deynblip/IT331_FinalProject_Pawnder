@@ -99,7 +99,12 @@ class AboutPage extends StatelessWidget {
                       color: kCardColor,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Image.asset('assets/logo.png', height: 80),
+                    child: Image.asset(
+                      'assets/logo.png',
+                      height: 80,
+                      color: isDark ? Colors.white : null,
+                      colorBlendMode: isDark ? BlendMode.srcIn : null,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text(

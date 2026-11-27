@@ -528,11 +528,10 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
             Text('The animal still needs assistance',
                 style: TextStyle(color: ReportColors.navy, fontSize: 15)),
             const SizedBox(height: 12),
-            _primaryButton("I'm on my way!", _onMyWay),
-            if (_report.isMine) ...[
-              const SizedBox(height: 10),
-              _secondaryButton('Mark as Rescued', _markRescued),
-            ],
+            if (_report.isMine)
+              _primaryButton('Mark as Rescued', _markRescued)
+            else
+              _primaryButton("I'm on my way!", _onMyWay),
             _busyLine(),
           ],
         );
@@ -583,14 +582,14 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
             const SizedBox(height: 12),
 
             if (me == null) ...[
-              _primaryButton("I'm on my way!", _onMyWay),
-              if (_isVerified && inactive) ...[
-                const SizedBox(height: 10),
-                _secondaryButton('Take over this report', _takeOver),
-              ],
-              if (_report.isMine) ...[
-                const SizedBox(height: 10),
-                _secondaryButton('Mark as Rescued', _markRescued),
+              if (_report.isMine)
+                _primaryButton('Mark as Rescued', _markRescued)
+              else ...[
+                _primaryButton("I'm on my way!", _onMyWay),
+                if (_isVerified && inactive) ...[
+                  const SizedBox(height: 10),
+                  _secondaryButton('Take over this report', _takeOver),
+                ],
               ],
             ] else ...[
               if (!me.checkedIn) ...[

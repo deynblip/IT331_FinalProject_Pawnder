@@ -228,7 +228,7 @@ class TermsConditionsPage extends StatelessWidget {
     return Text(
       text,
       style: TextStyle(
-        color: Colors.grey.shade700,
+        color: kHintGray,
         fontSize: 13,
         height: 1.6,
       ),
