@@ -1,25 +1,3 @@
--- =====================================================================
--- PAWNDER DATABASE SETUP  (migration 0001)
--- =====================================================================
--- Run this ONCE in Supabase: Dashboard > SQL Editor > New query >
--- paste everything > Run.
---
--- What it creates:
---   1. Types (the fixed choices, e.g. Urgent / Needs Help / Sighted)
---   2. Tables (where the data is saved)
---   3. Helper functions (private, the app cannot call these directly)
---   4. App functions (the ONLY way the app can change data; each one
---      checks the rules first, e.g. "only the admin can screen")
---   5. Security rules (Row Level Security: who can READ which rows)
---   6. Photo storage buckets
---
--- The app can READ tables directly (limited by the security rules) but
--- it can only WRITE through the app functions in part 4.
---
--- Everything runs as ONE transaction: if any line fails, NOTHING is
--- saved, so you can fix the problem and run the whole file again.
--- =====================================================================
-
 begin;
 
 

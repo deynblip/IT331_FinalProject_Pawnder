@@ -1,12 +1,3 @@
--- 0007: approved adoption posts can be edited up to 2 times (was 3 in 0006)
---
--- Same rules as 0006: an approved post stays approved when edited, a
--- pending post stays pending, and a rejected post goes back to pending.
--- Only edits of approved posts are counted. Posts that already have 2 or
--- more edits cannot be edited again.
---
--- Run once in the SQL Editor (after 0006).
-
 begin;
 
 -- Same parameters as before, so the existing grants stay.

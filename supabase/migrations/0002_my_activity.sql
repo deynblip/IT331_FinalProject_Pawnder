@@ -1,10 +1,3 @@
--- Rules:
---  * Only the reporter can edit / remove the report.
---  * Not allowed when the report is already Rescued (it is part of the rescue record).
---  * Not allowed while someone is responding ("I'm on my way" is active).
---  * The location pin cannot be changed.
---  * Remove = hidden (removed_at), never deleted.
-
 begin;
 
 -- ---------------------------------------------------------------- Edit my report
