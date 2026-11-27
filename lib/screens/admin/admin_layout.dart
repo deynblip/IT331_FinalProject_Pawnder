@@ -11,6 +11,7 @@ import '../../services/notification_service.dart';
 import '../../services/push_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/theme_controller.dart';
+import '../../widgets/profile_avatar.dart';
 import '../drawer/about.dart';
 import '../drawer/settings.dart';
 import '../login.dart';
@@ -134,11 +135,16 @@ class _AdminLayoutState extends State<AdminLayout> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.admin_panel_settings,
-                        color: kBlue, size: 32),
+                  // Tap to add, change or remove the admin's photo.
+                  GestureDetector(
+                    onTap: () => showAvatarOptions(context),
+                    child: const ProfileAvatar(
+                      size: 56,
+                      background: Colors.white,
+                      iconColor: kBlue,
+                      fallbackIcon: Icons.admin_panel_settings,
+                      showEditBadge: true,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text(

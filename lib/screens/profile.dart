@@ -1,6 +1,4 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../services/report_service.dart';
 import '../models/rescuer_application.dart';
@@ -11,6 +9,7 @@ import '../services/application_service.dart';
 import '../services/rescuer_service.dart';
 import '../services/response_service.dart';
 import '../services/auth_service.dart';
+import '../widgets/profile_avatar.dart';
 import '../widgets/rescuer_badge.dart';
 import 'my_applications_screen.dart';
 import 'my_posts_screen.dart';
@@ -29,7 +28,6 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -54,123 +52,17 @@ class _ProfilePageState extends State<ProfilePage> {
     if (mounted) setState(() {});
   }
 
-  // Stored as bytes so it works on phones and in Chrome (web).
-  // TEMP: lost when the app restarts. Save it to the backend later.
-  Uint8List? _photoBytes;
-
-  Future<void> _pickPhoto(ImageSource source) async {
-    try {
-      final picked = await _picker.pickImage(
-        source: source,
-        imageQuality: 80,
-        maxWidth: 800,
-      );
-      if (picked == null) return;
-      final bytes = await picked.readAsBytes();
-      if (mounted) setState(() => _photoBytes = bytes);
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open the camera or gallery.')),
-      );
-    }
-  }
-
-  void _showPhotoOptions() {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Wrap(
-          children: [
-            // Chrome has no camera option, so only the gallery is shown there.
-            if (!kIsWeb)
-              ListTile(
-                leading: const Icon(Icons.photo_camera, color: kBlue),
-                title: const Text('Take a photo'),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _pickPhoto(ImageSource.camera);
-                },
-              ),
-            ListTile(
-              leading: const Icon(Icons.photo_library, color: kBlue),
-              title: const Text('Choose from gallery'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _pickPhoto(ImageSource.gallery);
-              },
-            ),
-            if (_photoBytes != null)
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text('Remove photo'),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  setState(() => _photoBytes = null);
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
+  // Profile photo (saved in the database). Tap to change or remove it.
   Widget _avatar() {
-    const double size = 120;
-
-    final Widget picture = _photoBytes != null
-        ? Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: kNavy, width: 4),
-      ),
-      child: ClipOval(
-        child: Image.memory(
-          _photoBytes!,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-        ),
-      ),
-    )
-    // Default: a person icon on a peach circle (no image asset needed).
-        : Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: kPeach,
-        shape: BoxShape.circle,
-        border: Border.all(color: kNavy, width: 4),
-      ),
-      child: Icon(Icons.person, size: 80, color: kNavy),
-    );
-
     return GestureDetector(
-      onTap: _showPhotoOptions,
-      child: Stack(
-        children: [
-          picture,
-          // Small camera badge so users know the photo can be changed.
-          Positioned(
-            right: 0,
-            bottom: 4,
-            child: Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: kBlue,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-              ),
-              child: const Icon(
-                Icons.camera_alt,
-                color: Colors.white,
-                size: 16,
-              ),
-            ),
-          ),
-        ],
+      onTap: () => showAvatarOptions(context),
+      child: ProfileAvatar(
+        size: 120,
+        background: kPeach,
+        iconColor: kNavy,
+        borderColor: kNavy,
+        borderWidth: 4,
+        showEditBadge: true,
       ),
     );
   }
